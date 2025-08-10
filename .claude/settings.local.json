@@ -18,7 +18,8 @@
       "Bash(npm init:*)",
       "Bash(npx playwright:*)",
       "Bash(PORT=3001 npm start)",
-      "Bash(open http://localhost:3001?test=true)"
+      "Bash(open http://localhost:3001?test=true)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }

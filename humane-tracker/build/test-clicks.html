@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Habit Clicks</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        .instructions {
+            background: #242424;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        h2 { color: #60a5fa; }
+        .step { margin: 10px 0; }
+        code {
+            background: #333;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="instructions">
+        <h2>Debug Habit Click Handler</h2>
+        <p>To test the clicking functionality:</p>
+        
+        <div class="step">1. Open the app at <a href="http://localhost:3001" target="_blank">http://localhost:3001</a></div>
+        <div class="step">2. Sign in with Google</div>
+        <div class="step">3. Open Browser Developer Console (F12 or Cmd+Option+I)</div>
+        <div class="step">4. Click on any habit cell for today</div>
+        <div class="step">5. Watch the console for these messages:</div>
+        
+        <ul>
+            <li><code>Handling click for habit: [name]</code></li>
+            <li><code>Existing entry: [entry or undefined]</code></li>
+            <li><code>Creating new entry...</code> or <code>Updating existing entry...</code></li>
+            <li>Any error messages</li>
+        </ul>
+        
+        <div class="step">6. Click the same cell multiple times to see it cycle through: empty → ✓ → 2 → 3 → 4 → 5 → ½ → empty</div>
+        
+        <h3>Expected Console Output:</h3>
+        <pre>
+First click:
+  Handling click for habit: Back Twists on date: 2025-08-09
+  Existing entry: undefined
+  Creating new entry for habit: [habitId]
+  Created entry with id: [entryId]
+
+Second click:
+  Handling click for habit: Back Twists on date: 2025-08-09
+  Existing entry: {id: "...", value: 1, ...}
+  Updating existing entry with value: 1
+  Updated to: 2
+
+...continuing through values...
+
+Seventh click (removing):
+  Handling click for habit: Back Twists on date: 2025-08-09
+  Existing entry: {id: "...", value: 0.5, ...}
+  Updating existing entry with value: 0.5
+  Deleted entry
+        </pre>
+        
+        <h3>If clicks aren't working, check for:</h3>
+        <ul>
+            <li>Firebase permission errors</li>
+            <li>Network errors in the Network tab</li>
+            <li>JavaScript errors in the console</li>
+        </ul>
+    </div>
+</body>
+</html>
