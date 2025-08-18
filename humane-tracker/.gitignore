@@ -34,3 +34,35 @@ yarn-error.log*
 .vercel
 .firebase/
 *.cache
+
+# Claude Code configuration
+.claude/
+
+# Authentication files
+auth.json
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Additional build directories
+dist/
+lib/
+out/
+temp/
+tmp/
+
+# Additional OS files
+Thumbs.db
+Desktop.ini
+*.lnk
+
+# Additional editor files
+*.sublime-*
+.history/
+
+# Package manager alternatives
+.pnpm-store/
+.yarn/
+
+# Test results already generated
+test-results/
