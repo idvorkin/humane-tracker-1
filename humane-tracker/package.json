@@ -11,10 +11,11 @@
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "date-fns": "^4.1.0",
-    "firebase": "^12.1.0",
+    "dexie": "^4.2.1",
+    "dexie-cloud-addon": "^4.2.2",
+    "dexie-react-hooks": "^4.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-firebase-hooks": "^5.1.1",
     "react-scripts": "5.0.1",
     "typescript": "^4.9.5",
     "web-vitals": "^2.1.4"
@@ -26,7 +27,8 @@
     "eject": "react-scripts eject",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:debug": "playwright test --debug"
+    "test:e2e:debug": "playwright test --debug",
+    "deploy:surge": "npm run build && surge build humane-tracker.surge.sh"
   },
   "eslintConfig": {
     "extends": [

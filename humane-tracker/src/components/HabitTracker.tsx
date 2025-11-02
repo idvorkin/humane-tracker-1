@@ -58,39 +58,40 @@ export const HabitTracker: React.FC<{ userId: string }> = ({ userId }) => {
       const mockHabits: HabitWithStatus[] = DEFAULT_HABITS.map((habit, index) => {
         // Add some sample entries for demo
         const entries = [];
-        
+        const habitId = index + 1; // Use numeric ID
+
         // Add sample entries for some habits
         if (habit.name === 'Back Twists') {
           entries.push(
-            { id: 'e1', habitId: `mock-${index}`, userId, date: addDays(today, -6), value: 2, createdAt: new Date() },
-            { id: 'e2', habitId: `mock-${index}`, userId, date: addDays(today, -5), value: 4, createdAt: new Date() },
-            { id: 'e3', habitId: `mock-${index}`, userId, date: addDays(today, -4), value: 4, createdAt: new Date() },
-            { id: 'e4', habitId: `mock-${index}`, userId, date: addDays(today, -3), value: 4, createdAt: new Date() }
+            { id: 1, habitId, userId, date: addDays(today, -6), value: 2, createdAt: new Date() },
+            { id: 2, habitId, userId, date: addDays(today, -5), value: 4, createdAt: new Date() },
+            { id: 3, habitId, userId, date: addDays(today, -4), value: 4, createdAt: new Date() },
+            { id: 4, habitId, userId, date: addDays(today, -3), value: 4, createdAt: new Date() }
           );
         } else if (habit.name === 'Shin Boxes') {
           entries.push(
-            { id: 'e5', habitId: `mock-${index}`, userId, date: addDays(today, -6), value: 2, createdAt: new Date() },
-            { id: 'e6', habitId: `mock-${index}`, userId, date: addDays(today, -4), value: 1, createdAt: new Date() },
-            { id: 'e7', habitId: `mock-${index}`, userId, date: addDays(today, -2), value: 1, createdAt: new Date() }
+            { id: 5, habitId, userId, date: addDays(today, -6), value: 2, createdAt: new Date() },
+            { id: 6, habitId, userId, date: addDays(today, -4), value: 1, createdAt: new Date() },
+            { id: 7, habitId, userId, date: addDays(today, -2), value: 1, createdAt: new Date() }
           );
         } else if (habit.name === 'Juggling') {
           entries.push(
-            { id: 'e8', habitId: `mock-${index}`, userId, date: addDays(today, -6), value: 3, createdAt: new Date() },
-            { id: 'e9', habitId: `mock-${index}`, userId, date: addDays(today, -3), value: 1, createdAt: new Date() }
+            { id: 8, habitId, userId, date: addDays(today, -6), value: 3, createdAt: new Date() },
+            { id: 9, habitId, userId, date: addDays(today, -3), value: 1, createdAt: new Date() }
           );
         } else if (habit.name === 'TGU 28KG') {
           entries.push(
-            { id: 'e10', habitId: `mock-${index}`, userId, date: addDays(today, -5), value: 4, createdAt: new Date() },
-            { id: 'e11', habitId: `mock-${index}`, userId, date: addDays(today, -2), value: 5, createdAt: new Date() }
+            { id: 10, habitId, userId, date: addDays(today, -5), value: 4, createdAt: new Date() },
+            { id: 11, habitId, userId, date: addDays(today, -2), value: 5, createdAt: new Date() }
           );
         } else if (habit.name === 'Amelia Time') {
           entries.push(
-            { id: 'e12', habitId: `mock-${index}`, userId, date: addDays(today, -6), value: 1, createdAt: new Date() },
-            { id: 'e13', habitId: `mock-${index}`, userId, date: addDays(today, -4), value: 1, createdAt: new Date() },
-            { id: 'e14', habitId: `mock-${index}`, userId, date: addDays(today, -3), value: 0.5, createdAt: new Date() }
+            { id: 12, habitId, userId, date: addDays(today, -6), value: 1, createdAt: new Date() },
+            { id: 13, habitId, userId, date: addDays(today, -4), value: 1, createdAt: new Date() },
+            { id: 14, habitId, userId, date: addDays(today, -3), value: 0.5, createdAt: new Date() }
           );
         }
-        
+
         // Count unique days with entries (not total values)
         // According to PRD: "Weekly goals count DAYS not total sets"
         const daysWithEntries = new Set(
@@ -100,7 +101,7 @@ export const HabitTracker: React.FC<{ userId: string }> = ({ userId }) => {
         ).size;
         const currentWeekCount = daysWithEntries;
         let status: any = 'pending';
-        
+
         if (currentWeekCount >= habit.targetPerWeek) {
           status = 'met';
         } else if (habit.name === 'Physical Mobility' || habit.name === 'Cult Meditate') {
@@ -108,9 +109,9 @@ export const HabitTracker: React.FC<{ userId: string }> = ({ userId }) => {
         } else if (habit.name === 'Heavy Clubs 3x10') {
           status = 'overdue';
         }
-        
+
         return {
-          id: `mock-${index}`,
+          id: habitId,
           name: habit.name,
           category: habit.category,
           targetPerWeek: habit.targetPerWeek,
@@ -306,7 +307,7 @@ export const HabitTracker: React.FC<{ userId: string }> = ({ userId }) => {
     setSections(prev => prev.map(s => ({ ...s, isCollapsed: true })));
   };
 
-  const handleCellClick = async (habitId: string, date: Date) => {
+  const handleCellClick = async (habitId: number, date: Date) => {
     console.log('Handling click for habit:', habitId, 'on date:', format(date, 'yyyy-MM-dd'));
     
     // Check if date is older than yesterday and confirm
@@ -353,7 +354,7 @@ export const HabitTracker: React.FC<{ userId: string }> = ({ userId }) => {
         } else {
           // Add new entry
           newEntries.push({
-            id: `new-${Date.now()}`,
+            id: Date.now(),
             habitId,
             userId,
             date,
@@ -424,7 +425,7 @@ export const HabitTracker: React.FC<{ userId: string }> = ({ userId }) => {
             } else {
               // Add new entry
               updatedEntries.push({
-                id: 'temp-' + Date.now(),
+                id: Date.now(),
                 habitId,
                 userId,
                 date,
@@ -477,7 +478,7 @@ export const HabitTracker: React.FC<{ userId: string }> = ({ userId }) => {
                   }
                 } else {
                   updatedEntries.push({
-                    id: 'temp-' + Date.now(),
+                    id: Date.now(),
                     habitId,
                     userId,
                     date,

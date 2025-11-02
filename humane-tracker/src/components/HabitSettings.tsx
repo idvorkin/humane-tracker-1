@@ -26,8 +26,8 @@ const TRACKING_TYPES = [
 export const HabitSettings: React.FC<HabitSettingsProps> = ({ userId, onClose, onUpdate }) => {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [changes, setChanges] = useState<Record<string, Partial<Habit>>>({});
-  const [deletingHabits, setDeletingHabits] = useState<Set<string>>(new Set());
+  const [changes, setChanges] = useState<Record<number, Partial<Habit>>>({});
+  const [deletingHabits, setDeletingHabits] = useState<Set<number>>(new Set());
 
   const habitService = new HabitService();
 
@@ -54,7 +54,7 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({ userId, onClose, o
     }
   };
 
-  const handleFieldChange = (habitId: string, field: string, value: any) => {
+  const handleFieldChange = (habitId: number, field: string, value: any) => {
     setChanges(prev => ({
       ...prev,
       [habitId]: {
@@ -71,7 +71,7 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({ userId, onClose, o
     return habit[field];
   };
 
-  const handleDeleteToggle = (habitId: string) => {
+  const handleDeleteToggle = (habitId: number) => {
     setDeletingHabits(prev => {
       const newSet = new Set(prev);
       if (newSet.has(habitId)) {
@@ -86,8 +86,9 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({ userId, onClose, o
   const handleSaveAll = async () => {
     try {
       // Save changes
-      for (const [habitId, habitChanges] of Object.entries(changes)) {
+      for (const [habitIdStr, habitChanges] of Object.entries(changes)) {
         if (Object.keys(habitChanges).length > 0) {
+          const habitId = Number(habitIdStr);
           await habitService.updateHabit(habitId, {
             ...habitChanges,
             updatedAt: new Date()

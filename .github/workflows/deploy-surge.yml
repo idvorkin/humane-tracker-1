@@ -1,0 +1,44 @@
+name: Deploy to Surge
+
+on:
+  push:
+    branches:
+      - main  # Deploy on push to main branch
+  pull_request:
+    branches:
+      - main  # Preview on PRs
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    name: Build and Deploy to Surge
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: 'humane-tracker/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./humane-tracker
+        run: npm ci
+
+      - name: Build React app
+        working-directory: ./humane-tracker
+        run: npm run build
+        env:
+          CI: false  # Treat warnings as warnings, not errors
+
+      - name: Install Surge
+        run: npm install -g surge
+
+      - name: Deploy to Surge
+        run: surge ./humane-tracker/build ${{ secrets.SURGE_DOMAIN }} --token ${{ secrets.SURGE_TOKEN }}
+        env:
+          SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
+          SURGE_DOMAIN: ${{ secrets.SURGE_DOMAIN }}

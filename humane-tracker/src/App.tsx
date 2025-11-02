@@ -1,27 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { HabitTracker } from './components/HabitTracker';
 import { Login } from './components/Login';
-import { auth } from './config/firebase';
-import { onAuthStateChanged, User, signOut } from 'firebase/auth';
+import { db } from './config/db';
+import { useObservable } from 'dexie-react-hooks';
 import './App.css';
 
+const DEXIE_CLOUD_URL = process.env.REACT_APP_DEXIE_CLOUD_URL;
+const isCloudConfigured = DEXIE_CLOUD_URL && DEXIE_CLOUD_URL !== 'https://your-db.dexie.cloud';
+
 function App() {
-  const [user, setUser] = useState<User | null>(null);
+  const currentUser = useObservable(
+    () => db.cloud.currentUser,
+    [db]
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Listen for auth state changes
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
+    // Check if we have a user (including loading state)
+    const checkAuth = async () => {
+      try {
+        // Wait a bit for Dexie Cloud to initialize
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setLoading(false);
+      } catch (error) {
+        console.error('Error checking auth:', error);
+        setLoading(false);
+      }
+    };
 
-    return () => unsubscribe();
+    checkAuth();
   }, []);
 
   const handleSignOut = async () => {
     try {
-      await signOut(auth);
+      if (isCloudConfigured) {
+        await db.cloud.logout();
+      } else {
+        // In local mode, just clear data and reload
+        localStorage.removeItem('localUserId');
+        window.location.reload();
+      }
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -35,7 +53,33 @@ function App() {
     );
   }
 
-  if (!user) {
+  // Local mode - use a fixed user ID or create one
+  if (!isCloudConfigured) {
+    let localUserId = localStorage.getItem('localUserId');
+    if (!localUserId) {
+      localUserId = 'local-user-' + Date.now();
+      localStorage.setItem('localUserId', localUserId);
+    }
+
+    return (
+      <div className="App">
+        <div className="app-header">
+          <div className="user-info">
+            <div className="user-avatar">L</div>
+            <span className="user-name">Local User</span>
+            <span className="local-mode-badge">Local Mode</span>
+            <button className="sign-out-btn" onClick={handleSignOut}>
+              Reset
+            </button>
+          </div>
+        </div>
+        <HabitTracker userId={localUserId} />
+      </div>
+    );
+  }
+
+  // Cloud mode - require authentication
+  if (!currentUser || !currentUser.userId) {
     return <Login />;
   }
 
@@ -43,18 +87,16 @@ function App() {
     <div className="App">
       <div className="app-header">
         <div className="user-info">
-          <img 
-            src={user.photoURL || 'https://via.placeholder.com/32'} 
-            alt={user.displayName || 'User'} 
-            className="user-avatar"
-          />
-          <span className="user-name">{user.displayName || user.email}</span>
+          <div className="user-avatar">
+            {currentUser.name ? currentUser.name[0].toUpperCase() : '?'}
+          </div>
+          <span className="user-name">{currentUser.name || currentUser.email || 'User'}</span>
           <button className="sign-out-btn" onClick={handleSignOut}>
             Sign Out
           </button>
         </div>
       </div>
-      <HabitTracker userId={user.uid} />
+      <HabitTracker userId={currentUser.userId} />
     </div>
   );
 }
