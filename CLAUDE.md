@@ -90,3 +90,5 @@ React 18 + TypeScript + Vite application for tracking habits and behaviors with 
 3. Check recent changes (git diff)
 4. Find working examples to compare against
 5. Form a single hypothesis and test minimally
+
+- only run tests on chromium
