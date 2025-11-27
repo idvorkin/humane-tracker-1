@@ -23,7 +23,7 @@ export class HumaneTrackerDB extends Dexie {
 export const db = new HumaneTrackerDB();
 
 // Configure Dexie Cloud (optional - works offline if not configured)
-const dexieCloudUrl = process.env.REACT_APP_DEXIE_CLOUD_URL;
+const dexieCloudUrl = import.meta.env.VITE_DEXIE_CLOUD_URL;
 
 if (dexieCloudUrl && dexieCloudUrl !== "https://your-db.dexie.cloud") {
 	// Only configure cloud sync if URL is properly set

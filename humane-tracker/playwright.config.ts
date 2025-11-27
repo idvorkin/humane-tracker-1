@@ -29,7 +29,7 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'PORT=3001 npm start',
+    command: 'npm run dev -- --port 3001',
     url: 'http://localhost:3001',
     reuseExistingServer: true,
     timeout: 120 * 1000,

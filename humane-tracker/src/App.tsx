@@ -5,7 +5,7 @@ import { Login } from "./components/Login";
 import { db } from "./config/db";
 import "./App.css";
 
-const DEXIE_CLOUD_URL = process.env.REACT_APP_DEXIE_CLOUD_URL;
+const DEXIE_CLOUD_URL = import.meta.env.VITE_DEXIE_CLOUD_URL;
 const isCloudConfigured =
 	DEXIE_CLOUD_URL && DEXIE_CLOUD_URL !== "https://your-db.dexie.cloud";
 

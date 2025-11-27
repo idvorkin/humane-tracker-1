@@ -20,7 +20,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 20
           cache: 'npm'
           cache-dependency-path: 'humane-tracker/package-lock.json'
 
@@ -30,19 +30,17 @@ jobs:
 
       - name: Run unit tests
         working-directory: ./humane-tracker
-        run: CI=true npm test -- --passWithNoTests
+        run: npm test
 
-      - name: Build React app
+      - name: Build app
         working-directory: ./humane-tracker
         run: npm run build
-        env:
-          CI: false  # Treat warnings as warnings, not errors
 
       - name: Install Surge
         run: npm install -g surge
 
       - name: Deploy to Surge
-        run: surge ./humane-tracker/build "${{ secrets.SURGE_DOMAIN }}" --token "${{ secrets.SURGE_TOKEN }}"
+        run: surge ./humane-tracker/dist "${{ secrets.SURGE_DOMAIN }}" --token "${{ secrets.SURGE_TOKEN }}"
         env:
           SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
           SURGE_DOMAIN: ${{ secrets.SURGE_DOMAIN }}

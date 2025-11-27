@@ -17,24 +17,23 @@ Address your human partner as "Igor" at all times.
 
 ```bash
 cd humane-tracker
-npm start         # Run development server - opens http://localhost:3000
-npm run build     # Build for production
-npm test          # Run unit tests (Jest via react-scripts)
+npm run dev       # Run development server - opens http://localhost:3000
+npm run build     # Build for production (tsc + vite build)
+npm test          # Run unit tests (Vitest)
 npm run test:e2e  # Run E2E tests (Playwright)
 ```
 
 ## Code Quality
 
 - **Biome** for formatting (tabs, double quotes) and linting - runs via pre-commit hook
-- **ESLint** for React-specific rules (react-app preset)
-- **Jest** for unit tests (via react-scripts)
+- **Vitest** for unit tests (jsdom environment)
 - **Playwright** for E2E tests (in `tests/` directory)
 
 Pre-commit runs Biome checks and unit tests automatically.
 
 ## Architecture
 
-React 18 + TypeScript + Create React App application for tracking habits and behaviors with local-first storage.
+React 18 + TypeScript + Vite application for tracking habits and behaviors with local-first storage.
 
 ### Core Components
 

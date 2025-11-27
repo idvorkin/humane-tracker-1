@@ -1,35 +1,39 @@
-import { render, screen } from "@testing-library/react";
-import React from "react";
+import { render } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import App from "./App";
 
 // Mock Dexie database and hooks
-jest.mock("./config/db", () => ({
+vi.mock("./config/db", () => ({
 	db: {
 		habits: {
-			toArray: jest.fn(() => Promise.resolve([])),
-			where: jest.fn(() => ({
-				equals: jest.fn(() => ({
-					toArray: jest.fn(() => Promise.resolve([])),
+			toArray: vi.fn(() => Promise.resolve([])),
+			where: vi.fn(() => ({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(() => Promise.resolve([])),
 				})),
 			})),
 		},
 		entries: {
-			toArray: jest.fn(() => Promise.resolve([])),
-			where: jest.fn(() => ({
-				equals: jest.fn(() => ({
-					toArray: jest.fn(() => Promise.resolve([])),
+			toArray: vi.fn(() => Promise.resolve([])),
+			where: vi.fn(() => ({
+				equals: vi.fn(() => ({
+					toArray: vi.fn(() => Promise.resolve([])),
 				})),
 			})),
+		},
+		cloud: {
+			currentUser: null,
 		},
 	},
 }));
 
-jest.mock("dexie-react-hooks", () => ({
-	useObservable: jest.fn(() => null), // Simulate no user logged in
+vi.mock("dexie-react-hooks", () => ({
+	useObservable: vi.fn(() => null),
 }));
 
-test("renders habit tracker", () => {
-	render(<App />);
-	// Just check that something renders
-	expect(document.body).toBeTruthy();
+describe("App", () => {
+	it("renders habit tracker", () => {
+		render(<App />);
+		expect(document.body).toBeTruthy();
+	});
 });
