@@ -32,7 +32,6 @@ yarn-error.log*
 
 # Deployment
 .vercel
-.firebase/
 *.cache
 
 # Claude Code configuration
