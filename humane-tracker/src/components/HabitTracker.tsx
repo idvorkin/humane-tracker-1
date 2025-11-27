@@ -53,232 +53,8 @@ export const HabitTracker: React.FC<{ userId: string }> = ({ userId }) => {
 		}
 		setWeekDates(dates);
 
-		// Check if we should use mock mode
-		if (useMockMode) {
-			// Use mock data for testing with default habits and some sample entries
-			const today = new Date();
-			const mockHabits: HabitWithStatus[] = DEFAULT_HABITS.map(
-				(habit, index) => {
-					// Add some sample entries for demo
-					const entries = [];
-					const habitId = index + 1; // Use numeric ID
-
-					// Add sample entries for some habits
-					if (habit.name === "Back Twists") {
-						entries.push(
-							{
-								id: 1,
-								habitId,
-								userId,
-								date: addDays(today, -6),
-								value: 2,
-								createdAt: new Date(),
-							},
-							{
-								id: 2,
-								habitId,
-								userId,
-								date: addDays(today, -5),
-								value: 4,
-								createdAt: new Date(),
-							},
-							{
-								id: 3,
-								habitId,
-								userId,
-								date: addDays(today, -4),
-								value: 4,
-								createdAt: new Date(),
-							},
-							{
-								id: 4,
-								habitId,
-								userId,
-								date: addDays(today, -3),
-								value: 4,
-								createdAt: new Date(),
-							},
-						);
-					} else if (habit.name === "Shin Boxes") {
-						entries.push(
-							{
-								id: 5,
-								habitId,
-								userId,
-								date: addDays(today, -6),
-								value: 2,
-								createdAt: new Date(),
-							},
-							{
-								id: 6,
-								habitId,
-								userId,
-								date: addDays(today, -4),
-								value: 1,
-								createdAt: new Date(),
-							},
-							{
-								id: 7,
-								habitId,
-								userId,
-								date: addDays(today, -2),
-								value: 1,
-								createdAt: new Date(),
-							},
-						);
-					} else if (habit.name === "Juggling") {
-						entries.push(
-							{
-								id: 8,
-								habitId,
-								userId,
-								date: addDays(today, -6),
-								value: 3,
-								createdAt: new Date(),
-							},
-							{
-								id: 9,
-								habitId,
-								userId,
-								date: addDays(today, -3),
-								value: 1,
-								createdAt: new Date(),
-							},
-						);
-					} else if (habit.name === "TGU 28KG") {
-						entries.push(
-							{
-								id: 10,
-								habitId,
-								userId,
-								date: addDays(today, -5),
-								value: 4,
-								createdAt: new Date(),
-							},
-							{
-								id: 11,
-								habitId,
-								userId,
-								date: addDays(today, -2),
-								value: 5,
-								createdAt: new Date(),
-							},
-						);
-					} else if (habit.name === "Amelia Time") {
-						entries.push(
-							{
-								id: 12,
-								habitId,
-								userId,
-								date: addDays(today, -6),
-								value: 1,
-								createdAt: new Date(),
-							},
-							{
-								id: 13,
-								habitId,
-								userId,
-								date: addDays(today, -4),
-								value: 1,
-								createdAt: new Date(),
-							},
-							{
-								id: 14,
-								habitId,
-								userId,
-								date: addDays(today, -3),
-								value: 0.5,
-								createdAt: new Date(),
-							},
-						);
-					}
-
-					// Count unique days with entries (not total values)
-					// According to PRD: "Weekly goals count DAYS not total sets"
-					const daysWithEntries = new Set(
-						entries
-							.filter((e) => e.value > 0)
-							.map((e) => format(e.date, "yyyy-MM-dd")),
-					).size;
-					const currentWeekCount = daysWithEntries;
-					let status: any = "pending";
-
-					if (currentWeekCount >= habit.targetPerWeek) {
-						status = "met";
-					} else if (
-						habit.name === "Physical Mobility" ||
-						habit.name === "Cult Meditate"
-					) {
-						status = "today";
-					} else if (habit.name === "Heavy Clubs 3x10") {
-						status = "overdue";
-					}
-
-					return {
-						id: habitId,
-						name: habit.name,
-						category: habit.category,
-						targetPerWeek: habit.targetPerWeek,
-						userId: userId,
-						createdAt: new Date(),
-						updatedAt: new Date(),
-						status,
-						currentWeekCount,
-						entries,
-					};
-				},
-			);
-
-			// Deduplicate habits by name
-			const uniqueHabits = mockHabits.reduce((acc, habit) => {
-				if (!acc.find((h) => h.name === habit.name)) {
-					acc.push(habit);
-				}
-				return acc;
-			}, [] as HabitWithStatus[]);
-
-			console.log(
-				"Mock mode: Setting",
-				uniqueHabits.length,
-				"unique habits (from",
-				mockHabits.length,
-				"total)",
-			);
-
-			setHabits(uniqueHabits);
-
-			// Group by category with unique habits
-			const categorySections: CategorySection[] = Object.keys(CATEGORIES).map(
-				(cat) => {
-					const categoryHabits = uniqueHabits.filter((h) => h.category === cat);
-					console.log(`Category ${cat}: ${categoryHabits.length} habits`);
-					return {
-						category: cat as any,
-						name: CATEGORIES[cat].name,
-						color: CATEGORIES[cat].color,
-						habits: categoryHabits,
-						isCollapsed: collapsedSectionsRef.current.has(cat),
-					};
-				},
-			);
-			setSections(categorySections);
-
-			// Set sample stats
-			setSummaryStats({
-				dueToday: 2,
-				overdue: 1,
-				doneToday: 0,
-				onTrack: 0,
-			});
-
-			// Mark as loaded
-			setIsLoading(false);
-
-			return;
-		}
-
 		// Function to fetch and update habits with their status
-		const updateHabitsWithStatus = async (skipLoading = false) => {
+		const loadHabits = async (skipLoading = false) => {
 			try {
 				if (!skipLoading) setIsLoading(true);
 				const habitsWithStatus = await habitService.getHabitsWithStatus(userId);
@@ -304,8 +80,8 @@ export const HabitTracker: React.FC<{ userId: string }> = ({ userId }) => {
 
 				setHabits(uniqueHabits);
 
-				// Check if user has no habits and show initializer
-				if (uniqueHabits.length === 0 && !showInitializer) {
+				// Check if user has no habits and show initializer (skip in mock mode)
+				if (uniqueHabits.length === 0 && !showInitializer && !useMockMode) {
 					setShowInitializer(true);
 				}
 
@@ -352,20 +128,38 @@ export const HabitTracker: React.FC<{ userId: string }> = ({ userId }) => {
 			}
 		};
 
-		// Track if we've done initial load
+		// Handle mock mode - seed habits then load
+		if (useMockMode) {
+			const seedMockHabits = async () => {
+				const existingHabits = await habitService.getHabits(userId);
+				if (existingHabits.length === 0) {
+					console.log("Mock mode: Seeding default habits to IndexedDB");
+					const habitsToCreate = DEFAULT_HABITS.map((habit) => ({
+						name: habit.name,
+						category: habit.category,
+						targetPerWeek: habit.targetPerWeek,
+						userId,
+					}));
+					await habitService.bulkCreateHabits(habitsToCreate);
+				}
+			};
+
+			seedMockHabits().then(() => {
+				loadHabits();
+			});
+			return;
+		}
+
+		// Non-mock mode: set up subscriptions
 		let isInitialLoad = true;
 
 		// Subscribe to habits changes
-		const unsubscribeHabits = habitService.subscribeToHabits(
-			userId,
-			(updatedHabits) => {
-				// For subsequent updates, only update if not loading
-				if (!isInitialLoad) {
-					// Use the real-time data directly without re-fetching
-					updateHabitsWithStatus(true);
-				}
-			},
-		);
+		const unsubscribeHabits = habitService.subscribeToHabits(userId, () => {
+			// For subsequent updates, only update if not loading
+			if (!isInitialLoad) {
+				loadHabits(true);
+			}
+		});
 
 		// Subscribe to entries changes for the trailing 7 days
 		const endDate = new Date();
@@ -378,25 +172,22 @@ export const HabitTracker: React.FC<{ userId: string }> = ({ userId }) => {
 			userId,
 			startDate,
 			endDate,
-			(updatedEntries) => {
+			() => {
 				// For subsequent updates, only update if not loading
 				if (!isInitialLoad) {
-					// Use the real-time data directly without re-fetching
-					updateHabitsWithStatus(true);
+					loadHabits(true);
 				}
 			},
 		);
 
 		// Initial load
-		updateHabitsWithStatus().then(() => {
+		loadHabits().then(() => {
 			isInitialLoad = false;
 		});
 
 		return () => {
-			if (!useMockMode) {
-				unsubscribeHabits();
-				unsubscribeEntries();
-			}
+			unsubscribeHabits();
+			unsubscribeEntries();
 		};
 	}, [userId, useMockMode]); // eslint-disable-line react-hooks/exhaustive-deps
 

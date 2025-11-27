@@ -31,8 +31,17 @@ if (dexieCloudUrl && dexieCloudUrl !== "https://your-db.dexie.cloud") {
 		databaseUrl: dexieCloudUrl,
 		requireAuth: false, // Allow local use without auth for now
 		tryUseServiceWorker: true,
+		// Exclude auto-incremented tables from sync (they use numeric IDs)
+		unsyncedTables: ["habits", "entries"],
 	});
 } else {
 	// Disable cloud sync - work in local-only mode
+	// Still need to configure with unsyncedTables to avoid schema conflicts
+	db.cloud.configure({
+		databaseUrl: "https://placeholder.dexie.cloud",
+		requireAuth: false,
+		tryUseServiceWorker: false,
+		unsyncedTables: ["habits", "entries"],
+	});
 	console.log("Dexie Cloud not configured - running in local-only mode");
 }

@@ -208,4 +208,20 @@ export class HabitService {
 	async getHabits(userId: string): Promise<Habit[]> {
 		return this.getUserHabits(userId);
 	}
+
+	// Bulk create habits (faster than individual creates)
+	async bulkCreateHabits(
+		habits: Array<Omit<Habit, "id" | "createdAt" | "updatedAt">>,
+	): Promise<number[]> {
+		const now = new Date();
+		const habitsToInsert = habits.map((habit) => ({
+			...habit,
+			createdAt: now,
+			updatedAt: now,
+		}));
+		const ids = await db.habits.bulkAdd(habitsToInsert as any[], {
+			allKeys: true,
+		});
+		return ids;
+	}
 }

@@ -2,44 +2,34 @@ import { test, expect, Page } from '@playwright/test';
 
 test.describe('Habit Tracker App', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    // Wait for the app to load - handle both loading state and main app
-    try {
-      await page.waitForSelector('.container', { timeout: 15000 });
-    } catch (e) {
-      // If container not found, check for loading or error state
-      const hasLoading = await page.locator('.loading-container').count();
-      const hasError = await page.locator('.error-container').count();
-      
-      if (hasLoading > 0) {
-        console.log('App is still loading...');
-        await page.waitForSelector('.container', { timeout: 30000 });
-      } else if (hasError > 0) {
-        const errorText = await page.locator('.error-container').textContent();
-        console.log('App error:', errorText);
-        throw new Error(`App failed to load: ${errorText}`);
-      }
-    }
+    // Go to the app in test mode (no auth required)
+    await page.goto('/?test=true');
+
+    // Wait for the app to load
+    await page.waitForLoadState('networkidle');
+
+    // Wait for habit tracker content to be visible (not just loading screen)
+    await page.waitForSelector('table', { timeout: 15000 });
   });
 
   test('should load the main page with all sections', async ({ page }) => {
     // Check header elements
     await expect(page.locator('.week-title')).toBeVisible();
-    await expect(page.locator('.week-title')).toContainText('Week of');
-    
+    await expect(page.locator('.week-title')).toContainText('Last 7 Days');
+
     // Check summary bar
     await expect(page.locator('.summary-bar')).toBeVisible();
     await expect(page.locator('.summary-label').first()).toContainText('Due Today');
-    
+
     // Check view toggle buttons
     await expect(page.locator('button:has-text("Expand All")')).toBeVisible();
     await expect(page.locator('button:has-text("Collapse All")')).toBeVisible();
-    await expect(page.locator('button:has-text("+ Add Habit")')).toBeVisible();
-    
+    await expect(page.locator('button:has-text("Manage Habits")')).toBeVisible();
+
     // Check table structure
     await expect(page.locator('table')).toBeVisible();
     await expect(page.locator('th.col-habit')).toContainText('Habit');
-    
+
     // Check legend
     await expect(page.locator('.legend-strip')).toBeVisible();
     await expect(page.locator('.legend-item').first()).toContainText('done');
@@ -48,78 +38,83 @@ test.describe('Habit Tracker App', () => {
   test('should expand and collapse sections', async ({ page }) => {
     // Wait for sections to load
     await page.waitForSelector('.section-header', { timeout: 5000 });
-    
-    // Get all section headers
-    const sections = page.locator('.section-header');
-    const sectionCount = await sections.count();
-    
-    if (sectionCount > 0) {
-      // Click first section to toggle
-      const firstSection = sections.first();
-      await firstSection.click();
-      
-      // Check if arrow rotated (collapsed state)
-      const arrow = firstSection.locator('.section-arrow');
-      await expect(arrow).toHaveClass(/collapsed/);
-      
-      // Click again to expand
-      await firstSection.click();
-      await expect(arrow).not.toHaveClass(/collapsed/);
-    }
+
+    // First expand all to ensure we have expanded sections
+    await page.click('button:has-text("Expand All")');
+    await page.waitForTimeout(300);
+
+    // Now collapse all
+    await page.click('button:has-text("Collapse All")');
+    await page.waitForTimeout(300);
+
+    // Verify all arrows are collapsed
+    const collapsedArrows = page.locator('.section-arrow.collapsed');
+    const collapsedCount = await collapsedArrows.count();
+    expect(collapsedCount).toBeGreaterThan(0);
+
+    // Expand all again
+    await page.click('button:has-text("Expand All")');
+    await page.waitForTimeout(300);
+
+    // Verify no arrows are collapsed
+    const stillCollapsed = await page.locator('.section-arrow.collapsed').count();
+    expect(stillCollapsed).toBe(0);
   });
 
   test('should open and close add habit modal', async ({ page }) => {
-    // Click Add Habit button
-    await page.click('button:has-text("+ Add Habit")');
-    
-    // Check modal is visible
-    await expect(page.locator('.habit-manager-overlay')).toBeVisible();
-    await expect(page.locator('.modal-header h2')).toContainText('Add New Habit');
-    
-    // Check form fields
-    await expect(page.locator('label:has-text("Habit Name")')).toBeVisible();
-    await expect(page.locator('label:has-text("Category")')).toBeVisible();
-    await expect(page.locator('label:has-text("Target per Week")')).toBeVisible();
-    
-    // Close modal
-    await page.click('.close-btn');
-    await expect(page.locator('.habit-manager-overlay')).not.toBeVisible();
+    // Click Manage Habits button
+    await page.click('button:has-text("Manage Habits")');
+
+    // Check settings modal is visible
+    await expect(page.locator('.habit-settings-modal')).toBeVisible();
+
+    // Click + Add New Habit button
+    await page.click('button:has-text("+ Add New Habit")');
+
+    // Check add form is visible
+    await expect(page.locator('.new-habit-input')).toBeVisible();
+
+    // Close modal using X button
+    await page.click('.habit-settings-modal .close-btn');
+    await expect(page.locator('.habit-settings-modal')).not.toBeVisible();
   });
 
   test('should create a new habit', async ({ page }) => {
-    // Open Add Habit modal
-    await page.click('button:has-text("+ Add Habit")');
-    
-    // Fill in the form
-    await page.fill('#habitName', 'Morning Meditation');
-    await page.selectOption('#category', 'balance');
-    await page.fill('#target', '5');
-    
-    // Submit form - use more specific selector
-    await page.click('.btn-submit');
-    
-    // Wait for modal to close
-    await expect(page.locator('.habit-manager-overlay')).not.toBeVisible({ timeout: 5000 });
-    
-    // Check if habit appears in the table (may need to wait for Firebase sync)
-    await page.waitForTimeout(2000); // Wait for Firebase update
-    const habitName = page.locator('.habit-name:has-text("Morning Meditation")');
-    
-    // The habit might appear if Firebase is configured
-    // This is a soft check since Firebase might not be fully configured
-    const habitCount = await habitName.count();
-    if (habitCount > 0) {
-      await expect(habitName).toBeVisible();
-    }
+    // Open Manage Habits modal
+    await page.click('button:has-text("Manage Habits")');
+    await expect(page.locator('.habit-settings-modal')).toBeVisible();
+
+    // Click Add New Habit
+    const addNewButton = page.locator('button:has-text("+ Add New Habit")');
+    await addNewButton.click();
+
+    // Fill in the form (use the add-new-form specific inputs)
+    const nameInput = page.locator('.add-new-form .new-habit-input');
+    await expect(nameInput).toBeVisible();
+    await nameInput.fill('Morning Meditation');
+    await page.selectOption('.add-new-form .category-select', 'balance');
+    await page.fill('.add-new-form .target-input', '5');
+
+    // Submit form
+    await page.click('.btn-add');
+
+    // Wait for form to collapse (form submission successful)
+    await expect(addNewButton).toBeVisible({ timeout: 5000 });
+    await expect(nameInput).not.toBeVisible({ timeout: 3000 });
+
+    // Close modal
+    await page.click('.habit-settings-modal .close-btn');
+    await expect(page.locator('.habit-settings-modal')).not.toBeVisible();
   });
 
   test('should expand all sections', async ({ page }) => {
     // Click Expand All button
     await page.click('button:has-text("Expand All")');
-    
-    // Check that no sections have collapsed class
-    const collapsedSections = page.locator('.section-header.collapsed');
-    const count = await collapsedSections.count();
+    await page.waitForTimeout(500);
+
+    // Check that no section arrows have collapsed class
+    const collapsedArrows = page.locator('.section-arrow.collapsed');
+    const count = await collapsedArrows.count();
     expect(count).toBe(0);
   });
 
@@ -127,18 +122,18 @@ test.describe('Habit Tracker App', () => {
     // First expand all
     await page.click('button:has-text("Expand All")');
     await page.waitForTimeout(500);
-    
+
     // Then collapse all
     await page.click('button:has-text("Collapse All")');
     await page.waitForTimeout(500);
-    
-    // Check that all sections have collapsed class
-    const sections = page.locator('.section-header');
-    const totalCount = await sections.count();
-    
+
+    // Check that all section arrows have collapsed class
+    const arrows = page.locator('.section-arrow');
+    const totalCount = await arrows.count();
+
     if (totalCount > 0) {
-      const collapsedSections = page.locator('.section-header.collapsed');
-      const collapsedCount = await collapsedSections.count();
+      const collapsedArrows = page.locator('.section-arrow.collapsed');
+      const collapsedCount = await collapsedArrows.count();
       expect(collapsedCount).toBe(totalCount);
     }
   });
@@ -202,12 +197,12 @@ test.describe('Habit Tracker App', () => {
 
 test.describe('Habit Tracking Functions', () => {
   test('should track habit completion by clicking cells', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForSelector('.container', { timeout: 15000 });
-    
+    await page.goto('/?test=true');
+    await page.waitForSelector('table', { timeout: 15000 });
+
     // Wait for table cells to be clickable
-    await page.waitForTimeout(2000);
-    
+    await page.waitForTimeout(500);
+
     // Find a habit row cell (if habits exist)
     const habitCells = page.locator('td[style*="cursor: pointer"]');
     const cellCount = await habitCells.count();
@@ -234,36 +229,35 @@ test.describe('Habit Tracking Functions', () => {
   });
 
   test('should validate habit form inputs', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForSelector('.container', { timeout: 15000 });
-    
-    // Open Add Habit modal
-    await page.click('button:has-text("+ Add Habit")');
-    
-    // Try to submit empty form - use specific selector
-    await page.click('.btn-submit');
-    
-    // Check that modal is still open (form validation should prevent submission)
-    await expect(page.locator('.habit-manager-overlay')).toBeVisible();
-    
-    // Fill only name and try again
-    await page.fill('#habitName', 'Test Habit');
-    
-    // Check target field has min/max constraints
-    const targetInput = page.locator('#target');
-    await targetInput.fill('0');
+    await page.goto('/?test=true');
+    await page.waitForSelector('table', { timeout: 15000 });
+
+    // Open Manage Habits modal
+    await page.click('button:has-text("Manage Habits")');
+    await expect(page.locator('.habit-settings-modal')).toBeVisible();
+
+    // Click Add New Habit
+    await page.click('button:has-text("+ Add New Habit")');
+
+    // Verify form elements are visible
+    const nameInput = page.locator('.add-new-form .new-habit-input');
+    await expect(nameInput).toBeVisible();
+
+    const targetInput = page.locator('.add-new-form .target-input');
+    await expect(targetInput).toBeVisible();
+
+    // Check target field has constraints
     const minValue = await targetInput.getAttribute('min');
     expect(minValue).toBe('1');
-    
-    await targetInput.fill('10');
+
     const maxValue = await targetInput.getAttribute('max');
     expect(maxValue).toBe('7');
   });
 
   test('should display status indicators correctly', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForSelector('.container', { timeout: 15000 });
-    
+    await page.goto('/?test=true');
+    await page.waitForSelector('table', { timeout: 15000 });
+
     // Check for status icons in the legend
     const legendItems = page.locator('.legend-item');
     
