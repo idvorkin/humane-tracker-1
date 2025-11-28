@@ -1,7 +1,5 @@
-import { useObservable } from "dexie-react-hooks";
 import React, { useEffect, useRef, useState } from "react";
-import { db } from "../config/db";
-import { useVersionCheck } from "../hooks/useVersionCheck";
+import { SettingsDialog } from "./SettingsDialog";
 import { SyncStatusDialog } from "./SyncStatusDialog";
 import "./UserMenu.css";
 
@@ -11,69 +9,8 @@ interface UserMenuProps {
 	isLocalMode?: boolean;
 	onSignOut: () => void;
 	onManageHabits?: () => void;
-	onCleanDuplicates?: () => void;
 	onLoadDefaults?: () => void;
-	showCleanDuplicates?: boolean;
 	showLoadDefaults?: boolean;
-}
-
-type SyncStatePhase =
-	| "initial"
-	| "not-in-sync"
-	| "pushing"
-	| "pulling"
-	| "in-sync"
-	| "error"
-	| "offline";
-
-type WebSocketStatus =
-	| "not-started"
-	| "connecting"
-	| "connected"
-	| "disconnected"
-	| "error";
-
-interface SyncState {
-	status: string;
-	phase: SyncStatePhase;
-	progress?: number;
-	error?: Error;
-	license?: "ok" | "expired" | "deactivated";
-}
-
-function getSyncStatusIndicator(
-	syncState: SyncState | null,
-	wsStatus: WebSocketStatus | null,
-	isLocalMode: boolean,
-): { icon: string; className: string } {
-	if (isLocalMode) {
-		return { icon: "○", className: "sync-indicator-gray" };
-	}
-	if (!syncState) {
-		return { icon: "○", className: "sync-indicator-gray" };
-	}
-
-	const phase = syncState.phase;
-	if (phase === "error" || syncState.status === "error") {
-		return { icon: "●", className: "sync-indicator-red" };
-	}
-	if (phase === "offline" || syncState.status === "offline") {
-		return { icon: "○", className: "sync-indicator-gray" };
-	}
-	if (syncState.status === "connecting" || phase === "initial") {
-		return { icon: "○", className: "sync-indicator-yellow" };
-	}
-	if (phase === "pushing" || phase === "pulling") {
-		return { icon: "◐", className: "sync-indicator-blue" };
-	}
-	if (phase === "in-sync" && wsStatus === "connected") {
-		return { icon: "●", className: "sync-indicator-green" };
-	}
-	if (phase === "in-sync") {
-		return { icon: "●", className: "sync-indicator-green" };
-	}
-
-	return { icon: "○", className: "sync-indicator-gray" };
 }
 
 export function UserMenu({
@@ -82,44 +19,13 @@ export function UserMenu({
 	isLocalMode = false,
 	onSignOut,
 	onManageHabits,
-	onCleanDuplicates,
 	onLoadDefaults,
-	showCleanDuplicates = false,
 	showLoadDefaults = false,
 }: UserMenuProps) {
 	const [isOpen, setIsOpen] = useState(false);
-	const [showSettings, setShowSettings] = useState(false);
+	const [showSettingsDialog, setShowSettingsDialog] = useState(false);
 	const [showSyncDialog, setShowSyncDialog] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
-	const { checkForUpdate, isChecking, lastCheckTime } = useVersionCheck();
-
-	const syncStateFromCloud = useObservable(() => db.cloud.syncState, []) as
-		| SyncState
-		| undefined;
-	const wsStatusFromCloud = useObservable(() => db.cloud.webSocketStatus, []) as
-		| WebSocketStatus
-		| undefined;
-
-	const syncState = isLocalMode ? null : (syncStateFromCloud ?? null);
-	const wsStatus = isLocalMode ? null : (wsStatusFromCloud ?? null);
-
-	const syncIndicator = getSyncStatusIndicator(
-		syncState,
-		wsStatus,
-		isLocalMode,
-	);
-
-	const formatLastCheck = (date: Date | null): string => {
-		if (!date) return "Never";
-		const now = new Date();
-		const diffMs = now.getTime() - date.getTime();
-		const diffMins = Math.floor(diffMs / 60000);
-		if (diffMins < 1) return "Just now";
-		if (diffMins < 60) return `${diffMins}m ago`;
-		const diffHours = Math.floor(diffMins / 60);
-		if (diffHours < 24) return `${diffHours}h ago`;
-		return date.toLocaleDateString();
-	};
 
 	// Close menu when clicking outside
 	useEffect(() => {
@@ -235,28 +141,6 @@ export function UserMenu({
 						</button>
 					)}
 
-					{showCleanDuplicates && onCleanDuplicates && (
-						<button
-							className="user-menu-item user-menu-danger"
-							onClick={() => {
-								setIsOpen(false);
-								onCleanDuplicates();
-							}}
-						>
-							<svg
-								width="16"
-								height="16"
-								viewBox="0 0 16 16"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="1.5"
-							>
-								<path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 10h8l1-10" />
-							</svg>
-							Clean Duplicates
-						</button>
-					)}
-
 					<div className="user-menu-divider" />
 
 					<a
@@ -274,7 +158,10 @@ export function UserMenu({
 
 					<button
 						className="user-menu-item"
-						onClick={() => setShowSettings(!showSettings)}
+						onClick={() => {
+							setShowSettingsDialog(true);
+							setIsOpen(false);
+						}}
 					>
 						<svg
 							width="16"
@@ -288,70 +175,7 @@ export function UserMenu({
 							<path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.17 3.17l1.06 1.06M11.77 11.77l1.06 1.06M3.17 12.83l1.06-1.06M11.77 4.23l1.06-1.06" />
 						</svg>
 						Settings
-						<svg
-							className={`user-menu-settings-chevron ${showSettings ? "open" : ""}`}
-							width="12"
-							height="12"
-							viewBox="0 0 12 12"
-							fill="none"
-							style={{ marginLeft: "auto" }}
-						>
-							<path
-								d="M3 4.5L6 7.5L9 4.5"
-								stroke="currentColor"
-								strokeWidth="1.5"
-								strokeLinecap="round"
-								strokeLinejoin="round"
-							/>
-						</svg>
 					</button>
-
-					{showSettings && (
-						<div className="user-menu-settings-panel">
-							<div className="user-menu-settings-row">
-								<span className="user-menu-settings-label">Updates</span>
-								<span className="user-menu-settings-value">
-									Checked: {formatLastCheck(lastCheckTime)}
-								</span>
-							</div>
-							<button
-								className="user-menu-settings-button"
-								onClick={checkForUpdate}
-								disabled={isChecking}
-							>
-								{isChecking ? "Checking..." : "Check for Update"}
-							</button>
-
-							<div className="user-menu-settings-divider" />
-
-							<div className="user-menu-settings-row">
-								<span className="user-menu-settings-label">Sync</span>
-								<span
-									className={`user-menu-settings-value ${syncIndicator.className}`}
-								>
-									<span className="sync-indicator-icon">
-										{syncIndicator.icon}
-									</span>{" "}
-									{isLocalMode
-										? "Local Only"
-										: syncState?.phase === "in-sync"
-											? "Synced"
-											: (syncState?.phase ?? "Unknown")}
-								</span>
-							</div>
-							{!isLocalMode && (
-								<button
-									className="user-menu-settings-button"
-									onClick={() => {
-										setShowSyncDialog(true);
-										setIsOpen(false);
-									}}
-								>
-									View Sync Status
-								</button>
-							)}
-						</div>
-					)}
 
 					<div className="user-menu-divider" />
 
@@ -375,6 +199,14 @@ export function UserMenu({
 						{isLocalMode ? "Reset" : "Sign Out"}
 					</button>
 				</div>
+			)}
+
+			{showSettingsDialog && (
+				<SettingsDialog
+					isLocalMode={isLocalMode}
+					onClose={() => setShowSettingsDialog(false)}
+					onOpenSyncStatus={() => setShowSyncDialog(true)}
+				/>
 			)}
 
 			{showSyncDialog && (

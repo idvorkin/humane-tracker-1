@@ -26,9 +26,7 @@ interface HabitTrackerProps {
 	userId: string;
 	userMenu?: (props: {
 		onManageHabits: () => void;
-		onCleanDuplicates: () => void;
 		onLoadDefaults: () => void;
-		showCleanDuplicates: boolean;
 		showLoadDefaults: boolean;
 	}) => React.ReactNode;
 }
@@ -616,9 +614,7 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 					)}
 					{userMenu?.({
 						onManageHabits: () => setShowSettings(true),
-						onCleanDuplicates: () => setShowCleanup(true),
 						onLoadDefaults: () => setShowInitializer(true),
-						showCleanDuplicates: !useMockMode && habits.length > 0,
 						showLoadDefaults: !isLoading && habits.length === 0,
 					})}
 				</div>

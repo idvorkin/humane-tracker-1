@@ -72,9 +72,7 @@ function App() {
 							isLocalMode={true}
 							onSignOut={handleSignOut}
 							onManageHabits={menuProps.onManageHabits}
-							onCleanDuplicates={menuProps.onCleanDuplicates}
 							onLoadDefaults={menuProps.onLoadDefaults}
-							showCleanDuplicates={menuProps.showCleanDuplicates}
 							showLoadDefaults={menuProps.showLoadDefaults}
 						/>
 					)}
@@ -105,9 +103,7 @@ function App() {
 						isLocalMode={false}
 						onSignOut={handleSignOut}
 						onManageHabits={menuProps.onManageHabits}
-						onCleanDuplicates={menuProps.onCleanDuplicates}
 						onLoadDefaults={menuProps.onLoadDefaults}
-						showCleanDuplicates={menuProps.showCleanDuplicates}
 						showLoadDefaults={menuProps.showLoadDefaults}
 					/>
 				)}
