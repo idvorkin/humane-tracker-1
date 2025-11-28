@@ -1,14 +1,193 @@
-body {
+/* ==========================================================================
+   Humane Tracker - Cozy Productivity Design System
+   A warm, inviting habit tracker that feels like your favorite coffee shop
+   ========================================================================== */
+
+/* Import distinctive fonts */
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,400&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap");
+
+:root {
+	/* Warm, earthy palette */
+	--color-cream: #faf7f2;
+	--color-cream-dark: #f0ebe3;
+	--color-parchment: #e8e0d5;
+	--color-warm-gray: #9c9489;
+	--color-charcoal: #3d3a36;
+	--color-espresso: #2a2825;
+	--color-deep-brown: #1f1d1a;
+
+	/* Accent colors - rich and saturated */
+	--color-amber: #d97706;
+	--color-amber-glow: #fbbf24;
+	--color-terracotta: #c2410c;
+	--color-sage: #4d7c0f;
+	--color-sage-light: #84cc16;
+	--color-sky: #0284c7;
+	--color-plum: #7e22ce;
+	--color-rose: #be185d;
+
+	/* Semantic colors */
+	--color-success: #16a34a;
+	--color-success-soft: rgba(22, 163, 74, 0.15);
+	--color-warning: #ca8a04;
+	--color-warning-soft: rgba(202, 138, 4, 0.15);
+	--color-danger: #dc2626;
+	--color-danger-soft: rgba(220, 38, 38, 0.15);
+	--color-info: #0891b2;
+	--color-info-soft: rgba(8, 145, 178, 0.15);
+
+	/* Typography */
+	--font-display: "Fraunces", Georgia, serif;
+	--font-body: "DM Sans", -apple-system, sans-serif;
+
+	/* Spacing scale */
+	--space-xs: 4px;
+	--space-sm: 8px;
+	--space-md: 16px;
+	--space-lg: 24px;
+	--space-xl: 32px;
+	--space-2xl: 48px;
+
+	/* Shadows - soft and layered */
+	--shadow-sm: 0 1px 2px rgba(31, 29, 26, 0.08);
+	--shadow-md: 0 4px 12px rgba(31, 29, 26, 0.12);
+	--shadow-lg: 0 8px 24px rgba(31, 29, 26, 0.16);
+	--shadow-glow: 0 0 20px rgba(251, 191, 36, 0.2);
+
+	/* Borders */
+	--border-subtle: 1px solid rgba(156, 148, 137, 0.2);
+	--border-medium: 1px solid rgba(156, 148, 137, 0.35);
+	--radius-sm: 6px;
+	--radius-md: 10px;
+	--radius-lg: 16px;
+	--radius-xl: 24px;
+
+	/* Transitions */
+	--transition-fast: 150ms ease;
+	--transition-normal: 250ms ease;
+	--transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Reset with intention */
+*,
+*::before,
+*::after {
 	margin: 0;
-	font-family:
-		-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
-		"Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+html {
+	font-size: 16px;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
-	background: #1a1a1a;
+	text-rendering: optimizeLegibility;
+}
+
+body {
+	font-family: var(--font-body);
+	font-size: 1rem;
+	line-height: 1.6;
+	color: var(--color-cream);
+	background: var(--color-deep-brown);
+	min-height: 100vh;
+
+	/* Subtle texture overlay */
+	background-image:
+		radial-gradient(
+			ellipse at top,
+			rgba(251, 191, 36, 0.03) 0%,
+			transparent 50%
+		),
+		radial-gradient(
+			ellipse at bottom right,
+			rgba(217, 119, 6, 0.02) 0%,
+			transparent 40%
+		);
+}
+
+/* Selection styling */
+::selection {
+	background: var(--color-amber);
+	color: var(--color-deep-brown);
+}
+
+/* Focus states - accessible and beautiful */
+:focus-visible {
+	outline: 2px solid var(--color-amber);
+	outline-offset: 2px;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: var(--color-espresso);
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--color-warm-gray);
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--color-amber);
+}
+
+/* Typography base */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-family: var(--font-display);
+	font-weight: 500;
+	line-height: 1.2;
+	letter-spacing: -0.02em;
 }
 
 code {
-	font-family:
-		source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+	font-family: "SF Mono", "Fira Code", monospace;
+	font-size: 0.9em;
+	background: var(--color-espresso);
+	padding: 2px 6px;
+	border-radius: var(--radius-sm);
+}
+
+/* Link base */
+a {
+	color: var(--color-amber-glow);
+	text-decoration: none;
+	transition: color var(--transition-fast);
+}
+
+a:hover {
+	color: var(--color-amber);
+}
+
+/* Button reset */
+button {
+	font-family: inherit;
+	font-size: inherit;
+	cursor: pointer;
+	border: none;
+	background: none;
+}
+
+/* Utility: Screen reader only */
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
 }
