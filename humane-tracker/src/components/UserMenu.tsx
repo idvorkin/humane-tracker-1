@@ -6,6 +6,11 @@ interface UserMenuProps {
 	avatarLetter: string;
 	isLocalMode?: boolean;
 	onSignOut: () => void;
+	onManageHabits?: () => void;
+	onCleanDuplicates?: () => void;
+	onLoadDefaults?: () => void;
+	showCleanDuplicates?: boolean;
+	showLoadDefaults?: boolean;
 }
 
 export function UserMenu({
@@ -13,6 +18,11 @@ export function UserMenu({
 	avatarLetter,
 	isLocalMode = false,
 	onSignOut,
+	onManageHabits,
+	onCleanDuplicates,
+	onLoadDefaults,
+	showCleanDuplicates = false,
+	showLoadDefaults = false,
 }: UserMenuProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
@@ -83,6 +93,75 @@ export function UserMenu({
 						<span className="user-menu-name">{userName}</span>
 						{isLocalMode && <span className="user-menu-badge">Local Mode</span>}
 					</div>
+
+					<div className="user-menu-divider" />
+
+					{onManageHabits && (
+						<button
+							className="user-menu-item"
+							onClick={() => {
+								setIsOpen(false);
+								onManageHabits();
+							}}
+						>
+							<svg
+								width="16"
+								height="16"
+								viewBox="0 0 16 16"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="1.5"
+							>
+								<circle cx="8" cy="8" r="3" />
+								<path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" />
+							</svg>
+							Manage Habits
+						</button>
+					)}
+
+					{showLoadDefaults && onLoadDefaults && (
+						<button
+							className="user-menu-item"
+							onClick={() => {
+								setIsOpen(false);
+								onLoadDefaults();
+							}}
+						>
+							<svg
+								width="16"
+								height="16"
+								viewBox="0 0 16 16"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="1.5"
+							>
+								<path d="M8 1v10M4 7l4 4 4-4M2 14h12" />
+							</svg>
+							Load Default Habits
+						</button>
+					)}
+
+					{showCleanDuplicates && onCleanDuplicates && (
+						<button
+							className="user-menu-item user-menu-danger"
+							onClick={() => {
+								setIsOpen(false);
+								onCleanDuplicates();
+							}}
+						>
+							<svg
+								width="16"
+								height="16"
+								viewBox="0 0 16 16"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="1.5"
+							>
+								<path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 10h8l1-10" />
+							</svg>
+							Clean Duplicates
+						</button>
+					)}
 
 					<div className="user-menu-divider" />
 

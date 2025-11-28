@@ -157,6 +157,15 @@
 	color: var(--color-danger);
 }
 
+.user-menu-danger {
+	color: var(--color-danger);
+}
+
+.user-menu-danger:hover {
+	background: rgba(220, 38, 38, 0.1);
+	color: var(--color-danger);
+}
+
 /* Mobile adjustments */
 @media (max-width: 640px) {
 	.user-menu-trigger .user-avatar {

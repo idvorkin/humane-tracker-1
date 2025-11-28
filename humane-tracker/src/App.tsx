@@ -64,14 +64,19 @@ function App() {
 			<div className="App">
 				<HabitTracker
 					userId={localUserId}
-					userMenu={
+					userMenu={(menuProps) => (
 						<UserMenu
 							userName="Local User"
 							avatarLetter="L"
 							isLocalMode={true}
 							onSignOut={handleSignOut}
+							onManageHabits={menuProps.onManageHabits}
+							onCleanDuplicates={menuProps.onCleanDuplicates}
+							onLoadDefaults={menuProps.onLoadDefaults}
+							showCleanDuplicates={menuProps.showCleanDuplicates}
+							showLoadDefaults={menuProps.showLoadDefaults}
 						/>
-					}
+					)}
 				/>
 			</div>
 		);
@@ -91,14 +96,19 @@ function App() {
 		<div className="App">
 			<HabitTracker
 				userId={currentUser.userId}
-				userMenu={
+				userMenu={(menuProps) => (
 					<UserMenu
 						userName={displayName}
 						avatarLetter={avatarLetter}
 						isLocalMode={false}
 						onSignOut={handleSignOut}
+						onManageHabits={menuProps.onManageHabits}
+						onCleanDuplicates={menuProps.onCleanDuplicates}
+						onLoadDefaults={menuProps.onLoadDefaults}
+						showCleanDuplicates={menuProps.showCleanDuplicates}
+						showLoadDefaults={menuProps.showLoadDefaults}
 					/>
-				}
+				)}
 			/>
 		</div>
 	);

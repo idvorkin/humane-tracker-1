@@ -24,7 +24,13 @@ const CATEGORIES: { [key: string]: { name: string; color: string } } = {
 
 interface HabitTrackerProps {
 	userId: string;
-	userMenu?: React.ReactNode;
+	userMenu?: (props: {
+		onManageHabits: () => void;
+		onCleanDuplicates: () => void;
+		onLoadDefaults: () => void;
+		showCleanDuplicates: boolean;
+		showLoadDefaults: boolean;
+	}) => React.ReactNode;
 }
 
 export const HabitTracker: React.FC<HabitTrackerProps> = ({
@@ -40,6 +46,7 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 	const [isLoading, setIsLoading] = useState(true);
 	const [zoomedSection, setZoomedSection] = useState<string | null>(null);
 	const collapsedSectionsRef = useRef<Set<string>>(new Set(["balance", "joy"]));
+	const [allExpanded, setAllExpanded] = useState(false);
 	const useMockMode = !userId || userId === "mock-user";
 	const [summaryStats, setSummaryStats] = useState<SummaryStats>({
 		dueToday: 0,
@@ -230,6 +237,7 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 	const expandAll = () => {
 		collapsedSectionsRef.current.clear();
 		setSections((prev) => prev.map((s) => ({ ...s, isCollapsed: false })));
+		setAllExpanded(true);
 	};
 
 	const collapseAll = () => {
@@ -237,6 +245,15 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 			collapsedSectionsRef.current.add(cat),
 		);
 		setSections((prev) => prev.map((s) => ({ ...s, isCollapsed: true })));
+		setAllExpanded(false);
+	};
+
+	const toggleExpandCollapse = () => {
+		if (allExpanded) {
+			collapseAll();
+		} else {
+			expandAll();
+		}
 	};
 
 	const handleCellClick = async (habitId: string, date: Date) => {
@@ -598,41 +615,17 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 				</div>
 				<div className="view-toggle">
 					{!zoomedSection && (
-						<>
-							<button className="toggle-btn" onClick={expandAll}>
-								Expand All
-							</button>
-							<button className="toggle-btn" onClick={collapseAll}>
-								Collapse All
-							</button>
-						</>
-					)}
-					<button className="toggle-btn active">Dense View</button>
-					<button
-						className="toggle-btn settings"
-						onClick={() => setShowSettings(true)}
-						style={{ background: "#374151" }}
-					>
-						⚙️ Manage Habits
-					</button>
-					{habits.length === 0 && (
-						<button
-							className="toggle-btn initialize"
-							onClick={() => setShowInitializer(true)}
-						>
-							📥 Load Default Habits
+						<button className="toggle-btn" onClick={toggleExpandCollapse}>
+							{allExpanded ? "Collapse All" : "Expand All"}
 						</button>
 					)}
-					{!useMockMode && habits.length > 0 && (
-						<button
-							className="toggle-btn cleanup"
-							onClick={() => setShowCleanup(true)}
-							style={{ background: "#dc2626", marginLeft: "8px" }}
-						>
-							🧹 Clean Duplicates
-						</button>
-					)}
-					{userMenu}
+					{userMenu?.({
+						onManageHabits: () => setShowSettings(true),
+						onCleanDuplicates: () => setShowCleanup(true),
+						onLoadDefaults: () => setShowInitializer(true),
+						showCleanDuplicates: !useMockMode && habits.length > 0,
+						showLoadDefaults: habits.length === 0,
+					})}
 				</div>
 			</div>
 
