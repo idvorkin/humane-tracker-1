@@ -347,7 +347,7 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 			return;
 		}
 
-		// Firebase mode - handle cycling through values
+		// Cloud mode - handle cycling through values
 
 		// Optimistic UI update - update local state immediately
 		const optimisticUpdate = () => {

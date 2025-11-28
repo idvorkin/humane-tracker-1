@@ -1,6 +1,6 @@
 # Humane Tracker
 
-A habit tracking application with Firebase backend for tracking wellness goals across different categories.
+A habit tracking application with local-first storage and optional cloud sync for tracking wellness goals across different categories.
 
 **Live App:** https://humane-tracker.surge.sh
 **GitHub:** https://github.com/idvorkin/humane-tracker-1
@@ -11,39 +11,36 @@ A habit tracking application with Firebase backend for tracking wellness goals a
 - Weekly view with daily tracking
 - Visual status indicators (due today, overdue, met target, etc.)
 - Collapsible sections for better organization
-- Real-time sync with Firebase
+- Local-first with Dexie (IndexedDB) - works offline
+- Optional cloud sync with Dexie Cloud
 - Click cells to mark habits as complete, partial, or add counts
 
 ## Setup
 
-1. **Configure Firebase:**
-
-   - Create a new Firebase project at https://console.firebase.google.com
-   - Enable Firestore Database
-   - Enable Anonymous Authentication
-   - Copy your Firebase config
-
-2. **Set up environment variables:**
-
-   - Copy `.env.example` to `.env`
-   - Fill in your Firebase configuration values
-
-3. **Install dependencies:**
+1. **Install dependencies:**
 
    ```bash
    npm install
    ```
 
-4. **Start the development server:**
+2. **Start the development server:**
    ```bash
-   npm start
+   npm run dev
    ```
 
-## Firebase Firestore Structure
+### Optional: Enable Cloud Sync
 
-The app uses two main collections:
+To enable cloud synchronization across devices:
 
-### `habits` collection
+1. Create a Dexie Cloud database at https://dexie.org
+2. Copy `.env.example` to `.env`
+3. Set `VITE_DEXIE_CLOUD_URL` to your Dexie Cloud URL
+
+## Data Structure
+
+The app uses Dexie (IndexedDB) with two tables:
+
+### `habits` table
 
 ```javascript
 {
@@ -52,22 +49,20 @@ The app uses two main collections:
   category: 'mobility' | 'connection' | 'balance' | 'joy' | 'strength',
   targetPerWeek: number,
   userId: string,
-  createdAt: Timestamp,
-  updatedAt: Timestamp
+  createdAt: Date
 }
 ```
 
-### `entries` collection
+### `entries` table
 
 ```javascript
 {
   id: string,
   habitId: string,
   userId: string,
-  date: Timestamp,
+  date: Date,
   value: number, // 1 for complete, 0.5 for partial, or actual count
-  notes?: string,
-  createdAt: Timestamp
+  createdAt: Date
 }
 ```
 
@@ -88,11 +83,14 @@ The app uses two main collections:
 
 ```bash
 # Run development server
-npm start
+npm run dev
 
 # Build for production
 npm run build
 
 # Run tests
 npm test
+
+# Run E2E tests
+npm run test:e2e
 ```

@@ -177,7 +177,7 @@
 
 - Implement virtual scrolling for 100+ habits
 - Add pagination for historical data
-- Optimize Firebase queries with indices
+- Optimize database queries with indices
 - Implement service worker for offline mode
 
 #### Security & Privacy

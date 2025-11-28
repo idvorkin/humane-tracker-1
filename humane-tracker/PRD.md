@@ -8,7 +8,7 @@ Humane Tracker is a web-based habit tracking application designed to help users 
 
 **Status:** Live in Production
 **Version:** 1.0
-**Tech Stack:** React, TypeScript, Firebase
+**Tech Stack:** React, TypeScript, Dexie Cloud
 **Users:** Active deployment with Google Authentication
 
 ### Problem Statement
@@ -243,7 +243,7 @@ People struggle to maintain consistent habits across multiple areas of life. Exi
 
 - Google Sign-In authentication
 - Anonymous mode for testing
-- Real-time synchronization with Firebase
+- Real-time synchronization with Dexie Cloud
 - Offline capability with local caching
 - Data isolated per user
 
@@ -258,10 +258,10 @@ People struggle to maintain consistent habits across multiple areas of life. Exi
 
 #### Backend
 
-- **Database:** Firebase Firestore
-- **Authentication:** Firebase Auth (Google provider)
-- **Hosting:** Firebase Hosting / Vercel
-- **Real-time Updates:** Firestore listeners
+- **Database:** Dexie (IndexedDB) with Dexie Cloud sync
+- **Authentication:** Dexie Cloud Auth
+- **Hosting:** Surge / Vercel
+- **Real-time Updates:** Dexie liveQuery
 
 #### Data Models
 
@@ -297,7 +297,7 @@ People struggle to maintain consistent habits across multiple areas of life. Exi
 
 - Initial load time: < 3 seconds
 - Habit click response: < 100ms (optimistic updates)
-- Firebase sync: Background, non-blocking
+- Cloud sync: Background, non-blocking
 - Support 100+ habits per user
 - Handle 1000+ entries per user
 
@@ -366,7 +366,7 @@ Half:  [½]          Gray (#9ca3af), italic
 - [x] Weekly trailing 7-day view (newest to oldest)
 - [x] Progressive tracking (binary and sets)
 - [x] Click cycling (empty → 1-5 → ½ → empty)
-- [x] Real-time sync with Firebase
+- [x] Real-time sync with Dexie Cloud
 - [x] Smart status indicators
 - [x] Collapsible category sections
 - [x] Summary statistics dashboard
@@ -393,7 +393,7 @@ Half:  [½]          Gray (#9ca3af), italic
 
 | Risk                              | Impact   | Mitigation                                       |
 | --------------------------------- | -------- | ------------------------------------------------ |
-| Firebase costs exceed budget      | High     | Implement usage quotas, optimize queries         |
+| Cloud costs exceed budget         | High     | Implement usage quotas, optimize queries         |
 | Users abandon due to complexity   | High     | Keep UI simple, provide onboarding               |
 | Data loss                         | Critical | Regular backups, data validation                 |
 | Slow performance with many habits | Medium   | Pagination, virtual scrolling                    |
@@ -402,7 +402,7 @@ Half:  [½]          Gray (#9ca3af), italic
 ### Development Status
 
 **Current Version:** v1.0 - Core Features Complete
-**Environment:** Production (Firebase Hosting)
+**Environment:** Production (Surge)
 **Next Release:** v1.1 - Tracking Type Selection
 
 ### Acceptance Criteria (v1.0)
@@ -419,6 +419,6 @@ Half:  [½]          Gray (#9ca3af), italic
 
 ### Links
 
-- **Live App:** [Firebase/Vercel Deployment]
+- **Live App:** https://humane-tracker.surge.sh
 - **Repository:** [GitHub - idvorkin/humane-tracker-1]
 - **Future Features:** [ROADMAP.md](./ROADMAP.md)
