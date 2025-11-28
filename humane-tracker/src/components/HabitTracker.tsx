@@ -95,11 +95,6 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 
 				setHabits(uniqueHabits);
 
-				// Check if user has no habits and show initializer (skip in mock mode)
-				if (uniqueHabits.length === 0 && !showInitializer && !useMockMode) {
-					setShowInitializer(true);
-				}
-
 				// Group by category
 				const categorySections: CategorySection[] = Object.keys(CATEGORIES).map(
 					(cat) => ({

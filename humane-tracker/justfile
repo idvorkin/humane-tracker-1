@@ -19,6 +19,10 @@ test:
 e2e:
     npx playwright test --project=chromium
 
-# Deploy to Surge
-deploy: test build
+# Deploy to staging
+deploy-stage: test build
+    npx surge dist humane-tracker-stage.surge.sh
+
+# Deploy to production
+deploy-prod: test build
     npx surge dist humane-tracker.surge.sh

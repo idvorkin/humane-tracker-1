@@ -35,6 +35,29 @@ To enable cloud synchronization across devices:
 1. Create a Dexie Cloud database at https://dexie.org
 2. Copy `.env.example` to `.env`
 3. Set `VITE_DEXIE_CLOUD_URL` to your Dexie Cloud URL
+4. Whitelist your deployment domains (see below)
+
+### Dexie Cloud Domain Whitelisting
+
+Dexie Cloud requires whitelisting origins that can access your database. Use the CLI:
+
+```bash
+# Connect to your database (creates dexie-cloud.json and dexie-cloud.key)
+npx dexie-cloud connect <your-database-url>
+
+# Whitelist a domain
+npx dexie-cloud whitelist https://humane-tracker.surge.sh
+npx dexie-cloud whitelist https://humane-tracker-stage.surge.sh
+
+# For local development (requires --force for non-https)
+npx dexie-cloud whitelist http://localhost:3000 --force
+
+# Remove a domain
+npx dexie-cloud whitelist https://old-domain.com --delete
+
+# List all CLI commands
+npx dexie-cloud --help
+```
 
 ## Data Structure
 
@@ -84,21 +107,26 @@ The app uses Dexie (IndexedDB) with two tables:
 Use the justfile for all commands:
 
 ```bash
-just dev      # Run development server
-just build    # Build for production
-just test     # Run unit tests
-just e2e      # Run E2E tests (Playwright)
-just deploy   # Run tests, build, and deploy to Surge
+just dev          # Run development server
+just build        # Build for production
+just test         # Run unit tests
+just e2e          # Run E2E tests (Playwright)
+just deploy-stage # Deploy to staging (humane-tracker-stage.surge.sh)
+just deploy-prod  # Deploy to production (humane-tracker.surge.sh)
 ```
 
 ## Deployment
 
-The app is deployed to **Surge** at https://humane-tracker.surge.sh
+The app is deployed to **Surge**:
+
+- **Production:** https://humane-tracker.surge.sh
+- **Staging:** https://humane-tracker-stage.surge.sh
 
 To deploy:
 
 ```bash
-just deploy
+just deploy-stage  # Deploy to staging first
+just deploy-prod   # Deploy to production after testing
 ```
 
-This runs tests, builds the app, and deploys to Surge.
+Both commands run tests, build the app, and deploy to Surge.
