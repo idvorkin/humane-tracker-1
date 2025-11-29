@@ -2,24 +2,19 @@ import { addDays, format, isToday, isYesterday } from "date-fns";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_HABITS } from "../data/defaultHabits";
 import { HabitService } from "../services/habitService";
-import type {
-	CategorySection,
-	HabitCategory,
-	HabitEntry,
-	HabitStatus,
-	HabitWithStatus,
-	SummaryStats,
+import {
+	ALL_CATEGORY_VALUES,
+	CATEGORIES,
+	CATEGORY_MAP,
+	type CategorySection,
+	type HabitCategory,
+	type HabitEntry,
+	type HabitStatus,
+	type HabitWithStatus,
+	type SummaryStats,
 } from "../types/habit";
 
 const habitService = new HabitService();
-
-const CATEGORIES: Record<HabitCategory, { name: string; color: string }> = {
-	mobility: { name: "Movement & Mobility", color: "#60a5fa" },
-	connection: { name: "Connections", color: "#a855f7" },
-	balance: { name: "Inner Balance", color: "#fbbf24" },
-	joy: { name: "Joy & Play", color: "#f472b6" },
-	strength: { name: "Strength Building", color: "#34d399" },
-};
 
 // ============================================================================
 // Pure helper functions (easily testable)
@@ -115,12 +110,12 @@ export function groupHabitsByCategory(
 	habits: HabitWithStatus[],
 	collapsedCategories: Set<string>,
 ): CategorySection[] {
-	return (Object.keys(CATEGORIES) as HabitCategory[]).map((cat) => ({
-		category: cat,
-		name: CATEGORIES[cat].name,
-		color: CATEGORIES[cat].color,
-		habits: habits.filter((h) => h.category === cat),
-		isCollapsed: collapsedCategories.has(cat),
+	return CATEGORIES.map((cat) => ({
+		category: cat.value,
+		name: cat.name,
+		color: cat.color,
+		habits: habits.filter((h) => h.category === cat.value),
+		isCollapsed: collapsedCategories.has(cat.value),
 	}));
 }
 
@@ -187,7 +182,9 @@ export function useHabitTrackerVM({
 	const [isLoading, setIsLoading] = useState(true);
 	const [zoomedSection, setZoomedSection] = useState<string | null>(null);
 	const [allExpanded, setAllExpanded] = useState(false);
-	const collapsedSectionsRef = useRef<Set<string>>(new Set(["balance", "joy"]));
+	const collapsedSectionsRef = useRef<Set<string>>(
+		new Set(ALL_CATEGORY_VALUES),
+	);
 	const [collapsedVersion, setCollapsedVersion] = useState(0); // trigger re-render on collapse changes
 
 	const useMockMode = !userId || userId === "mock-user";
@@ -299,12 +296,21 @@ export function useHabitTrackerVM({
 			// Don't allow collapsing when zoomed in
 			if (zoomedSection) return;
 
-			if (collapsedSectionsRef.current.has(category)) {
+			const isCurrentlyCollapsed = collapsedSectionsRef.current.has(category);
+
+			if (isCurrentlyCollapsed) {
+				// Expanding this section - collapse all others first (accordion behavior)
+				ALL_CATEGORY_VALUES.forEach((cat) =>
+					collapsedSectionsRef.current.add(cat),
+				);
+				// Then expand only this one
 				collapsedSectionsRef.current.delete(category);
 			} else {
+				// Collapsing this section
 				collapsedSectionsRef.current.add(category);
 			}
 			setCollapsedVersion((v) => v + 1);
+			setAllExpanded(false);
 		},
 		[zoomedSection],
 	);
@@ -316,9 +322,7 @@ export function useHabitTrackerVM({
 	}, []);
 
 	const collapseAll = useCallback(() => {
-		(Object.keys(CATEGORIES) as HabitCategory[]).forEach((cat) =>
-			collapsedSectionsRef.current.add(cat),
-		);
+		ALL_CATEGORY_VALUES.forEach((cat) => collapsedSectionsRef.current.add(cat));
 		setCollapsedVersion((v) => v + 1);
 		setAllExpanded(false);
 	}, []);

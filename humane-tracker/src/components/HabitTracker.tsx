@@ -1,18 +1,11 @@
 import { format } from "date-fns";
 import React, { useState } from "react";
 import { useHabitTrackerVM } from "../hooks/useHabitTrackerVM";
+import { CATEGORY_MAP } from "../types/habit";
 import { CleanupDuplicates } from "./CleanupDuplicates";
 import { HabitSettings } from "./HabitSettings";
 import { InitializeHabits } from "./InitializeHabits";
 import "./HabitTracker.css";
-
-const CATEGORIES: { [key: string]: { name: string; color: string } } = {
-	mobility: { name: "Movement & Mobility", color: "#60a5fa" },
-	connection: { name: "Connections", color: "#a855f7" },
-	balance: { name: "Inner Balance", color: "#fbbf24" },
-	joy: { name: "Joy & Play", color: "#f472b6" },
-	strength: { name: "Strength Building", color: "#34d399" },
-};
 
 interface HabitTrackerProps {
 	userId: string;
@@ -81,13 +74,10 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 				<div className="week-title">
 					{vm.zoomedSection ? (
 						<>
+							{CATEGORY_MAP[vm.zoomedSection as keyof typeof CATEGORY_MAP].name}
 							<button className="zoom-back-btn" onClick={vm.zoomOut}>
 								← Back
 							</button>
-							{CATEGORIES[vm.zoomedSection].name} •
-							<span className="current-day">
-								{format(new Date(), "EEEE, MMM d")}
-							</span>
 						</>
 					) : (
 						<span className="current-day">
@@ -119,7 +109,7 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 								key={date.toISOString()}
 								className={`col-day ${index === 0 ? "col-today" : ""}`}
 							>
-								{format(date, "E")[0]}
+								{format(date, "EEE").slice(0, 2)}
 								<br />
 								{format(date, "d")}
 							</th>
@@ -160,7 +150,18 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 														style={{ background: section.color }}
 													/>
 													{section.name}
-													{!vm.zoomedSection && (
+													{vm.zoomedSection ? (
+														<button
+															className="zoom-btn"
+															onClick={(e) => {
+																e.stopPropagation();
+																vm.zoomOut();
+															}}
+															title="Back to all categories"
+														>
+															← Back
+														</button>
+													) : (
 														<button
 															className="zoom-btn"
 															onClick={(e) => {

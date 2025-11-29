@@ -1,7 +1,7 @@
 import type React from "react";
 import { useEffect, useState } from "react";
 import { HabitService } from "../services/habitService";
-import type { Habit } from "../types/habit";
+import { CATEGORIES, type Habit } from "../types/habit";
 import "./HabitSettings.css";
 
 interface HabitSettingsProps {
@@ -9,14 +9,6 @@ interface HabitSettingsProps {
 	onClose: () => void;
 	onUpdate: () => void;
 }
-
-const CATEGORIES = [
-	{ value: "mobility", label: "Movement & Mobility", color: "#60a5fa" },
-	{ value: "connection", label: "Connections", color: "#10b981" },
-	{ value: "balance", label: "Inner Balance", color: "#a855f7" },
-	{ value: "joy", label: "Joy & Play", color: "#f472b6" },
-	{ value: "strength", label: "Strength Building", color: "#34d399" },
-];
 
 const TRACKING_TYPES = [
 	{ value: "binary", label: "Binary", icon: "✓" },
