@@ -1,0 +1,467 @@
+import { addDays, format, isToday, isYesterday } from "date-fns";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { DEFAULT_HABITS } from "../data/defaultHabits";
+import { HabitService } from "../services/habitService";
+import type {
+	CategorySection,
+	HabitCategory,
+	HabitEntry,
+	HabitStatus,
+	HabitWithStatus,
+	SummaryStats,
+} from "../types/habit";
+
+const habitService = new HabitService();
+
+const CATEGORIES: Record<HabitCategory, { name: string; color: string }> = {
+	mobility: { name: "Movement & Mobility", color: "#60a5fa" },
+	connection: { name: "Connections", color: "#a855f7" },
+	balance: { name: "Inner Balance", color: "#fbbf24" },
+	joy: { name: "Joy & Play", color: "#f472b6" },
+	strength: { name: "Strength Building", color: "#34d399" },
+};
+
+// ============================================================================
+// Pure helper functions (easily testable)
+// ============================================================================
+
+export type StatStatus = "good" | "warn" | "bad" | "neutral";
+
+export interface CategorySummary {
+	doneToday: number;
+	dueToday: number;
+	met: number;
+	total: number;
+	todayStatus: StatStatus;
+	totalStatus: StatStatus;
+}
+
+export function getCategorySummary(habits: HabitWithStatus[]): CategorySummary {
+	const doneToday = habits.filter((h) => h.status === "done").length;
+	const total = habits.length;
+	const met = habits.filter((h) => h.status === "met").length;
+
+	const todayStatus: StatStatus =
+		total === 0
+			? "neutral"
+			: doneToday === total
+				? "good"
+				: doneToday > 0
+					? "warn"
+					: "bad";
+
+	const totalStatus: StatStatus =
+		total === 0 ? "neutral" : met === total ? "good" : met > 0 ? "warn" : "bad";
+
+	return { doneToday, dueToday: total, met, total, todayStatus, totalStatus };
+}
+
+export function getStatusIcon(status: HabitStatus): string {
+	switch (status) {
+		case "done":
+			return "●";
+		case "met":
+			return "✓";
+		case "today":
+			return "⏰";
+		case "tomorrow":
+			return "→";
+		case "overdue":
+			return "!";
+		default:
+			return "";
+	}
+}
+
+export interface CellDisplay {
+	content: string;
+	className: string;
+}
+
+export function getCellDisplay(
+	habit: HabitWithStatus,
+	date: Date,
+): CellDisplay {
+	const entry = habit.entries.find(
+		(e) => format(e.date, "yyyy-MM-dd") === format(date, "yyyy-MM-dd"),
+	);
+
+	if (!entry) {
+		return { content: "", className: "" };
+	}
+
+	let content = "";
+	if (entry.value === 1) content = "✓";
+	else if (entry.value === 0.5) content = "½";
+	else if (entry.value > 1) content = entry.value.toString();
+
+	let className = "";
+	if (entry.value >= 1) className = "completed";
+	else if (entry.value === 0.5) className = "partial";
+
+	return { content, className };
+}
+
+export function calculateSummaryStats(habits: HabitWithStatus[]): SummaryStats {
+	return {
+		dueToday: habits.filter((h) => h.status === "today").length,
+		overdue: habits.filter((h) => h.status === "overdue").length,
+		doneToday: habits.filter((h) => h.status === "done").length,
+		onTrack: habits.filter((h) => h.status === "met").length,
+	};
+}
+
+export function groupHabitsByCategory(
+	habits: HabitWithStatus[],
+	collapsedCategories: Set<string>,
+): CategorySection[] {
+	return (Object.keys(CATEGORIES) as HabitCategory[]).map((cat) => ({
+		category: cat,
+		name: CATEGORIES[cat].name,
+		color: CATEGORIES[cat].color,
+		habits: habits.filter((h) => h.category === cat),
+		isCollapsed: collapsedCategories.has(cat),
+	}));
+}
+
+export function getTrailingWeekDates(): Date[] {
+	const today = new Date();
+	const dates: Date[] = [];
+	for (let i = 0; i <= 6; i++) {
+		dates.push(addDays(today, -i));
+	}
+	return dates;
+}
+
+/**
+ * Calculate the next entry value when cycling through click states.
+ * Cycle: empty → 1 → 2 → 3 → 4 → 5 → 0.5 → empty
+ */
+export function getNextEntryValue(currentValue: number | null): number | null {
+	if (currentValue === null) return 1;
+	if (currentValue >= 1 && currentValue < 5) return currentValue + 1;
+	if (currentValue >= 5) return 0.5;
+	if (currentValue === 0.5) return null; // delete
+	return 1;
+}
+
+// ============================================================================
+// ViewModel Hook
+// ============================================================================
+
+interface UseHabitTrackerVMProps {
+	userId: string;
+}
+
+export interface HabitTrackerVM {
+	// State
+	habits: HabitWithStatus[];
+	sections: CategorySection[];
+	weekDates: Date[];
+	summaryStats: SummaryStats;
+	isLoading: boolean;
+	zoomedSection: string | null;
+	allExpanded: boolean;
+
+	// Computed helpers (exposed for convenience)
+	getCategorySummary: typeof getCategorySummary;
+	getStatusIcon: typeof getStatusIcon;
+	getCellDisplay: typeof getCellDisplay;
+
+	// Actions
+	toggleEntry: (habitId: string, date: Date) => Promise<void>;
+	toggleSection: (category: string) => void;
+	expandAll: () => void;
+	collapseAll: () => void;
+	zoomIn: (category: string) => void;
+	zoomOut: () => void;
+
+	// For menu actions
+	hasNoHabits: boolean;
+}
+
+export function useHabitTrackerVM({
+	userId,
+}: UseHabitTrackerVMProps): HabitTrackerVM {
+	const [habits, setHabits] = useState<HabitWithStatus[]>([]);
+	const [isLoading, setIsLoading] = useState(true);
+	const [zoomedSection, setZoomedSection] = useState<string | null>(null);
+	const [allExpanded, setAllExpanded] = useState(false);
+	const collapsedSectionsRef = useRef<Set<string>>(new Set(["balance", "joy"]));
+	const [collapsedVersion, setCollapsedVersion] = useState(0); // trigger re-render on collapse changes
+
+	const useMockMode = !userId || userId === "mock-user";
+	const weekDates = useMemo(() => getTrailingWeekDates(), []);
+
+	// Derived state
+	const sections = useMemo(
+		() => groupHabitsByCategory(habits, collapsedSectionsRef.current),
+		[habits, collapsedVersion], // eslint-disable-line react-hooks/exhaustive-deps
+	);
+
+	const summaryStats = useMemo(() => {
+		// When zoomed, show stats only for that category
+		if (zoomedSection) {
+			const section = sections.find((s) => s.category === zoomedSection);
+			if (section) {
+				return calculateSummaryStats(section.habits);
+			}
+		}
+		return calculateSummaryStats(habits);
+	}, [habits, zoomedSection, sections]);
+
+	// Load habits
+	useEffect(() => {
+		setHabits([]);
+		setIsLoading(true);
+
+		const loadHabits = async (skipLoading = false) => {
+			try {
+				if (!skipLoading) setIsLoading(true);
+				const habitsWithStatus = await habitService.getHabitsWithStatus(userId);
+
+				// Deduplicate habits by name (keeping the one with most entries)
+				const uniqueHabits = habitsWithStatus.reduce((acc, habit) => {
+					const existing = acc.find((h) => h.name === habit.name);
+					if (!existing) {
+						acc.push(habit);
+					} else if (habit.entries.length > existing.entries.length) {
+						const index = acc.indexOf(existing);
+						acc[index] = habit;
+					}
+					return acc;
+				}, [] as HabitWithStatus[]);
+
+				setHabits(uniqueHabits);
+				if (!skipLoading) setIsLoading(false);
+			} catch (error) {
+				console.error("Error fetching habits:", error);
+				setHabits([]);
+				if (!skipLoading) setIsLoading(false);
+			}
+		};
+
+		// Mock mode - seed habits then load
+		if (useMockMode) {
+			const seedMockHabits = async () => {
+				const existingHabits = await habitService.getHabits(userId);
+				if (existingHabits.length === 0) {
+					console.log("Mock mode: Seeding default habits to IndexedDB");
+					const habitsToCreate = DEFAULT_HABITS.map((habit) => ({
+						name: habit.name,
+						category: habit.category,
+						targetPerWeek: habit.targetPerWeek,
+						userId,
+					}));
+					await habitService.bulkCreateHabits(habitsToCreate);
+				}
+			};
+
+			seedMockHabits().then(() => loadHabits());
+			return;
+		}
+
+		// Non-mock mode: set up subscriptions
+		let isInitialLoad = true;
+
+		const unsubscribeHabits = habitService.subscribeToHabits(userId, () => {
+			if (!isInitialLoad) loadHabits(true);
+		});
+
+		const endDate = new Date();
+		endDate.setHours(23, 59, 59, 999);
+		const startDate = new Date();
+		startDate.setDate(startDate.getDate() - 6);
+		startDate.setHours(0, 0, 0, 0);
+
+		const unsubscribeEntries = habitService.subscribeToWeekEntries(
+			userId,
+			startDate,
+			endDate,
+			() => {
+				if (!isInitialLoad) loadHabits(true);
+			},
+		);
+
+		loadHabits().then(() => {
+			isInitialLoad = false;
+		});
+
+		return () => {
+			unsubscribeHabits();
+			unsubscribeEntries();
+		};
+	}, [userId, useMockMode]);
+
+	// Actions
+	const toggleSection = useCallback(
+		(category: string) => {
+			// Don't allow collapsing when zoomed in
+			if (zoomedSection) return;
+
+			if (collapsedSectionsRef.current.has(category)) {
+				collapsedSectionsRef.current.delete(category);
+			} else {
+				collapsedSectionsRef.current.add(category);
+			}
+			setCollapsedVersion((v) => v + 1);
+		},
+		[zoomedSection],
+	);
+
+	const expandAll = useCallback(() => {
+		collapsedSectionsRef.current.clear();
+		setCollapsedVersion((v) => v + 1);
+		setAllExpanded(true);
+	}, []);
+
+	const collapseAll = useCallback(() => {
+		(Object.keys(CATEGORIES) as HabitCategory[]).forEach((cat) =>
+			collapsedSectionsRef.current.add(cat),
+		);
+		setCollapsedVersion((v) => v + 1);
+		setAllExpanded(false);
+	}, []);
+
+	const zoomIn = useCallback((category: string) => {
+		setZoomedSection(category);
+		collapsedSectionsRef.current.delete(category);
+		setCollapsedVersion((v) => v + 1);
+	}, []);
+
+	const zoomOut = useCallback(() => {
+		setZoomedSection(null);
+	}, []);
+
+	const toggleEntry = useCallback(
+		async (habitId: string, date: Date) => {
+			// Check if date is older than yesterday and confirm
+			if (!isToday(date) && !isYesterday(date)) {
+				const dateStr = format(date, "MMM d");
+				if (
+					!window.confirm(
+						`Are you sure you want to modify entries for ${dateStr}? This is an older date.`,
+					)
+				) {
+					return;
+				}
+			}
+
+			const habit = habits.find((h) => h.id === habitId);
+			if (!habit) {
+				console.error("Habit not found:", habitId);
+				return;
+			}
+
+			const existingEntry = habit.entries.find(
+				(e) => format(e.date, "yyyy-MM-dd") === format(date, "yyyy-MM-dd"),
+			);
+
+			const currentValue = existingEntry?.value ?? null;
+			const nextValue = getNextEntryValue(currentValue);
+
+			// Optimistic UI update
+			setHabits((prevHabits) =>
+				prevHabits.map((h) => {
+					if (h.id !== habitId) return h;
+
+					const updatedEntries = [...h.entries];
+					const entryIndex = updatedEntries.findIndex(
+						(e) => format(e.date, "yyyy-MM-dd") === format(date, "yyyy-MM-dd"),
+					);
+
+					if (nextValue === null) {
+						// Delete entry
+						if (entryIndex >= 0) {
+							updatedEntries.splice(entryIndex, 1);
+						}
+					} else if (entryIndex >= 0) {
+						// Update existing entry
+						updatedEntries[entryIndex] = {
+							...updatedEntries[entryIndex],
+							value: nextValue,
+						};
+					} else {
+						// Add new entry
+						updatedEntries.push({
+							id: crypto.randomUUID(),
+							habitId,
+							userId,
+							date,
+							value: nextValue,
+							createdAt: new Date(),
+						} as HabitEntry);
+					}
+
+					// Recalculate status
+					const newStatus = habitService.calculateHabitStatus(
+						h,
+						updatedEntries,
+					);
+					const daysWithEntries = new Set(
+						updatedEntries
+							.filter((e) => e.value > 0)
+							.map((e) => format(e.date, "yyyy-MM-dd")),
+					).size;
+
+					return {
+						...h,
+						entries: updatedEntries,
+						status: newStatus,
+						currentWeekCount: daysWithEntries,
+					};
+				}),
+			);
+
+			// Persist to database (for non-mock mode)
+			if (!useMockMode) {
+				try {
+					if (existingEntry) {
+						if (nextValue === null) {
+							habitService.deleteEntry(existingEntry.id);
+						} else {
+							habitService.updateEntry(existingEntry.id, nextValue);
+						}
+					} else if (nextValue !== null) {
+						habitService.addEntry({
+							habitId,
+							userId,
+							date,
+							value: nextValue,
+						});
+					}
+				} catch (error) {
+					console.error("Error updating entry:", error);
+				}
+			}
+		},
+		[habits, userId, useMockMode],
+	);
+
+	return {
+		// State
+		habits,
+		sections,
+		weekDates,
+		summaryStats,
+		isLoading,
+		zoomedSection,
+		allExpanded,
+
+		// Computed helpers
+		getCategorySummary,
+		getStatusIcon,
+		getCellDisplay,
+
+		// Actions
+		toggleEntry,
+		toggleSection,
+		expandAll,
+		collapseAll,
+		zoomIn,
+		zoomOut,
+
+		// Menu helpers
+		hasNoHabits: !isLoading && habits.length === 0,
+	};
+}
