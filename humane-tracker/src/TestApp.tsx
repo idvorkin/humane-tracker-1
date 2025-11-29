@@ -1,5 +1,6 @@
 import React from "react";
 import { HabitTracker } from "./components/HabitTracker";
+import { UserMenu } from "./components/UserMenu";
 import "./App.css";
 
 function TestApp() {
@@ -11,7 +12,23 @@ function TestApp() {
 					<span className="user-name">Test Mode (No Auth Required)</span>
 				</div>
 			</div>
-			<HabitTracker userId="mock-user" />
+			<HabitTracker
+				userId="mock-user"
+				userMenu={(menuProps) => (
+					<UserMenu
+						userName="Test User"
+						avatarLetter="T"
+						isLocalMode={true}
+						onSignOut={() => {
+							localStorage.clear();
+							window.location.reload();
+						}}
+						onManageHabits={menuProps.onManageHabits}
+						onLoadDefaults={menuProps.onLoadDefaults}
+						showLoadDefaults={menuProps.showLoadDefaults}
+					/>
+				)}
+			/>
 		</div>
 	);
 }

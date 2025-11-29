@@ -284,47 +284,69 @@ describe("getTrailingWeekDates", () => {
 describe("groupHabitsByCategory", () => {
 	it("groups habits into correct categories", () => {
 		const habits = [
-			createMockHabit({ id: "1", category: "mobility" }),
-			createMockHabit({ id: "2", category: "mobility" }),
-			createMockHabit({ id: "3", category: "joy" }),
+			createMockHabit({ id: "1", category: "Mobility" }),
+			createMockHabit({ id: "2", category: "Mobility" }),
+			createMockHabit({ id: "3", category: "Smile and Wonder" }),
 		];
 
 		const sections = groupHabitsByCategory(habits, new Set());
 
-		const mobility = sections.find((s) => s.category === "mobility");
-		const joy = sections.find((s) => s.category === "joy");
-		const connection = sections.find((s) => s.category === "connection");
+		const mobility = sections.find((s) => s.category === "Mobility");
+		const joy = sections.find((s) => s.category === "Smile and Wonder");
 
 		expect(mobility?.habits).toHaveLength(2);
 		expect(joy?.habits).toHaveLength(1);
-		expect(connection?.habits).toHaveLength(0);
+		// With dynamic categories, only categories with habits appear
+		expect(sections).toHaveLength(2);
 	});
 
 	it("respects collapsed state", () => {
-		const habits = [createMockHabit({ category: "mobility" })];
-		const collapsed = new Set(["mobility", "joy"]);
+		const habits = [createMockHabit({ category: "Mobility" })];
+		const collapsed = new Set(["Mobility"]);
 
 		const sections = groupHabitsByCategory(habits, collapsed);
 
-		const mobility = sections.find((s) => s.category === "mobility");
-		const joy = sections.find((s) => s.category === "joy");
-		const connection = sections.find((s) => s.category === "connection");
+		const mobility = sections.find((s) => s.category === "Mobility");
 
 		expect(mobility?.isCollapsed).toBe(true);
-		expect(joy?.isCollapsed).toBe(true);
-		expect(connection?.isCollapsed).toBe(false);
 	});
 
-	it("returns all 5 categories", () => {
+	it("returns empty array for empty habits (dynamic categories)", () => {
 		const sections = groupHabitsByCategory([], new Set());
-		expect(sections).toHaveLength(5);
-		expect(sections.map((s) => s.category)).toEqual([
-			"mobility",
-			"connection",
-			"balance",
-			"joy",
-			"strength",
-		]);
+		// With dynamic categories derived from habits, empty habits = no categories
+		expect(sections).toHaveLength(0);
+	});
+
+	it("uses raw category values without migration", () => {
+		// Legacy values are no longer auto-migrated at read time
+		// Migration is explicit via HabitSettings migration button
+		const habits = [
+			createMockHabit({ id: "1", category: "mobility" }),
+			createMockHabit({ id: "2", category: "joy" }),
+		];
+
+		const sections = groupHabitsByCategory(habits, new Set());
+
+		// Should use raw category values - no auto-migration
+		const mobility = sections.find((s) => s.category === "mobility");
+		const joy = sections.find((s) => s.category === "joy");
+
+		expect(mobility?.habits).toHaveLength(1);
+		expect(joy?.habits).toHaveLength(1);
+	});
+
+	it("preserves first-appearance ordering of categories", () => {
+		const habits = [
+			createMockHabit({ id: "1", category: "Smile and Wonder" }),
+			createMockHabit({ id: "2", category: "Mobility" }),
+			createMockHabit({ id: "3", category: "Smile and Wonder" }),
+		];
+
+		const sections = groupHabitsByCategory(habits, new Set());
+
+		// Smile and Wonder appears first in the habits list, so it should be first
+		expect(sections[0].category).toBe("Smile and Wonder");
+		expect(sections[1].category).toBe("Mobility");
 	});
 });
 

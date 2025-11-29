@@ -137,7 +137,8 @@ test.describe('Habit Tracker Click Functionality (No Auth)', () => {
     expect(dialogMessage).toContain('Are you sure');
   });
 
-  test('check console for debugging when clicking', async ({ page }) => {
+  test.skip('check console for debugging when clicking', async ({ page }) => {
+    // Skip: Debug console messages were removed from production code
     // Collect console messages
     const consoleMessages: string[] = [];
     page.on('console', msg => {

@@ -58,3 +58,12 @@ export function validateExportData(data: unknown): data is ExportData {
 		Array.isArray(d.entries)
 	);
 }
+
+/**
+ * Generate a filename for habit tracker backup exports.
+ * Format: habit-tracker-backup-YYYY-MM-DDTHH-MM-SS.json
+ */
+export function generateExportFilename(date: Date = new Date()): string {
+	const timestamp = date.toISOString().replace(/[:.]/g, "-").slice(0, 19);
+	return `habit-tracker-backup-${timestamp}.json`;
+}

@@ -1,7 +1,8 @@
 import type React from "react";
 import { useState } from "react";
 import { HabitService } from "../services/habitService";
-import { CATEGORIES, type Habit } from "../types/habit";
+import type { Habit } from "../types/habit";
+import { buildCategoryInfo } from "../utils/categoryUtils";
 import "./HabitSettings.css";
 
 interface HabitEditorProps {
@@ -9,6 +10,7 @@ interface HabitEditorProps {
 	onClose: () => void;
 	onUpdate: () => void;
 	userId: string;
+	existingCategories: string[];
 }
 
 const TRACKING_TYPES = [
@@ -30,6 +32,7 @@ export const HabitEditor: React.FC<HabitEditorProps> = ({
 	onClose,
 	onUpdate,
 	userId,
+	existingCategories,
 }) => {
 	const [name, setName] = useState(habit.name);
 	const [category, setCategory] = useState(habit.category);
@@ -42,10 +45,16 @@ export const HabitEditor: React.FC<HabitEditorProps> = ({
 	const [error, setError] = useState("");
 
 	const habitService = new HabitService();
+	const categoryInfo = buildCategoryInfo(category);
 
 	const handleSave = async () => {
 		if (!name.trim()) {
 			setError("Habit name is required");
+			return;
+		}
+
+		if (!category.trim()) {
+			setError("Category is required");
 			return;
 		}
 
@@ -55,7 +64,7 @@ export const HabitEditor: React.FC<HabitEditorProps> = ({
 		try {
 			await habitService.updateHabit(habit.id, {
 				name: name.trim(),
-				category,
+				category: category.trim(),
 				targetPerWeek,
 				trackingType,
 				updatedAt: new Date(),
@@ -123,26 +132,28 @@ export const HabitEditor: React.FC<HabitEditorProps> = ({
 
 					<div className="form-group">
 						<label htmlFor="category">Category</label>
-						<select
+						<input
 							id="category"
+							type="text"
+							list="category-options"
 							value={category}
-							onChange={(e) => setCategory(e.target.value as any)}
-						>
-							{CATEGORIES.map((cat) => (
-								<option key={cat.value} value={cat.value}>
-									{cat.label}
-								</option>
+							onChange={(e) => setCategory(e.target.value)}
+							placeholder="e.g., Mobility"
+							maxLength={50}
+						/>
+						<datalist id="category-options">
+							{existingCategories.map((cat) => (
+								<option key={cat} value={cat} />
 							))}
-						</select>
+						</datalist>
 						<div className="category-preview">
 							<span
 								className="category-dot"
 								style={{
-									background: CATEGORIES.find((c) => c.value === category)
-										?.color,
+									background: categoryInfo.color,
 								}}
 							/>
-							<span>{CATEGORIES.find((c) => c.value === category)?.label}</span>
+							<span>{category || "No category"}</span>
 						</div>
 					</div>
 
@@ -192,9 +203,7 @@ export const HabitEditor: React.FC<HabitEditorProps> = ({
 							className={`btn-delete ${isDeleting ? "confirming" : ""}`}
 							onClick={handleDelete}
 						>
-							{isDeleting
-								? "⚠️ Click again to confirm deletion"
-								: "🗑️ Delete Habit"}
+							{isDeleting ? "Click again to confirm deletion" : "Delete Habit"}
 						</button>
 						{isDeleting && (
 							<small className="delete-warning">
