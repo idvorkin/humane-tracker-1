@@ -3,11 +3,15 @@
  * Provides utilities for GitHub repository links and issue creation
  */
 
+import {
+	BUILD_TIMESTAMP,
+	GIT_BRANCH,
+	GIT_COMMIT_URL,
+	GIT_SHA,
+} from "../generated_version";
+
 // Default repository URL - can be overridden via environment variable
 const DEFAULT_REPO_URL = "https://github.com/idvorkin/humane-tracker-1";
-
-// Fetch timeout in milliseconds
-const FETCH_TIMEOUT_MS = 5000;
 
 export interface GitHubLinks {
 	repo: string;
@@ -15,10 +19,23 @@ export interface GitHubLinks {
 	newIssue: string;
 }
 
-export interface CommitInfo {
+export interface BuildInfo {
 	sha: string;
-	message: string;
-	url: string;
+	commitUrl: string;
+	branch: string;
+	timestamp: string;
+}
+
+/**
+ * Get build-time version info (embedded at build time)
+ */
+export function getBuildInfo(): BuildInfo {
+	return {
+		sha: GIT_SHA,
+		commitUrl: GIT_COMMIT_URL,
+		branch: GIT_BRANCH,
+		timestamp: BUILD_TIMESTAMP,
+	};
 }
 
 export interface BugReportData {
@@ -72,52 +89,6 @@ export function getGitHubLinks(repoUrl: string = getRepoUrl()): GitHubLinks {
 }
 
 /**
- * Fetch the latest commit from the repository
- */
-export async function fetchLatestCommit(
-	repoUrl: string = getRepoUrl(),
-): Promise<CommitInfo | null> {
-	const match = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
-	if (!match) return null;
-
-	const [, owner, repo] = match;
-	const cleanRepo = repo.replace(/\.git$/, "");
-
-	// Create abort controller for timeout
-	const controller = new AbortController();
-	const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
-	try {
-		const response = await fetch(
-			`https://api.github.com/repos/${owner}/${cleanRepo}/commits?per_page=1`,
-			{
-				headers: {
-					Accept: "application/vnd.github.v3+json",
-				},
-				signal: controller.signal,
-			},
-		);
-
-		clearTimeout(timeoutId);
-
-		if (!response.ok) return null;
-
-		const commits = await response.json();
-		if (!commits || commits.length === 0) return null;
-
-		return {
-			sha: commits[0].sha.substring(0, 7),
-			message: commits[0].commit.message.split("\n")[0],
-			url: commits[0].html_url,
-		};
-	} catch (error) {
-		clearTimeout(timeoutId);
-		console.error("Failed to fetch latest commit:", error);
-		return null;
-	}
-}
-
-/**
  * Get browser and device information for bug reports
  */
 export function getDeviceInfo(): string {
@@ -143,11 +114,11 @@ export function getDeviceInfo(): string {
 /**
  * Build the complete issue body with metadata
  */
-export async function buildIssueBody(
+export function buildIssueBody(
 	description: string,
 	includeMetadata: boolean,
 	hasScreenshot = false,
-): Promise<string> {
+): string {
 	const parts: string[] = [];
 
 	// User description
@@ -169,10 +140,14 @@ export async function buildIssueBody(
 		parts.push("## Environment");
 		parts.push(`**Date:** ${new Date().toISOString()}`);
 
-		// Try to get latest commit
-		const commit = await fetchLatestCommit();
-		if (commit) {
-			parts.push(`**Version:** [${commit.sha}](${commit.url}) - ${commit.message}`);
+		// Use build-time version info
+		const buildInfo = getBuildInfo();
+		if (buildInfo.sha && buildInfo.sha !== "development") {
+			parts.push(
+				`**Version:** [${buildInfo.sha.slice(0, 7)}](${buildInfo.commitUrl}) on ${buildInfo.branch}`,
+			);
+		} else {
+			parts.push("**Version:** development");
 		}
 
 		parts.push("");
@@ -186,9 +161,9 @@ export async function buildIssueBody(
 /**
  * Generate the URL for creating a new GitHub issue with pre-filled content
  */
-export async function generateIssueUrl(data: BugReportData): Promise<string> {
+export function generateIssueUrl(data: BugReportData): string {
 	const links = getGitHubLinks();
-	const body = await buildIssueBody(
+	const body = buildIssueBody(
 		data.description,
 		data.includeMetadata,
 		!!data.screenshot,
@@ -240,7 +215,7 @@ function dataUrlToBlob(dataUrl: string): Blob {
  * Returns the issue body for clipboard backup
  */
 export async function openBugReport(data: BugReportData): Promise<string> {
-	const body = await buildIssueBody(
+	const body = buildIssueBody(
 		data.description,
 		data.includeMetadata,
 		!!data.screenshot,
@@ -270,7 +245,7 @@ export async function openBugReport(data: BugReportData): Promise<string> {
 	}
 
 	// Open GitHub issue page
-	const url = await generateIssueUrl(data);
+	const url = generateIssueUrl(data);
 	window.open(url, "_blank", "noopener,noreferrer");
 
 	return body;
