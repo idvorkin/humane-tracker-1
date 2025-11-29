@@ -385,6 +385,61 @@
 	color: #f87171;
 }
 
+/* Toggle Row */
+.settings-toggle-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 2px;
+	cursor: pointer;
+}
+
+.settings-toggle-label {
+	font-size: 0.85rem;
+	color: var(--color-cream);
+}
+
+/* Toggle Switch */
+.settings-toggle {
+	position: relative;
+	width: 44px;
+	height: 24px;
+	background: rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(255, 255, 255, 0.15);
+	border-radius: 12px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.settings-toggle:hover {
+	background: rgba(255, 255, 255, 0.15);
+}
+
+.settings-toggle-on {
+	background: linear-gradient(
+		135deg,
+		var(--color-amber) 0%,
+		var(--color-terracotta) 100%
+	);
+	border-color: transparent;
+}
+
+.settings-toggle-thumb {
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 18px;
+	height: 18px;
+	background: var(--color-cream);
+	border-radius: 50%;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+	transition: transform 0.2s ease;
+}
+
+.settings-toggle-on .settings-toggle-thumb {
+	transform: translateX(20px);
+}
+
 /* Mobile adjustments */
 @media (max-width: 480px) {
 	.settings-dialog {

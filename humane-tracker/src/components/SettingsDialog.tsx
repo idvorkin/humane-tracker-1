@@ -9,12 +9,19 @@ import {
 	importAllData,
 	validateExportData,
 } from "../services/dataService";
+import { getModifierKey } from "../services/githubService";
 import "./SettingsDialog.css";
 
 interface SettingsDialogProps {
 	isLocalMode: boolean;
 	onClose: () => void;
 	onOpenSyncStatus: () => void;
+	onOpenBugReport?: () => void;
+	shakeEnabled?: boolean;
+	onShakeEnabledChange?: (enabled: boolean) => void;
+	shakeSupported?: boolean;
+	shakeHasPermission?: boolean;
+	onRequestShakePermission?: () => Promise<boolean>;
 }
 
 type SyncStatePhase =
@@ -94,6 +101,12 @@ export function SettingsDialog({
 	isLocalMode,
 	onClose,
 	onOpenSyncStatus,
+	onOpenBugReport,
+	shakeEnabled = false,
+	onShakeEnabledChange,
+	shakeSupported = false,
+	shakeHasPermission = false,
+	onRequestShakePermission,
 }: SettingsDialogProps) {
 	const { checkForUpdate, isChecking, lastCheckTime } = useVersionCheck();
 	const [isExporting, setIsExporting] = useState(false);
@@ -490,6 +503,88 @@ export function SettingsDialog({
 									<span className="settings-info-value">{importStatus}</span>
 								</div>
 							)}
+						</div>
+					</div>
+
+					{/* Help & Feedback Section */}
+					<div className="settings-section">
+						<div className="settings-section-header">
+							<div className="settings-section-icon">
+								<svg
+									width="18"
+									height="18"
+									viewBox="0 0 18 18"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="1.5"
+								>
+									<path d="M9 1.5a5.5 5.5 0 015.5 5.5v1h2v2h-2v1a5.5 5.5 0 01-11 0v-1h-2V8h2V7A5.5 5.5 0 019 1.5z" />
+									<path d="M7 8h4M7 11h4" />
+								</svg>
+							</div>
+							<span className="settings-section-title">Help & Feedback</span>
+						</div>
+						<div className="settings-section-content">
+							{onOpenBugReport && (
+								<button
+									className="settings-action-button"
+									onClick={() => {
+										onClose();
+										onOpenBugReport();
+									}}
+								>
+									<svg
+										width="16"
+										height="16"
+										viewBox="0 0 16 16"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="1.5"
+									>
+										<path d="M8 1.5a4 4 0 014 4v1h1.5v1.5H12v1a4 4 0 01-8 0v-1H2.5V6.5H4v-1a4 4 0 014-4z" />
+										<path d="M6.5 6.5h3M6.5 9h3" />
+									</svg>
+									Report a Bug
+								</button>
+							)}
+							{shakeSupported && onShakeEnabledChange && (
+								<div className="settings-toggle-row">
+									<span
+										id="shake-toggle-label"
+										className="settings-toggle-label"
+									>
+										Shake to Report Bug
+									</span>
+									<button
+										type="button"
+										role="switch"
+										aria-checked={shakeEnabled}
+										aria-labelledby="shake-toggle-label"
+										className={`settings-toggle ${shakeEnabled ? "settings-toggle-on" : ""}`}
+										onClick={async () => {
+											try {
+												if (!shakeEnabled && !shakeHasPermission) {
+													// Request permission first
+													const granted = await onRequestShakePermission?.();
+													if (granted) {
+														onShakeEnabledChange(true);
+													}
+												} else {
+													onShakeEnabledChange(!shakeEnabled);
+												}
+											} catch (err) {
+												console.error("Failed to toggle shake setting:", err);
+											}
+										}}
+									>
+										<span className="settings-toggle-thumb" />
+									</button>
+								</div>
+							)}
+							<div className="settings-info-row">
+								<span className="settings-info-label">Keyboard shortcut</span>
+								<span className="settings-info-value">{getModifierKey()}+I</span>
+							</div>
 						</div>
 					</div>
 				</div>
