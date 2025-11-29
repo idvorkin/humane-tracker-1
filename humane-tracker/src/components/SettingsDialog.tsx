@@ -9,6 +9,7 @@ import {
 	importAllData,
 	validateExportData,
 } from "../services/dataService";
+import { getModifierKey } from "../services/githubService";
 import "./SettingsDialog.css";
 
 interface SettingsDialogProps {
@@ -547,39 +548,42 @@ export function SettingsDialog({
 								</button>
 							)}
 							{shakeSupported && onShakeEnabledChange && (
-								<label className="settings-toggle-row">
-									<span className="settings-toggle-label">
+								<div className="settings-toggle-row">
+									<span
+										id="shake-toggle-label"
+										className="settings-toggle-label"
+									>
 										Shake to Report Bug
 									</span>
 									<button
 										type="button"
 										role="switch"
 										aria-checked={shakeEnabled}
+										aria-labelledby="shake-toggle-label"
 										className={`settings-toggle ${shakeEnabled ? "settings-toggle-on" : ""}`}
 										onClick={async () => {
-											if (!shakeEnabled && !shakeHasPermission) {
-												// Request permission first
-												const granted = await onRequestShakePermission?.();
-												if (granted) {
-													onShakeEnabledChange(true);
+											try {
+												if (!shakeEnabled && !shakeHasPermission) {
+													// Request permission first
+													const granted = await onRequestShakePermission?.();
+													if (granted) {
+														onShakeEnabledChange(true);
+													}
+												} else {
+													onShakeEnabledChange(!shakeEnabled);
 												}
-											} else {
-												onShakeEnabledChange(!shakeEnabled);
+											} catch (err) {
+												console.error("Failed to toggle shake setting:", err);
 											}
 										}}
 									>
 										<span className="settings-toggle-thumb" />
 									</button>
-								</label>
+								</div>
 							)}
 							<div className="settings-info-row">
 								<span className="settings-info-label">Keyboard shortcut</span>
-								<span className="settings-info-value">
-									{navigator.platform.toUpperCase().indexOf("MAC") >= 0
-										? "Cmd"
-										: "Ctrl"}
-									+I
-								</span>
+								<span className="settings-info-value">{getModifierKey()}+I</span>
 							</div>
 						</div>
 					</div>

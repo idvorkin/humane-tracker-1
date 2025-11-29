@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { openBugReport } from "../services/githubService";
+import { isMacPlatform, openBugReport } from "../services/githubService";
 import { useShakeDetector } from "./useShakeDetector";
 
 const SHAKE_ENABLED_KEY = "bugReporter.shakeEnabled";
@@ -114,8 +114,7 @@ export function useBugReporter(
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
 			// Check for Ctrl+I (Windows/Linux) or Cmd+I (Mac)
-			const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-			const modifier = isMac ? event.metaKey : event.ctrlKey;
+			const modifier = isMacPlatform() ? event.metaKey : event.ctrlKey;
 
 			if (modifier && event.key.toLowerCase() === "i" && !event.shiftKey) {
 				event.preventDefault();
@@ -134,10 +133,18 @@ export function useBugReporter(
 		setIsCapturingScreenshot(true);
 
 		try {
-			// Request screen capture
-			const stream = await navigator.mediaDevices.getDisplayMedia({
-				video: { displaySurface: "browser" } as MediaTrackConstraints,
-			});
+			// Request screen capture with fallback for browsers that don't support displaySurface
+			let stream: MediaStream;
+			try {
+				stream = await navigator.mediaDevices.getDisplayMedia({
+					video: { displaySurface: "browser" } as MediaTrackConstraints,
+				});
+			} catch {
+				// Fallback to basic video capture if displaySurface constraint fails
+				stream = await navigator.mediaDevices.getDisplayMedia({
+					video: true,
+				});
+			}
 
 			// Create video element to capture frame
 			const video = document.createElement("video");
@@ -149,7 +156,13 @@ export function useBugReporter(
 			canvas.width = video.videoWidth;
 			canvas.height = video.videoHeight;
 			const ctx = canvas.getContext("2d");
-			ctx?.drawImage(video, 0, 0);
+
+			// Validate canvas context was created successfully
+			if (!ctx) {
+				throw new Error("Failed to create canvas context");
+			}
+
+			ctx.drawImage(video, 0, 0);
 
 			// Stop all tracks immediately
 			for (const track of stream.getTracks()) {

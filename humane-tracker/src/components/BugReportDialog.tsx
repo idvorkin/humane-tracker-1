@@ -1,4 +1,5 @@
 import type React from "react";
+import { getModifierKey } from "../services/githubService";
 import "./BugReportDialog.css";
 
 interface BugReportDialogProps {
@@ -53,10 +54,7 @@ export function BugReportDialog({
 		onSubmit();
 	};
 
-	const isMac =
-		typeof navigator !== "undefined" &&
-		navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-	const shortcutKey = isMac ? "Cmd" : "Ctrl";
+	const shortcutKey = getModifierKey();
 
 	return (
 		<div className="bug-report-overlay" onClick={handleOverlayClick}>
@@ -207,7 +205,16 @@ export function BugReportDialog({
 						</span>
 					</label>
 
-					{error && <div className="bug-report-error">{error}</div>}
+					{error && (
+						<div
+							id="bug-report-error"
+							className="bug-report-error"
+							role="alert"
+							aria-live="polite"
+						>
+							{error}
+						</div>
+					)}
 
 					<div className="bug-report-actions">
 						<button

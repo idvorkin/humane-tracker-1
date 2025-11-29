@@ -6,6 +6,9 @@
 // Default repository URL - can be overridden via environment variable
 const DEFAULT_REPO_URL = "https://github.com/idvorkin/humane-tracker-1";
 
+// Fetch timeout in milliseconds
+const FETCH_TIMEOUT_MS = 5000;
+
 export interface GitHubLinks {
 	repo: string;
 	issues: string;
@@ -23,6 +26,23 @@ export interface BugReportData {
 	description: string;
 	includeMetadata: boolean;
 	screenshot?: string; // base64 data URL
+}
+
+/**
+ * Detect if the current platform is macOS
+ */
+export function isMacPlatform(): boolean {
+	return (
+		typeof navigator !== "undefined" &&
+		navigator.platform.toUpperCase().indexOf("MAC") >= 0
+	);
+}
+
+/**
+ * Get the modifier key name for the current platform
+ */
+export function getModifierKey(): string {
+	return isMacPlatform() ? "Cmd" : "Ctrl";
 }
 
 /**
@@ -63,6 +83,10 @@ export async function fetchLatestCommit(
 	const [, owner, repo] = match;
 	const cleanRepo = repo.replace(/\.git$/, "");
 
+	// Create abort controller for timeout
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
 	try {
 		const response = await fetch(
 			`https://api.github.com/repos/${owner}/${cleanRepo}/commits?per_page=1`,
@@ -70,8 +94,11 @@ export async function fetchLatestCommit(
 				headers: {
 					Accept: "application/vnd.github.v3+json",
 				},
+				signal: controller.signal,
 			},
 		);
+
+		clearTimeout(timeoutId);
 
 		if (!response.ok) return null;
 
@@ -84,6 +111,7 @@ export async function fetchLatestCommit(
 			url: commits[0].html_url,
 		};
 	} catch (error) {
+		clearTimeout(timeoutId);
 		console.error("Failed to fetch latest commit:", error);
 		return null;
 	}
@@ -177,11 +205,28 @@ export async function generateIssueUrl(data: BugReportData): Promise<string> {
 
 /**
  * Convert base64 data URL to Blob for clipboard
+ * @throws Error if dataUrl is not a valid data URL format
  */
 function dataUrlToBlob(dataUrl: string): Blob {
-	const parts = dataUrl.split(",");
-	const mime = parts[0].match(/:(.*?);/)?.[1] || "image/png";
-	const bstr = atob(parts[1]);
+	// Validate data URL format
+	if (!dataUrl || typeof dataUrl !== "string") {
+		throw new Error("Invalid data URL: must be a non-empty string");
+	}
+
+	const commaIndex = dataUrl.indexOf(",");
+	if (commaIndex === -1) {
+		throw new Error("Invalid data URL: missing comma separator");
+	}
+
+	const header = dataUrl.substring(0, commaIndex);
+	const base64Data = dataUrl.substring(commaIndex + 1);
+
+	if (!header.startsWith("data:")) {
+		throw new Error("Invalid data URL: must start with 'data:'");
+	}
+
+	const mime = header.match(/:(.*?);/)?.[1] || "image/png";
+	const bstr = atob(base64Data);
 	let n = bstr.length;
 	const u8arr = new Uint8Array(n);
 	while (n--) {
