@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useBugReporter } from "../hooks/useBugReporter";
+import { BugReportDialog } from "./BugReportDialog";
 import { SettingsDialog } from "./SettingsDialog";
 import { SyncStatusDialog } from "./SyncStatusDialog";
 import "./UserMenu.css";
@@ -26,6 +28,9 @@ export function UserMenu({
 	const [showSettingsDialog, setShowSettingsDialog] = useState(false);
 	const [showSyncDialog, setShowSyncDialog] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
+
+	// Bug reporter state
+	const bugReporter = useBugReporter();
 
 	// Close menu when clicking outside
 	useEffect(() => {
@@ -159,6 +164,27 @@ export function UserMenu({
 					<button
 						className="user-menu-item"
 						onClick={() => {
+							setIsOpen(false);
+							bugReporter.open();
+						}}
+					>
+						<svg
+							width="16"
+							height="16"
+							viewBox="0 0 16 16"
+							fill="none"
+							stroke="currentColor"
+							strokeWidth="1.5"
+						>
+							<path d="M8 1.5a4 4 0 014 4v1h1.5v1.5H12v1a4 4 0 01-8 0v-1H2.5V6.5H4v-1a4 4 0 014-4z" />
+							<path d="M6.5 6.5h3M6.5 9h3" />
+						</svg>
+						Report Bug
+					</button>
+
+					<button
+						className="user-menu-item"
+						onClick={() => {
 							setShowSettingsDialog(true);
 							setIsOpen(false);
 						}}
@@ -206,12 +232,32 @@ export function UserMenu({
 					isLocalMode={isLocalMode}
 					onClose={() => setShowSettingsDialog(false)}
 					onOpenSyncStatus={() => setShowSyncDialog(true)}
+					onOpenBugReport={bugReporter.open}
+					shakeEnabled={bugReporter.shakeEnabled}
+					onShakeEnabledChange={bugReporter.setShakeEnabled}
+					shakeSupported={bugReporter.shakeSupported}
+					shakeHasPermission={bugReporter.shakeHasPermission}
+					onRequestShakePermission={bugReporter.requestShakePermission}
 				/>
 			)}
 
 			{showSyncDialog && (
 				<SyncStatusDialog onClose={() => setShowSyncDialog(false)} />
 			)}
+
+			<BugReportDialog
+				isOpen={bugReporter.isOpen}
+				onClose={bugReporter.close}
+				title={bugReporter.title}
+				setTitle={bugReporter.setTitle}
+				description={bugReporter.description}
+				setDescription={bugReporter.setDescription}
+				includeMetadata={bugReporter.includeMetadata}
+				setIncludeMetadata={bugReporter.setIncludeMetadata}
+				isSubmitting={bugReporter.isSubmitting}
+				onSubmit={bugReporter.submit}
+				error={bugReporter.error}
+			/>
 		</div>
 	);
 }
