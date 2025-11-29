@@ -279,6 +279,19 @@
 	box-shadow: none;
 }
 
+.settings-action-danger {
+	background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+	box-shadow:
+		0 2px 8px rgba(220, 38, 38, 0.25),
+		0 1px 0 rgba(255, 255, 255, 0.1) inset;
+}
+
+.settings-action-danger:hover:not(:disabled) {
+	box-shadow:
+		0 4px 16px rgba(220, 38, 38, 0.35),
+		0 1px 0 rgba(255, 255, 255, 0.1) inset;
+}
+
 /* Spinner */
 .settings-button-spinner {
 	width: 16px;
@@ -317,6 +330,49 @@
 .settings-done-button:hover {
 	background: rgba(255, 255, 255, 0.04);
 	border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Import Confirmation Dialog */
+.import-confirm-dialog {
+	z-index: 10;
+}
+
+.import-confirm-info {
+	text-align: center;
+	padding: 8px 0 16px;
+}
+
+.import-confirm-info p {
+	margin: 0 0 8px;
+	color: var(--color-cream);
+	font-size: 0.95rem;
+}
+
+.import-confirm-info strong {
+	color: var(--color-amber);
+}
+
+.import-confirm-date {
+	color: var(--color-warm-gray) !important;
+	font-size: 0.85rem !important;
+}
+
+.import-confirm-options {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.import-option-desc {
+	margin: 0 0 12px;
+	padding: 0 4px;
+	font-size: 0.8rem;
+	color: var(--color-warm-gray);
+	text-align: center;
+}
+
+.import-option-warning {
+	color: #f87171;
 }
 
 /* Mobile adjustments */
