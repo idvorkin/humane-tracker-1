@@ -1,0 +1,21 @@
+# Humane CLI justfile
+
+# Run the TUI with the backup file
+run:
+    ./humane_cli.py ../humane-tracker-backup-2025-11-29.json
+
+# Run with a specific file
+run-file FILE:
+    ./humane_cli.py {{FILE}}
+
+# Install dependencies
+install:
+    uv sync
+
+# Run tests
+test:
+    uv run pytest test_humane_cli.py -v
+
+# Run in dev mode with textual console
+dev:
+    uv run textual run --dev humane_cli.py ../humane-tracker-backup-2025-11-29.json
