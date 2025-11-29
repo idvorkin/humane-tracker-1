@@ -226,6 +226,16 @@
 	}
 }
 
+/* Button Row - for side-by-side buttons */
+.settings-button-row {
+	display: flex;
+	gap: 8px;
+}
+
+.settings-button-row .settings-action-button {
+	flex: 1;
+}
+
 /* Action Buttons */
 .settings-action-button {
 	width: 100%;

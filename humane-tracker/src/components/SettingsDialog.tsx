@@ -429,60 +429,62 @@ export function SettingsDialog({
 								onChange={handleFileChange}
 								style={{ display: "none" }}
 							/>
-							<button
-								className="settings-action-button"
-								onClick={handleExport}
-								disabled={isExporting}
-							>
-								{isExporting ? (
-									<>
-										<span className="settings-button-spinner" />
-										Exporting...
-									</>
-								) : (
-									<>
-										<svg
-											width="16"
-											height="16"
-											viewBox="0 0 16 16"
-											fill="none"
-											stroke="currentColor"
-											strokeWidth="1.5"
-										>
-											<path d="M8 2v9M4 7l4 4 4-4" />
-											<path d="M2 12v2h12v-2" />
-										</svg>
-										Export All Data
-									</>
-								)}
-							</button>
-							<button
-								className="settings-action-button settings-action-secondary"
-								onClick={handleImportClick}
-								disabled={isImporting}
-							>
-								{isImporting ? (
-									<>
-										<span className="settings-button-spinner" />
-										Importing...
-									</>
-								) : (
-									<>
-										<svg
-											width="16"
-											height="16"
-											viewBox="0 0 16 16"
-											fill="none"
-											stroke="currentColor"
-											strokeWidth="1.5"
-										>
-											<path d="M8 11V2M4 6l4-4 4 4" />
-											<path d="M2 12v2h12v-2" />
-										</svg>
-										Import Data
-									</>
-								)}
-							</button>
+							<div className="settings-button-row">
+								<button
+									className="settings-action-button"
+									onClick={handleExport}
+									disabled={isExporting}
+								>
+									{isExporting ? (
+										<>
+											<span className="settings-button-spinner" />
+											Exporting...
+										</>
+									) : (
+										<>
+											<svg
+												width="16"
+												height="16"
+												viewBox="0 0 16 16"
+												fill="none"
+												stroke="currentColor"
+												strokeWidth="1.5"
+											>
+												<path d="M8 2v9M4 7l4 4 4-4" />
+												<path d="M2 12v2h12v-2" />
+											</svg>
+											Export
+										</>
+									)}
+								</button>
+								<button
+									className="settings-action-button settings-action-secondary"
+									onClick={handleImportClick}
+									disabled={isImporting}
+								>
+									{isImporting ? (
+										<>
+											<span className="settings-button-spinner" />
+											Importing...
+										</>
+									) : (
+										<>
+											<svg
+												width="16"
+												height="16"
+												viewBox="0 0 16 16"
+												fill="none"
+												stroke="currentColor"
+												strokeWidth="1.5"
+											>
+												<path d="M8 11V2M4 6l4-4 4 4" />
+												<path d="M2 12v2h12v-2" />
+											</svg>
+											Import
+										</>
+									)}
+								</button>
+							</div>
 							{importStatus && (
 								<div className="settings-info-row">
 									<span className="settings-info-value">{importStatus}</span>
