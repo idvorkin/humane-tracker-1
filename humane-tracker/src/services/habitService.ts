@@ -1,10 +1,4 @@
-import {
-	differenceInDays,
-	endOfWeek,
-	format,
-	isToday,
-	startOfWeek,
-} from "date-fns";
+import { format } from "date-fns";
 import { liveQuery } from "dexie";
 import { db } from "../config/db";
 import type {
@@ -13,6 +7,70 @@ import type {
 	HabitStatus,
 	HabitWithStatus,
 } from "../types/habit";
+
+// ============================================================================
+// Pure functions (easily testable)
+// ============================================================================
+
+/**
+ * Calculate habit status based on entries in trailing 7-day window.
+ * This is a pure function for easy testing.
+ */
+export function calculateHabitStatus(
+	habit: Pick<Habit, "name" | "targetPerWeek">,
+	entries: Pick<HabitEntry, "date" | "value">[],
+	currentDate: Date = new Date(),
+): HabitStatus {
+	// Use trailing 7 days (today and 6 days back) to match UI display
+	const weekEnd = new Date(currentDate);
+	weekEnd.setHours(23, 59, 59, 999);
+	const weekStart = new Date(currentDate);
+	weekStart.setDate(weekStart.getDate() - 6);
+	weekStart.setHours(0, 0, 0, 0);
+
+	const todayStr = format(currentDate, "yyyy-MM-dd");
+
+	const weekEntries = entries.filter((e) => {
+		const entryDate = new Date(e.date);
+		return entryDate >= weekStart && entryDate <= weekEnd;
+	});
+
+	// Count unique days with entries (not total values)
+	// A day counts if there's any entry with value > 0
+	const daysWithEntries = new Set(
+		weekEntries
+			.filter((e) => e.value > 0)
+			.map((e) => format(new Date(e.date), "yyyy-MM-dd")),
+	).size;
+
+	// Check if there's an entry for today (using currentDate, not real today)
+	const todayEntry = weekEntries.find(
+		(e) => format(new Date(e.date), "yyyy-MM-dd") === todayStr,
+	);
+	const doneToday = todayEntry && todayEntry.value >= 1;
+	const targetMet = daysWithEntries >= habit.targetPerWeek;
+
+	// Check if weekly target is met first
+	if (targetMet) {
+		return doneToday ? "done" : "met";
+	}
+
+	// For trailing 7-day window: check if on track to meet target
+	const daysNeeded = habit.targetPerWeek - daysWithEntries;
+
+	// With trailing window, urgency is based on whether you're behind pace
+	if (daysNeeded >= habit.targetPerWeek && !todayEntry) {
+		// Haven't started at all this week
+		return "today";
+	}
+
+	if (daysNeeded > 0 && !todayEntry) {
+		// Behind but not critical - do tomorrow
+		return "tomorrow";
+	}
+
+	return "pending";
+}
 
 export class HabitService {
 	// Create a new habit
@@ -95,52 +153,13 @@ export class HabitService {
 		return () => subscription.unsubscribe();
 	}
 
-	// Calculate habit status
+	// Calculate habit status - delegates to pure function
 	calculateHabitStatus(
 		habit: Habit,
 		entries: HabitEntry[],
 		currentDate: Date = new Date(),
 	): HabitStatus {
-		const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }); // Week starts on Monday
-		const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
-
-		const weekEntries = entries.filter(
-			(e) => e.date >= weekStart && e.date <= weekEnd,
-		);
-
-		// Count unique days with entries (not total values)
-		// A day counts if there's any entry with value > 0
-		const daysWithEntries = new Set(
-			weekEntries
-				.filter((e) => e.value > 0)
-				.map((e) => format(e.date, "yyyy-MM-dd")),
-		).size;
-
-		const todayEntry = weekEntries.find((e) => isToday(e.date));
-
-		// Check if done today
-		if (todayEntry && todayEntry.value >= 1) {
-			return "done";
-		}
-
-		// Check if weekly target is met (counting days, not total values)
-		if (daysWithEntries >= habit.targetPerWeek) {
-			return "met";
-		}
-
-		// Calculate days left and days still needed
-		const daysLeft = differenceInDays(weekEnd, currentDate) + 1;
-		const daysNeeded = habit.targetPerWeek - daysWithEntries;
-
-		// Check if due today
-		if (daysLeft <= daysNeeded && !todayEntry) {
-			if (daysLeft === 0) return "overdue";
-			if (daysLeft === 1) return "today";
-			if (daysLeft === 2) return "tomorrow";
-			return "soon";
-		}
-
-		return "pending";
+		return calculateHabitStatus(habit, entries, currentDate);
 	}
 
 	// Get habits with status for trailing 7 days

@@ -1,0 +1,205 @@
+import { addDays } from "date-fns";
+import { describe, expect, it } from "vitest";
+import { calculateHabitStatus } from "./habitService";
+
+// Helper to create dates relative to a base date
+function daysAgo(days: number, baseDate: Date = new Date()): Date {
+	return addDays(baseDate, -days);
+}
+
+// Helper to create a mock habit
+function createHabit(targetPerWeek: number, name = "Test Habit") {
+	return { name, targetPerWeek };
+}
+
+// Helper to create a mock entry
+function createEntry(date: Date, value = 1) {
+	return { date, value };
+}
+
+describe("calculateHabitStatus", () => {
+	// Use a fixed date for consistent testing
+	const today = new Date("2024-11-29T12:00:00");
+
+	describe("target met scenarios", () => {
+		it("returns 'done' when target met AND done today", () => {
+			const habit = createHabit(2);
+			const entries = [
+				createEntry(today, 1), // today
+				createEntry(daysAgo(1, today), 1), // yesterday
+			];
+
+			const status = calculateHabitStatus(habit, entries, today);
+
+			expect(status).toBe("done");
+		});
+
+		it("returns 'met' when target met but NOT done today", () => {
+			const habit = createHabit(2);
+			const entries = [
+				createEntry(daysAgo(1, today), 1), // yesterday
+				createEntry(daysAgo(2, today), 1), // 2 days ago
+			];
+
+			const status = calculateHabitStatus(habit, entries, today);
+
+			expect(status).toBe("met");
+		});
+
+		it("returns 'done' when target exceeded AND done today", () => {
+			const habit = createHabit(2);
+			const entries = [
+				createEntry(today, 1),
+				createEntry(daysAgo(1, today), 1),
+				createEntry(daysAgo(2, today), 1), // exceeded target
+			];
+
+			const status = calculateHabitStatus(habit, entries, today);
+
+			expect(status).toBe("done");
+		});
+	});
+
+	describe("target not met scenarios", () => {
+		it("returns 'today' when no entries at all", () => {
+			const habit = createHabit(2);
+			const entries: { date: Date; value: number }[] = [];
+
+			const status = calculateHabitStatus(habit, entries, today);
+
+			expect(status).toBe("today");
+		});
+
+		it("returns 'tomorrow' when some progress but not done today", () => {
+			const habit = createHabit(3);
+			const entries = [
+				createEntry(daysAgo(1, today), 1), // 1 of 3, not done today
+			];
+
+			const status = calculateHabitStatus(habit, entries, today);
+
+			expect(status).toBe("tomorrow");
+		});
+
+		it("returns 'pending' when done today but target not met yet", () => {
+			const habit = createHabit(3);
+			const entries = [
+				createEntry(today, 1), // done today, 1 of 3
+			];
+
+			const status = calculateHabitStatus(habit, entries, today);
+
+			expect(status).toBe("pending");
+		});
+	});
+
+	describe("trailing 7-day window", () => {
+		it("counts entries from trailing 7 days only", () => {
+			const habit = createHabit(2);
+			const entries = [
+				createEntry(daysAgo(1, today), 1), // yesterday - counts
+				createEntry(daysAgo(6, today), 1), // 6 days ago - counts (edge of window)
+			];
+
+			const status = calculateHabitStatus(habit, entries, today);
+
+			expect(status).toBe("met"); // 2 entries in window
+		});
+
+		it("ignores entries older than 7 days", () => {
+			const habit = createHabit(2);
+			const entries = [
+				createEntry(daysAgo(1, today), 1), // yesterday - counts
+				createEntry(daysAgo(7, today), 1), // 7 days ago - outside window
+			];
+
+			const status = calculateHabitStatus(habit, entries, today);
+
+			expect(status).toBe("tomorrow"); // only 1 entry counts
+		});
+
+		it("includes today in the 7-day window", () => {
+			const habit = createHabit(1);
+			const entries = [createEntry(today, 1)];
+
+			const status = calculateHabitStatus(habit, entries, today);
+
+			expect(status).toBe("done"); // today counts
+		});
+	});
+
+	describe("counts unique days not total entries", () => {
+		it("counts each day only once regardless of entry value", () => {
+			const habit = createHabit(2);
+			const entries = [
+				createEntry(today, 5), // high value, but still just 1 day
+			];
+
+			const status = calculateHabitStatus(habit, entries, today);
+
+			expect(status).toBe("pending"); // only 1 day, need 2
+		});
+
+		it("counts multiple entries on same day as one day", () => {
+			const habit = createHabit(2);
+			// Two entries on today (shouldn't happen but test the logic)
+			const entries = [createEntry(today, 1), createEntry(today, 1)];
+
+			const status = calculateHabitStatus(habit, entries, today);
+
+			expect(status).toBe("pending"); // still just 1 day
+		});
+	});
+
+	describe("handles date as string (from IndexedDB)", () => {
+		it("works when date is ISO string instead of Date object", () => {
+			const habit = createHabit(2);
+			const entries = [
+				{ date: today.toISOString() as unknown as Date, value: 1 },
+				{ date: daysAgo(1, today).toISOString() as unknown as Date, value: 1 },
+			];
+
+			const status = calculateHabitStatus(habit, entries, today);
+
+			expect(status).toBe("done");
+		});
+	});
+
+	describe("real scenario: strength building habits", () => {
+		it("matches expected behavior for TGU 32KG", () => {
+			// Target: 1/week, entry 6 days ago (within window)
+			const habit = createHabit(1, "TGU 32KG");
+			const entries = [createEntry(daysAgo(6, today), 1)];
+
+			const status = calculateHabitStatus(habit, entries, today);
+
+			expect(status).toBe("met");
+		});
+
+		it("matches expected behavior for 1H Swings 28KG", () => {
+			// Target: 2/week, entries today (5 reps) and yesterday
+			const habit = createHabit(2, "1H Swings - 28 KG");
+			const entries = [
+				createEntry(today, 5),
+				createEntry(daysAgo(1, today), 1),
+			];
+
+			const status = calculateHabitStatus(habit, entries, today);
+
+			expect(status).toBe("done");
+		});
+
+		it("matches expected behavior for Pistols", () => {
+			// Target: 2/week, entries today and 2 days ago
+			const habit = createHabit(2, "Pistols");
+			const entries = [
+				createEntry(today, 1),
+				createEntry(daysAgo(2, today), 5),
+			];
+
+			const status = calculateHabitStatus(habit, entries, today);
+
+			expect(status).toBe("done");
+		});
+	});
+});

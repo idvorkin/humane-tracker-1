@@ -105,6 +105,51 @@ describe("getCategorySummary", () => {
 		expect(summary.totalStatus).toBe("good");
 	});
 
+	it("counts done status as met for weekly total", () => {
+		const habits = [
+			createMockHabit({ status: "done" }), // met target AND done today
+			createMockHabit({ status: "done" }), // met target AND done today
+			createMockHabit({ status: "met" }), // met target but not done today
+		];
+
+		const summary = getCategorySummary(habits);
+
+		expect(summary.met).toBe(3); // all 3 should count as met
+		expect(summary.totalStatus).toBe("good");
+	});
+
+	it("matches real scenario: strength building category", () => {
+		// Real scenario from Igor's screenshot:
+		// TGU 28KG: 0/2 - not met, not done today -> "today" or similar
+		// TGU 32KG: 1/1 - met, not done today -> "met"
+		// 1H Swings 28KG: 2/2 - met AND done today -> "done"
+		// 1H Swings 32KG: 0/1 - not met -> "tomorrow" or similar
+		// Pistols: 2/2 - met AND done today -> "done"
+		// L-Sit Hangs: 0/2 - not met -> "tomorrow"
+		// Pull Ups: 0/3 - not met -> "overdue" (needs 3, only 2 days left)
+		// Kettlebility: 0/2 - not met -> "tomorrow"
+		const habits = [
+			createMockHabit({ id: "1", name: "TGU 28KG", status: "tomorrow" }),
+			createMockHabit({ id: "2", name: "TGU 32KG", status: "met" }),
+			createMockHabit({ id: "3", name: "1H Swings 28KG", status: "done" }),
+			createMockHabit({ id: "4", name: "1H Swings 32KG", status: "tomorrow" }),
+			createMockHabit({ id: "5", name: "Pistols", status: "done" }),
+			createMockHabit({ id: "6", name: "L-Sit Hangs", status: "tomorrow" }),
+			createMockHabit({ id: "7", name: "Pull Ups", status: "overdue" }),
+			createMockHabit({ id: "8", name: "Kettlebility", status: "tomorrow" }),
+		];
+
+		const summary = getCategorySummary(habits);
+
+		// Expected: 2 done today (1H Swings 28KG, Pistols)
+		expect(summary.doneToday).toBe(2);
+		// Expected: 3 met (TGU 32KG + 1H Swings 28KG + Pistols)
+		expect(summary.met).toBe(3);
+		expect(summary.total).toBe(8);
+		expect(summary.todayStatus).toBe("warn"); // some done, not all
+		expect(summary.totalStatus).toBe("warn"); // some met, not all
+	});
+
 	it("returns bad total status when none met", () => {
 		const habits = [
 			createMockHabit({ status: "today" }),
@@ -299,7 +344,7 @@ describe("calculateSummaryStats", () => {
 		expect(stats.dueToday).toBe(2);
 		expect(stats.overdue).toBe(1);
 		expect(stats.doneToday).toBe(1);
-		expect(stats.onTrack).toBe(2);
+		expect(stats.onTrack).toBe(3); // done + 2 met = 3 on track
 	});
 
 	it("returns zeros for empty habits", () => {

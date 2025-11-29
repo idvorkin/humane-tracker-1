@@ -34,7 +34,10 @@ export interface CategorySummary {
 export function getCategorySummary(habits: HabitWithStatus[]): CategorySummary {
 	const doneToday = habits.filter((h) => h.status === "done").length;
 	const total = habits.length;
-	const met = habits.filter((h) => h.status === "met").length;
+	// "done" means met target AND done today, "met" means met target but not done today
+	const met = habits.filter(
+		(h) => h.status === "met" || h.status === "done",
+	).length;
 
 	const todayStatus: StatStatus =
 		total === 0
@@ -102,7 +105,8 @@ export function calculateSummaryStats(habits: HabitWithStatus[]): SummaryStats {
 		dueToday: habits.filter((h) => h.status === "today").length,
 		overdue: habits.filter((h) => h.status === "overdue").length,
 		doneToday: habits.filter((h) => h.status === "done").length,
-		onTrack: habits.filter((h) => h.status === "met").length,
+		onTrack: habits.filter((h) => h.status === "met" || h.status === "done")
+			.length,
 	};
 }
 
