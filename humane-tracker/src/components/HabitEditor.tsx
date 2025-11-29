@@ -1,8 +1,8 @@
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { HabitService } from "../services/habitService";
 import { CATEGORIES, type Habit } from "../types/habit";
-import "./HabitEditor.css";
+import "./HabitSettings.css";
 
 interface HabitEditorProps {
 	habit: Habit;
