@@ -170,6 +170,8 @@ export class HabitService {
 			.and((entry) => {
 				// entry.date may be a string (ISO format) from IndexedDB, so convert to Date for comparison
 				const entryDate = new Date(entry.date);
+				// Handle invalid dates by excluding them from results
+				if (Number.isNaN(entryDate.getTime())) return false;
 				return entryDate >= startDate && entryDate <= endDate;
 			})
 			.toArray();
@@ -189,6 +191,8 @@ export class HabitService {
 				.and((entry) => {
 					// entry.date may be a string (ISO format) from IndexedDB, so convert to Date for comparison
 					const entryDate = new Date(entry.date);
+					// Handle invalid dates by excluding them from results
+					if (Number.isNaN(entryDate.getTime())) return false;
 					return entryDate >= startDate && entryDate <= endDate;
 				})
 				.toArray(),
