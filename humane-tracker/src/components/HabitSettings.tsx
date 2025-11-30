@@ -378,6 +378,25 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 						/>
 					</div>
 
+					<div className="habit-category-field">
+						<input
+							type="text"
+							list={`category-options-${habit.id}`}
+							value={getHabitValue(habit, "category") as string}
+							onChange={(e) =>
+								handleFieldChange(habit.id, "category", e.target.value)
+							}
+							className="category-input"
+							placeholder="Category"
+							title="Category"
+						/>
+						<datalist id={`category-options-${habit.id}`}>
+							{existingCategories.map((cat) => (
+								<option key={cat} value={cat} />
+							))}
+						</datalist>
+					</div>
+
 					<div className="habit-type-field">
 						<select
 							value={

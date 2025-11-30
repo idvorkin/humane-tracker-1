@@ -356,6 +356,26 @@
 	color: var(--color-cream);
 }
 
+.habit-category-field {
+	width: 120px;
+}
+
+.habit-category-field .category-input {
+	width: 100%;
+	padding: 10px;
+	background: var(--color-espresso);
+	border: var(--border-subtle);
+	border-radius: var(--radius-md);
+	color: var(--color-cream);
+	font-size: 0.9rem;
+	transition: all var(--transition-fast);
+}
+
+.habit-category-field .category-input:focus {
+	outline: none;
+	border-color: var(--color-amber);
+}
+
 .habit-type-field {
 	width: 130px;
 }
