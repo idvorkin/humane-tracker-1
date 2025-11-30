@@ -1,11 +1,14 @@
 import Dexie, { type Table } from "dexie";
 import dexieCloud from "dexie-cloud-addon";
+import { syncLogService } from "../services/syncLogService";
 import type { Habit, HabitEntry } from "../types/habit";
+import type { SyncLog } from "../types/syncLog";
 
 // Extend Dexie with cloud addon
 export class HumaneTrackerDB extends Dexie {
 	habits!: Table<Habit, string>;
 	entries!: Table<HabitEntry, string>;
+	syncLogs!: Table<SyncLog, string>;
 
 	constructor() {
 		super("HumaneTrackerDB", { addons: [dexieCloud] });
@@ -15,6 +18,14 @@ export class HumaneTrackerDB extends Dexie {
 			habits:
 				"@id, userId, name, category, targetPerWeek, createdAt, updatedAt",
 			entries: "@id, habitId, userId, date, value, createdAt",
+		});
+
+		// Version 3: Add syncLogs table for debug logging
+		this.version(3).stores({
+			habits:
+				"@id, userId, name, category, targetPerWeek, createdAt, updatedAt",
+			entries: "@id, habitId, userId, date, value, createdAt",
+			syncLogs: "@id, timestamp, eventType, level",
 		});
 	}
 }
@@ -51,7 +62,7 @@ if (
 	// Monitor sync state changes
 	db.cloud.syncState.subscribe((syncState) => {
 		const timestamp = new Date().toISOString();
-		console.log(`[Dexie Cloud] ${timestamp} Sync state:`, {
+		const logData = {
 			phase: syncState.phase,
 			status: syncState.status,
 			progress: syncState.progress,
@@ -63,26 +74,34 @@ if (
 						stack: syncState.error.stack,
 					}
 				: undefined,
-		});
+		};
+		console.log(`[Dexie Cloud] ${timestamp} Sync state:`, logData);
 
 		// Log specific sync events with more detail
 		if (syncState.phase === "pushing") {
-			console.log(
-				`[Dexie Cloud] ${timestamp} ↑ Uploading changes (${syncState.progress ?? 0}%)`,
-			);
+			const message = `↑ Uploading changes (${syncState.progress ?? 0}%)`;
+			console.log(`[Dexie Cloud] ${timestamp} ${message}`);
+			syncLogService.addLog("syncState", "info", message, logData);
 		} else if (syncState.phase === "pulling") {
-			console.log(
-				`[Dexie Cloud] ${timestamp} ↓ Downloading changes (${syncState.progress ?? 0}%)`,
-			);
+			const message = `↓ Downloading changes (${syncState.progress ?? 0}%)`;
+			console.log(`[Dexie Cloud] ${timestamp} ${message}`);
+			syncLogService.addLog("syncState", "info", message, logData);
 		} else if (syncState.phase === "in-sync") {
-			console.log(`[Dexie Cloud] ${timestamp} ✓ Sync complete`);
+			const message = "✓ Sync complete";
+			console.log(`[Dexie Cloud] ${timestamp} ${message}`);
+			syncLogService.addLog("syncState", "success", message, logData);
 		} else if (syncState.phase === "error") {
-			console.error(
-				`[Dexie Cloud] ${timestamp} ✗ Sync error:`,
-				syncState.error,
-			);
+			const message = `✗ Sync error: ${syncState.error?.message || "Unknown error"}`;
+			console.error(`[Dexie Cloud] ${timestamp} ${message}`, syncState.error);
+			syncLogService.addLog("syncState", "error", message, logData);
 		} else if (syncState.phase === "offline") {
-			console.warn(`[Dexie Cloud] ${timestamp} ⚠ Offline mode`);
+			const message = "⚠ Offline mode";
+			console.warn(`[Dexie Cloud] ${timestamp} ${message}`);
+			syncLogService.addLog("syncState", "warning", message, logData);
+		} else {
+			// Log all other state changes
+			const message = `Sync state: ${syncState.phase} (${syncState.status})`;
+			syncLogService.addLog("syncState", "info", message, logData);
 		}
 	});
 
@@ -92,19 +111,32 @@ if (
 		console.log(`[Dexie Cloud] ${timestamp} WebSocket status:`, wsStatus);
 
 		if (wsStatus === "connected") {
-			console.log(
-				`[Dexie Cloud] ${timestamp} ✓ WebSocket connected - live sync active`,
-			);
+			const message = "✓ WebSocket connected - live sync active";
+			console.log(`[Dexie Cloud] ${timestamp} ${message}`);
+			syncLogService.addLog("webSocket", "success", message, {
+				status: wsStatus,
+			});
 		} else if (wsStatus === "disconnected") {
-			console.warn(
-				`[Dexie Cloud] ${timestamp} ⚠ WebSocket disconnected - using HTTP polling`,
-			);
+			const message = "⚠ WebSocket disconnected - using HTTP polling";
+			console.warn(`[Dexie Cloud] ${timestamp} ${message}`);
+			syncLogService.addLog("webSocket", "warning", message, {
+				status: wsStatus,
+			});
 		} else if (wsStatus === "error") {
-			console.error(
-				`[Dexie Cloud] ${timestamp} ✗ WebSocket error - check domain whitelist in Dexie Cloud`,
-			);
+			const message =
+				"✗ WebSocket error - check domain whitelist in Dexie Cloud";
+			console.error(`[Dexie Cloud] ${timestamp} ${message}`);
+			syncLogService.addLog("webSocket", "error", message, {
+				status: wsStatus,
+			});
 		} else if (wsStatus === "connecting") {
-			console.log(`[Dexie Cloud] ${timestamp} ○ WebSocket connecting...`);
+			const message = "○ WebSocket connecting...";
+			console.log(`[Dexie Cloud] ${timestamp} ${message}`);
+			syncLogService.addLog("webSocket", "info", message, { status: wsStatus });
+		} else {
+			// Log all other status changes
+			const message = `WebSocket status: ${wsStatus}`;
+			syncLogService.addLog("webSocket", "info", message, { status: wsStatus });
 		}
 	});
 
@@ -112,18 +144,21 @@ if (
 	db.cloud.persistedSyncState.subscribe((persistedState) => {
 		if (persistedState?.timestamp) {
 			const lastSyncTime = new Date(persistedState.timestamp);
-			console.log(
-				`[Dexie Cloud] Last successful sync:`,
-				lastSyncTime.toLocaleString(),
-				`(${Math.round((Date.now() - lastSyncTime.getTime()) / 1000)}s ago)`,
+			const secondsAgo = Math.round(
+				(Date.now() - lastSyncTime.getTime()) / 1000,
 			);
+			const message = `Last successful sync: ${lastSyncTime.toLocaleString()} (${secondsAgo}s ago)`;
+			console.log(`[Dexie Cloud] ${message}`);
+			syncLogService.addLog("persistedState", "info", message, persistedState);
 		}
 	});
 
 	// Subscribe to sync complete events
 	db.cloud.events.syncComplete.subscribe(() => {
 		const timestamp = new Date().toISOString();
-		console.log(`[Dexie Cloud] ${timestamp} 🎉 Sync completed successfully`);
+		const message = "🎉 Sync completed successfully";
+		console.log(`[Dexie Cloud] ${timestamp} ${message}`);
+		syncLogService.addLog("syncComplete", "success", message);
 	});
 
 	console.log("[Dexie Cloud] Sync monitoring initialized");

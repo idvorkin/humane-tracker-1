@@ -3,6 +3,7 @@ import { useBugReporter } from "../hooks/useBugReporter";
 import { AboutDialog } from "./AboutDialog";
 import { BugReportDialog } from "./BugReportDialog";
 import { CrashTestButton } from "./CrashTestButton";
+import { DebugLogsDialog } from "./DebugLogsDialog";
 import { SettingsDialog } from "./SettingsDialog";
 import { SyncStatusDialog } from "./SyncStatusDialog";
 import "./UserMenu.css";
@@ -29,6 +30,7 @@ export function UserMenu({
 	const [isOpen, setIsOpen] = useState(false);
 	const [showSettingsDialog, setShowSettingsDialog] = useState(false);
 	const [showSyncDialog, setShowSyncDialog] = useState(false);
+	const [showDebugLogsDialog, setShowDebugLogsDialog] = useState(false);
 	const [showAboutDialog, setShowAboutDialog] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
 
@@ -245,6 +247,7 @@ export function UserMenu({
 					isLocalMode={isLocalMode}
 					onClose={() => setShowSettingsDialog(false)}
 					onOpenSyncStatus={() => setShowSyncDialog(true)}
+					onOpenDebugLogs={() => setShowDebugLogsDialog(true)}
 					onOpenBugReport={bugReporter.open}
 					shakeEnabled={bugReporter.shakeEnabled}
 					onShakeEnabledChange={bugReporter.setShakeEnabled}
@@ -261,6 +264,10 @@ export function UserMenu({
 
 			{showSyncDialog && (
 				<SyncStatusDialog onClose={() => setShowSyncDialog(false)} />
+			)}
+
+			{showDebugLogsDialog && (
+				<DebugLogsDialog onClose={() => setShowDebugLogsDialog(false)} />
 			)}
 
 			<BugReportDialog

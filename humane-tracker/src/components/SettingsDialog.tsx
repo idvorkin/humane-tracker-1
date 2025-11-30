@@ -9,6 +9,7 @@ interface SettingsDialogProps {
 	isLocalMode: boolean;
 	onClose: () => void;
 	onOpenSyncStatus: () => void;
+	onOpenDebugLogs?: () => void;
 	onOpenBugReport?: () => void;
 	shakeEnabled?: boolean;
 	onShakeEnabledChange?: (enabled: boolean) => void;
@@ -94,6 +95,7 @@ export function SettingsDialog({
 	isLocalMode,
 	onClose,
 	onOpenSyncStatus,
+	onOpenDebugLogs,
 	onOpenBugReport,
 	shakeEnabled = false,
 	onShakeEnabledChange,
@@ -123,6 +125,11 @@ export function SettingsDialog({
 	const handleViewSyncDetails = () => {
 		onClose();
 		onOpenSyncStatus();
+	};
+
+	const handleViewDebugLogs = () => {
+		onClose();
+		onOpenDebugLogs?.();
 	};
 
 	return (
@@ -216,12 +223,20 @@ export function SettingsDialog({
 								</span>
 							</div>
 							{!isLocalMode && (
-								<button
-									className="settings-action-button settings-action-secondary"
-									onClick={handleViewSyncDetails}
-								>
-									View Sync Details
-								</button>
+								<>
+									<button
+										className="settings-action-button settings-action-secondary"
+										onClick={handleViewSyncDetails}
+									>
+										View Sync Details
+									</button>
+									<button
+										className="settings-action-button settings-action-secondary"
+										onClick={handleViewDebugLogs}
+									>
+										View Debug Logs
+									</button>
+								</>
 							)}
 						</div>
 					</div>
