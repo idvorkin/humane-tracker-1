@@ -102,7 +102,11 @@ export const HabitManager: React.FC<HabitManagerProps> = ({
 							min="1"
 							max="7"
 							value={targetPerWeek}
-							onChange={(e) => setTargetPerWeek(parseInt(e.target.value))}
+							onChange={(e) =>
+								setTargetPerWeek(
+									Math.max(1, Math.min(7, parseInt(e.target.value) || 1)),
+								)
+							}
 							required
 						/>
 					</div>

@@ -13,6 +13,41 @@ import type {
 // ============================================================================
 
 /**
+ * Validate and normalize a category string.
+ * Returns the trimmed category or throws if invalid.
+ */
+export function validateCategory(category: string): string {
+	const trimmed = category.trim();
+	if (!trimmed) {
+		throw new Error("Category cannot be empty");
+	}
+	return trimmed;
+}
+
+/**
+ * Validate and normalize a habit name.
+ * Returns the trimmed name or throws if invalid.
+ */
+export function validateHabitName(name: string): string {
+	const trimmed = name.trim();
+	if (!trimmed) {
+		throw new Error("Habit name cannot be empty");
+	}
+	return trimmed;
+}
+
+/**
+ * Validate targetPerWeek is within bounds.
+ * Returns the clamped value.
+ */
+export function validateTargetPerWeek(target: number): number {
+	if (typeof target !== "number" || Number.isNaN(target)) {
+		return 3; // default
+	}
+	return Math.max(1, Math.min(7, target));
+}
+
+/**
  * Calculate habit status based on entries in trailing 7-day window.
  * This is a pure function for easy testing.
  */
@@ -73,12 +108,19 @@ export function calculateHabitStatus(
 }
 
 export class HabitService {
-	// Create a new habit
+	// Create a new habit with validation
 	async createHabit(
 		habit: Omit<Habit, "id" | "createdAt" | "updatedAt">,
 	): Promise<string> {
+		const validatedName = validateHabitName(habit.name);
+		const validatedCategory = validateCategory(habit.category);
+		const validatedTarget = validateTargetPerWeek(habit.targetPerWeek);
+
 		const newHabit: Omit<Habit, "id"> = {
 			...habit,
+			name: validatedName,
+			category: validatedCategory,
+			targetPerWeek: validatedTarget,
 			createdAt: new Date(),
 			updatedAt: new Date(),
 		};
@@ -213,9 +255,24 @@ export class HabitService {
 		await db.habits.delete(habitId);
 	}
 
-	// Update habit
+	// Update habit with validation
 	async updateHabit(habitId: string, updates: Partial<Habit>): Promise<void> {
-		await db.habits.update(habitId, updates);
+		const validatedUpdates = { ...updates };
+
+		// Validate fields if they're being updated
+		if (updates.name !== undefined) {
+			validatedUpdates.name = validateHabitName(updates.name);
+		}
+		if (updates.category !== undefined) {
+			validatedUpdates.category = validateCategory(updates.category);
+		}
+		if (updates.targetPerWeek !== undefined) {
+			validatedUpdates.targetPerWeek = validateTargetPerWeek(
+				updates.targetPerWeek,
+			);
+		}
+
+		await db.habits.update(habitId, validatedUpdates);
 	}
 
 	// Get entries for a specific habit

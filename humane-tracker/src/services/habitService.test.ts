@@ -1,6 +1,11 @@
 import { addDays } from "date-fns";
 import { describe, expect, it } from "vitest";
-import { calculateHabitStatus } from "./habitService";
+import {
+	calculateHabitStatus,
+	validateCategory,
+	validateHabitName,
+	validateTargetPerWeek,
+} from "./habitService";
 
 // Helper to create dates relative to a base date
 function daysAgo(days: number, baseDate: Date = new Date()): Date {
@@ -201,5 +206,64 @@ describe("calculateHabitStatus", () => {
 
 			expect(status).toBe("done");
 		});
+	});
+});
+
+describe("validateCategory", () => {
+	it("returns trimmed category for valid input", () => {
+		expect(validateCategory("Mobility")).toBe("Mobility");
+		expect(validateCategory("  Mobility  ")).toBe("Mobility");
+	});
+
+	it("throws for empty string", () => {
+		expect(() => validateCategory("")).toThrow("Category cannot be empty");
+	});
+
+	it("throws for whitespace-only string", () => {
+		expect(() => validateCategory("   ")).toThrow("Category cannot be empty");
+		expect(() => validateCategory("\t")).toThrow("Category cannot be empty");
+	});
+});
+
+describe("validateHabitName", () => {
+	it("returns trimmed name for valid input", () => {
+		expect(validateHabitName("Morning Walk")).toBe("Morning Walk");
+		expect(validateHabitName("  Morning Walk  ")).toBe("Morning Walk");
+	});
+
+	it("throws for empty string", () => {
+		expect(() => validateHabitName("")).toThrow("Habit name cannot be empty");
+	});
+
+	it("throws for whitespace-only string", () => {
+		expect(() => validateHabitName("   ")).toThrow(
+			"Habit name cannot be empty",
+		);
+	});
+});
+
+describe("validateTargetPerWeek", () => {
+	it("returns value within bounds", () => {
+		expect(validateTargetPerWeek(1)).toBe(1);
+		expect(validateTargetPerWeek(3)).toBe(3);
+		expect(validateTargetPerWeek(7)).toBe(7);
+	});
+
+	it("clamps values below minimum to 1", () => {
+		expect(validateTargetPerWeek(0)).toBe(1);
+		expect(validateTargetPerWeek(-5)).toBe(1);
+	});
+
+	it("clamps values above maximum to 7", () => {
+		expect(validateTargetPerWeek(8)).toBe(7);
+		expect(validateTargetPerWeek(100)).toBe(7);
+	});
+
+	it("returns default for NaN", () => {
+		expect(validateTargetPerWeek(NaN)).toBe(3);
+	});
+
+	it("returns default for non-number input", () => {
+		expect(validateTargetPerWeek("five" as unknown as number)).toBe(3);
 	});
 });

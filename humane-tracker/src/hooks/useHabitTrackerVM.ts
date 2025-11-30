@@ -370,6 +370,9 @@ export function useHabitTrackerVM({
 			const currentValue = existingEntry?.value ?? null;
 			const nextValue = getNextEntryValue(currentValue);
 
+			// Store previous state for rollback
+			const previousHabits = habits;
+
 			// Optimistic UI update
 			setHabits((prevHabits) =>
 				prevHabits.map((h) => {
@@ -428,12 +431,12 @@ export function useHabitTrackerVM({
 				try {
 					if (existingEntry) {
 						if (nextValue === null) {
-							habitService.deleteEntry(existingEntry.id);
+							await habitService.deleteEntry(existingEntry.id);
 						} else {
-							habitService.updateEntry(existingEntry.id, nextValue);
+							await habitService.updateEntry(existingEntry.id, nextValue);
 						}
 					} else if (nextValue !== null) {
-						habitService.addEntry({
+						await habitService.addEntry({
 							habitId,
 							userId,
 							date,
@@ -442,6 +445,8 @@ export function useHabitTrackerVM({
 					}
 				} catch (error) {
 					console.error("Error updating entry:", error);
+					// Rollback optimistic update on failure
+					setHabits(previousHabits);
 				}
 			}
 		},
