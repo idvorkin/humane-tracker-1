@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-function CrashingComponent() {
+function CrashingComponent(): null {
 	// This will crash during render
 	throw new Error("Test crash - triggered manually from dev menu");
 }

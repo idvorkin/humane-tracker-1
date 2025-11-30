@@ -130,3 +130,73 @@ just deploy-prod   # Deploy to production after testing
 ```
 
 Both commands run tests, build the app, and deploy to Surge.
+
+## Debugging Dexie Cloud Sync
+
+The application includes comprehensive logging for debugging sync issues. When Dexie Cloud is configured, you'll see detailed console logs:
+
+### Enabling Debug Logging
+
+Debug logging is automatically enabled in development mode (`import.meta.env.DEV`). This enables:
+
+- **Dexie.debug mode**: Enhanced error stack traces
+- **Sync state monitoring**: Real-time sync phase and status updates
+- **WebSocket monitoring**: Connection status tracking
+- **Sync events**: Detailed logging of push/pull operations
+
+### Console Log Examples
+
+```
+[Dexie] Debug mode enabled - enhanced error stack traces
+[Dexie Cloud] Configuring sync with URL: https://your-db.dexie.cloud
+[Dexie Cloud] 2025-11-30T12:00:00.000Z Sync state: { phase: 'initial', status: 'not-started', ... }
+[Dexie Cloud] 2025-11-30T12:00:01.000Z WebSocket status: connecting
+[Dexie Cloud] 2025-11-30T12:00:02.000Z ✓ WebSocket connected - live sync active
+[Dexie Cloud] 2025-11-30T12:00:03.000Z ↑ Uploading changes (50%)
+[Dexie Cloud] 2025-11-30T12:00:04.000Z ✓ Sync complete
+[Dexie Cloud] 2025-11-30T12:00:05.000Z 🎉 Sync completed successfully
+[Dexie Cloud] Last successful sync: 11/30/2025, 12:00:05 PM (0s ago)
+```
+
+### Common Sync Issues and Solutions
+
+**WebSocket Connection Issues:**
+
+```
+[Dexie Cloud] ✗ WebSocket error - check domain whitelist in Dexie Cloud
+```
+
+**Solution**: Ensure your domain is whitelisted using `npx dexie-cloud whitelist <domain>`
+
+**Sync Stuck in "connecting" or "offline":**
+
+```
+[Dexie Cloud] ⚠ WebSocket disconnected - using HTTP polling
+```
+
+**Solution**: Check network connectivity and verify the Dexie Cloud URL is correct
+
+**License Errors:**
+
+```
+[Dexie Cloud] Sync state: { ..., license: 'expired' }
+```
+
+**Solution**: Check your Dexie Cloud subscription status
+
+### Monitoring Tools
+
+The app also provides a **Sync Status Dialog** (accessible from settings) that shows:
+
+- Current sync phase and status
+- Last successful sync timestamp
+- WebSocket connection state
+- License status
+- Progress indicators for active syncs
+- Detailed error messages when sync fails
+
+### Additional Resources
+
+- [Dexie Cloud Sync State Documentation](https://dexie.org/cloud/docs/db.cloud.syncState)
+- [Dexie Cloud Best Practices](https://dexie.org/cloud/docs/best-practices)
+- [Dexie.debug Documentation](https://dexie.org/docs/Dexie/Dexie.debug)

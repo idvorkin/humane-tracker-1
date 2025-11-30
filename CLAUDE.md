@@ -104,3 +104,4 @@ Follow the `useHabitTrackerVM` + `HabitTracker` pattern:
 5. Form a single hypothesis and test minimally
 
 - only run tests on chromium
+- If in a container, NEVER direct commit to main, always create A PR
