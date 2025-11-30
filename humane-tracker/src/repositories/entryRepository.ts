@@ -46,90 +46,127 @@ function toRecord(
  * Handles date conversion: ISO strings in DB, Date objects in app.
  */
 export const entryRepository = {
-	/**
-	 * Get all entries (for export).
-	 */
 	async getAll(): Promise<HabitEntry[]> {
-		const records = await db.entries.toArray();
-		return records.map((r) => toEntry(r as unknown as EntryRecord));
+		try {
+			const records = await db.entries.toArray();
+			return records.map((r) => toEntry(r as unknown as EntryRecord));
+		} catch (error) {
+			console.error("[EntryRepository] Failed to get all entries:", error);
+			throw new Error(
+				`Failed to load entries: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
 	},
 
-	/**
-	 * Clear all entries (for import replace mode).
-	 */
 	async clear(): Promise<void> {
-		await db.entries.clear();
+		try {
+			const count = await db.entries.count();
+			console.warn(
+				`[EntryRepository] DESTRUCTIVE: Clearing ${count} entries. This should only happen during import replace mode.`,
+			);
+			await db.entries.clear();
+			console.log(`[EntryRepository] Successfully cleared ${count} entries`);
+		} catch (error) {
+			console.error("[EntryRepository] Failed to clear entries:", error);
+			throw new Error(
+				`Failed to clear entries: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
 	},
 
-	/**
-	 * Get all entries for a user.
-	 */
 	async getByUserId(userId: string): Promise<HabitEntry[]> {
-		const records = await db.entries.where("userId").equals(userId).toArray();
-		return records.map((r) => toEntry(r as unknown as EntryRecord));
+		try {
+			const records = await db.entries.where("userId").equals(userId).toArray();
+			return records.map((r) => toEntry(r as unknown as EntryRecord));
+		} catch (error) {
+			console.error(
+				`[EntryRepository] Failed to get entries for user ${userId}:`,
+				error,
+			);
+			throw new Error(
+				`Failed to load entries: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
 	},
 
-	/**
-	 * Get all entries for a habit.
-	 */
 	async getByHabitId(habitId: string): Promise<HabitEntry[]> {
-		const records = await db.entries
-			.where("habitId")
-			.equals(habitId)
-			.toArray();
-		return records.map((r) => toEntry(r as unknown as EntryRecord));
+		try {
+			const records = await db.entries
+				.where("habitId")
+				.equals(habitId)
+				.toArray();
+			return records.map((r) => toEntry(r as unknown as EntryRecord));
+		} catch (error) {
+			console.error(
+				`[EntryRepository] Failed to get entries for habit ${habitId}:`,
+				error,
+			);
+			throw new Error(
+				`Failed to load entries: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
 	},
 
-	/**
-	 * Get entries for a user within a date range.
-	 * Comparison is done on YYYY-MM-DD strings for consistency.
-	 */
 	async getForDateRange(
 		userId: string,
 		startDate: Date,
 		endDate: Date,
 	): Promise<HabitEntry[]> {
-		const startStr = toDateString(startDate);
-		const endStr = toDateString(endDate);
+		try {
+			const startStr = toDateString(startDate);
+			const endStr = toDateString(endDate);
 
-		const records = await db.entries
-			.where("userId")
-			.equals(userId)
-			.and((record) => {
-				const dateStr = normalizeDateString(record.date as string | Date);
-				return dateStr >= startStr && dateStr <= endStr;
-			})
-			.toArray();
+			const records = await db.entries
+				.where("userId")
+				.equals(userId)
+				.and((record) => {
+					const dateStr = normalizeDateString(record.date as string | Date);
+					return dateStr >= startStr && dateStr <= endStr;
+				})
+				.toArray();
 
-		return records.map((r) => toEntry(r as unknown as EntryRecord));
+			return records.map((r) => toEntry(r as unknown as EntryRecord));
+		} catch (error) {
+			console.error(
+				`[EntryRepository] Failed to get entries for user ${userId} in date range:`,
+				{ startDate, endDate, error },
+			);
+			throw new Error(
+				`Failed to load entries: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
 	},
 
-	/**
-	 * Get entries for a specific habit within a date range.
-	 */
 	async getForHabitInRange(
 		habitId: string,
 		startDate: Date,
 		endDate: Date,
 	): Promise<HabitEntry[]> {
-		const startStr = toDateString(startDate);
-		const endStr = toDateString(endDate);
+		try {
+			const startStr = toDateString(startDate);
+			const endStr = toDateString(endDate);
 
-		const records = await db.entries
-			.where("habitId")
-			.equals(habitId)
-			.and((record) => {
-				const dateStr = normalizeDateString(record.date as string | Date);
-				return dateStr >= startStr && dateStr <= endStr;
-			})
-			.toArray();
+			const records = await db.entries
+				.where("habitId")
+				.equals(habitId)
+				.and((record) => {
+					const dateStr = normalizeDateString(record.date as string | Date);
+					return dateStr >= startStr && dateStr <= endStr;
+				})
+				.toArray();
 
-		return records.map((r) => toEntry(r as unknown as EntryRecord));
+			return records.map((r) => toEntry(r as unknown as EntryRecord));
+		} catch (error) {
+			console.error(
+				`[EntryRepository] Failed to get entries for habit ${habitId} in date range:`,
+				{ startDate, endDate, error },
+			);
+			throw new Error(
+				`Failed to load entries: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
 	},
 
-	/**
-	 * Add a new entry.
-	 */
 	async add(entry: {
 		habitId: string;
 		userId: string;
@@ -137,43 +174,72 @@ export const entryRepository = {
 		value: number;
 		notes?: string;
 	}): Promise<string> {
-		const record = toRecord({
-			...entry,
-			createdAt: new Date(),
-		});
-		const id = await db.entries.add(record as unknown as HabitEntry);
-		return id;
+		try {
+			const record = toRecord({
+				...entry,
+				createdAt: new Date(),
+			});
+			const id = await db.entries.add(record as unknown as HabitEntry);
+			return id;
+		} catch (error) {
+			console.error("[EntryRepository] Failed to add entry:", {
+				habitId: entry.habitId,
+				date: entry.date.toISOString(),
+				value: entry.value,
+				error,
+			});
+			throw new Error(
+				`Failed to save entry for ${entry.date.toDateString()}: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
 	},
 
-	/**
-	 * Update an entry's value.
-	 */
 	async updateValue(entryId: string, value: number): Promise<void> {
-		await db.entries.update(entryId, { value });
+		try {
+			await db.entries.update(entryId, { value });
+		} catch (error) {
+			console.error(`[EntryRepository] Failed to update entry ${entryId}:`, {
+				value,
+				error,
+			});
+			throw new Error(
+				`Failed to update entry: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
 	},
 
-	/**
-	 * Delete an entry.
-	 */
 	async delete(entryId: string): Promise<void> {
-		await db.entries.delete(entryId);
+		try {
+			await db.entries.delete(entryId);
+		} catch (error) {
+			console.error(
+				`[EntryRepository] Failed to delete entry ${entryId}:`,
+				error,
+			);
+			throw new Error(
+				`Failed to delete entry: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
 	},
 
-	/**
-	 * Bulk insert entries.
-	 */
 	async bulkPut(entries: HabitEntry[]): Promise<void> {
-		const records = entries.map((entry) => ({
-			id: entry.id,
-			...toRecord(entry),
-		}));
-		await db.entries.bulkPut(records as unknown as HabitEntry[]);
+		try {
+			const records = entries.map((entry) => ({
+				id: entry.id,
+				...toRecord(entry),
+			}));
+			await db.entries.bulkPut(records as unknown as HabitEntry[]);
+		} catch (error) {
+			console.error(
+				`[EntryRepository] Failed to bulk insert ${entries.length} entries:`,
+				error,
+			);
+			throw new Error(
+				`Failed to import entries: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
 	},
 
-	/**
-	 * Subscribe to entries for a user within a date range.
-	 * Returns an unsubscribe function.
-	 */
 	subscribeForDateRange(
 		userId: string,
 		startDate: Date,
@@ -197,15 +263,22 @@ export const entryRepository = {
 		const subscription = observable.subscribe({
 			next: (records) =>
 				callback(records.map((r) => toEntry(r as unknown as EntryRecord))),
-			error: (error) => console.error("Error in entries subscription:", error),
+			error: (error) => {
+				console.error(
+					"[EntryRepository] Error in entries subscription:",
+					error,
+				);
+				// Return empty array so UI doesn't crash
+				callback([]);
+				throw new Error(
+					`Failed to load entry updates. Please refresh the page. Error: ${error instanceof Error ? error.message : String(error)}`,
+				);
+			},
 		});
 
 		return () => subscription.unsubscribe();
 	},
 
-	/**
-	 * Subscribe to all entries for a user.
-	 */
 	subscribeByUserId(
 		userId: string,
 		callback: (entries: HabitEntry[]) => void,
@@ -217,7 +290,17 @@ export const entryRepository = {
 		const subscription = observable.subscribe({
 			next: (records) =>
 				callback(records.map((r) => toEntry(r as unknown as EntryRecord))),
-			error: (error) => console.error("Error in entries subscription:", error),
+			error: (error) => {
+				console.error(
+					"[EntryRepository] Error in entries subscription:",
+					error,
+				);
+				// Return empty array so UI doesn't crash
+				callback([]);
+				throw new Error(
+					`Failed to load entry updates. Please refresh the page. Error: ${error instanceof Error ? error.message : String(error)}`,
+				);
+			},
 		});
 
 		return () => subscription.unsubscribe();

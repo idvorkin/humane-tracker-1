@@ -1,25 +1,9 @@
 import Dexie, { type Table } from "dexie";
 import dexieCloud from "dexie-cloud-addon";
+import { toDateString, toTimestamp } from "../repositories/types";
 import { SyncLogService } from "../services/syncLogService";
 import type { Habit, HabitEntry } from "../types/habit";
 import type { SyncLog } from "../types/syncLog";
-
-/**
- * Convert a Date to an ISO date string (YYYY-MM-DD) for storage.
- */
-function toDateString(date: Date): string {
-	const year = date.getFullYear();
-	const month = String(date.getMonth() + 1).padStart(2, "0");
-	const day = String(date.getDate()).padStart(2, "0");
-	return `${year}-${month}-${day}`;
-}
-
-/**
- * Convert a Date to a full ISO timestamp string for storage.
- */
-function toTimestamp(date: Date): string {
-	return date.toISOString();
-}
 
 // Extend Dexie with cloud addon
 export class HumaneTrackerDB extends Dexie {
@@ -30,7 +14,7 @@ export class HumaneTrackerDB extends Dexie {
 	constructor() {
 		super("HumaneTrackerDB", { addons: [dexieCloud] });
 
-		// Version 2: Original schema with Date objects
+		// Version 2: Schema definition (dates can be Date objects or ISO strings)
 		this.version(2).stores({
 			habits:
 				"@id, userId, name, category, targetPerWeek, createdAt, updatedAt",
@@ -55,31 +39,99 @@ export class HumaneTrackerDB extends Dexie {
 				syncLogs: "@id, timestamp, eventType, level",
 			})
 			.upgrade(async (tx) => {
-				// Migrate habits: convert Date objects to ISO strings
-				await tx
-					.table("habits")
-					.toCollection()
-					.modify((habit) => {
-						if (habit.createdAt instanceof Date) {
-							habit.createdAt = toTimestamp(habit.createdAt);
-						}
-						if (habit.updatedAt instanceof Date) {
-							habit.updatedAt = toTimestamp(habit.updatedAt);
-						}
-					});
+				try {
+					console.log("[Migration v4] Starting database migration...");
 
-				// Migrate entries: convert Date objects to ISO strings
-				await tx
-					.table("entries")
-					.toCollection()
-					.modify((entry) => {
-						if (entry.date instanceof Date) {
-							entry.date = toDateString(entry.date);
-						}
-						if (entry.createdAt instanceof Date) {
-							entry.createdAt = toTimestamp(entry.createdAt);
-						}
-					});
+					// Migrate habits: convert Date objects to ISO strings
+					const habitCount = await tx.table("habits").count();
+					console.log(`[Migration v4] Migrating ${habitCount} habits...`);
+
+					await tx
+						.table("habits")
+						.toCollection()
+						.modify((habit) => {
+							try {
+								if (habit.createdAt instanceof Date) {
+									if (Number.isNaN(habit.createdAt.getTime())) {
+										throw new Error(
+											`Invalid createdAt date in habit ${habit.id}`,
+										);
+									}
+									habit.createdAt = toTimestamp(habit.createdAt);
+								}
+								if (habit.updatedAt instanceof Date) {
+									if (Number.isNaN(habit.updatedAt.getTime())) {
+										throw new Error(
+											`Invalid updatedAt date in habit ${habit.id}`,
+										);
+									}
+									habit.updatedAt = toTimestamp(habit.updatedAt);
+								}
+							} catch (error) {
+								console.error(
+									`[Migration v4] Failed to convert habit ${habit.id}:`,
+									error,
+								);
+								throw new Error(
+									`Migration failed for habit ${habit.id}: ${error instanceof Error ? error.message : String(error)}`,
+								);
+							}
+						});
+
+					console.log(
+						`[Migration v4] Successfully migrated ${habitCount} habits`,
+					);
+
+					// Migrate entries: convert Date objects to ISO strings
+					const entryCount = await tx.table("entries").count();
+					console.log(`[Migration v4] Migrating ${entryCount} entries...`);
+
+					await tx
+						.table("entries")
+						.toCollection()
+						.modify((entry) => {
+							try {
+								if (entry.date instanceof Date) {
+									if (Number.isNaN(entry.date.getTime())) {
+										throw new Error(`Invalid date in entry ${entry.id}`);
+									}
+									entry.date = toDateString(entry.date);
+								}
+								if (entry.createdAt instanceof Date) {
+									if (Number.isNaN(entry.createdAt.getTime())) {
+										throw new Error(
+											`Invalid createdAt date in entry ${entry.id}`,
+										);
+									}
+									entry.createdAt = toTimestamp(entry.createdAt);
+								}
+							} catch (error) {
+								console.error(
+									`[Migration v4] Failed to convert entry ${entry.id}:`,
+									error,
+								);
+								throw new Error(
+									`Migration failed for entry ${entry.id}: ${error instanceof Error ? error.message : String(error)}`,
+								);
+							}
+						});
+
+					console.log(
+						`[Migration v4] Successfully migrated ${entryCount} entries`,
+					);
+					console.log(
+						`[Migration v4] Migration complete! Migrated ${habitCount} habits and ${entryCount} entries`,
+					);
+				} catch (error) {
+					console.error(
+						"[Migration v4] CRITICAL: Database migration failed:",
+						error,
+					);
+					alert(
+						`Database migration failed: ${error instanceof Error ? error.message : String(error)}.\n\nPlease restore from backup if you have one, or contact support.`,
+					);
+					throw error;
+				}
 			});
 	}
 }

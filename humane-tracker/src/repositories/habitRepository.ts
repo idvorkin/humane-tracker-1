@@ -1,11 +1,7 @@
 import { liveQuery } from "dexie";
 import { db } from "../config/db";
 import type { Habit } from "../types/habit";
-import {
-	type HabitRecord,
-	normalizeDate,
-	toTimestamp,
-} from "./types";
+import { type HabitRecord, normalizeDate, toTimestamp } from "./types";
 
 /**
  * Validate and normalize a category string.
@@ -31,6 +27,7 @@ function validateHabitName(name: string): string {
 
 /**
  * Validate targetPerWeek is within bounds.
+ * Returns a default value of 3 for invalid input, clamps to 1-7 range.
  */
 function validateTargetPerWeek(target: number): number {
 	if (typeof target !== "number" || Number.isNaN(target)) {
@@ -61,16 +58,22 @@ function toHabit(record: HabitRecord | Habit): Habit {
 function toRecord(
 	habit: Omit<Habit, "id" | "createdAt" | "updatedAt">,
 ): Omit<HabitRecord, "id"> {
-	const now = toTimestamp(new Date());
-	return {
-		name: validateHabitName(habit.name),
-		category: validateCategory(habit.category),
-		targetPerWeek: validateTargetPerWeek(habit.targetPerWeek),
-		trackingType: habit.trackingType,
-		userId: habit.userId,
-		createdAt: now,
-		updatedAt: now,
-	};
+	try {
+		const now = toTimestamp(new Date());
+		return {
+			name: validateHabitName(habit.name),
+			category: validateCategory(habit.category),
+			targetPerWeek: validateTargetPerWeek(habit.targetPerWeek),
+			trackingType: habit.trackingType,
+			userId: habit.userId,
+			createdAt: now,
+			updatedAt: now,
+		};
+	} catch (error) {
+		throw new Error(
+			`Invalid habit data: ${error instanceof Error ? error.message : String(error)}. Name: "${habit.name}", Category: "${habit.category}"`,
+		);
+	}
 }
 
 /**
@@ -78,46 +81,78 @@ function toRecord(
  * Handles date conversion: ISO strings in DB, Date objects in app.
  */
 export const habitRepository = {
-	/**
-	 * Get all habits (for export).
-	 */
 	async getAll(): Promise<Habit[]> {
-		const records = await db.habits.toArray();
-		return records.map((r) => toHabit(r as unknown as HabitRecord));
+		try {
+			const records = await db.habits.toArray();
+			return records.map((r) => toHabit(r as unknown as HabitRecord));
+		} catch (error) {
+			console.error("[HabitRepository] Failed to get all habits:", error);
+			throw new Error(
+				`Failed to load habits: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
 	},
 
-	/**
-	 * Clear all habits (for import replace mode).
-	 */
 	async clear(): Promise<void> {
-		await db.habits.clear();
+		try {
+			const count = await db.habits.count();
+			console.warn(
+				`[HabitRepository] DESTRUCTIVE: Clearing ${count} habits. This should only happen during import replace mode.`,
+			);
+			await db.habits.clear();
+			console.log(`[HabitRepository] Successfully cleared ${count} habits`);
+		} catch (error) {
+			console.error("[HabitRepository] Failed to clear habits:", error);
+			throw new Error(
+				`Failed to clear habits: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
 	},
 
-	/**
-	 * Get all habits for a user.
-	 */
 	async getByUserId(userId: string): Promise<Habit[]> {
-		const records = await db.habits.where("userId").equals(userId).toArray();
-		return records.map((r) => toHabit(r as unknown as HabitRecord));
+		try {
+			const records = await db.habits.where("userId").equals(userId).toArray();
+			return records.map((r) => toHabit(r as unknown as HabitRecord));
+		} catch (error) {
+			console.error(
+				`[HabitRepository] Failed to get habits for user ${userId}:`,
+				error,
+			);
+			throw new Error(
+				`Failed to load habits: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
 	},
 
-	/**
-	 * Get a single habit by ID.
-	 */
 	async getById(habitId: string): Promise<Habit | undefined> {
-		const record = await db.habits.get(habitId);
-		return record ? toHabit(record as unknown as HabitRecord) : undefined;
+		try {
+			const record = await db.habits.get(habitId);
+			return record ? toHabit(record as unknown as HabitRecord) : undefined;
+		} catch (error) {
+			console.error(`[HabitRepository] Failed to get habit ${habitId}:`, error);
+			throw new Error(
+				`Failed to load habit: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
 	},
 
-	/**
-	 * Create a new habit.
-	 */
 	async create(
 		habit: Omit<Habit, "id" | "createdAt" | "updatedAt">,
 	): Promise<string> {
-		const record = toRecord(habit);
-		const id = await db.habits.add(record as unknown as Habit);
-		return id;
+		try {
+			const record = toRecord(habit);
+			const id = await db.habits.add(record as unknown as Habit);
+			return id;
+		} catch (error) {
+			console.error("[HabitRepository] Failed to create habit:", {
+				name: habit.name,
+				category: habit.category,
+				error,
+			});
+			throw new Error(
+				`Failed to create habit "${habit.name}": ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
 	},
 
 	/**
@@ -133,54 +168,75 @@ export const habitRepository = {
 		return ids;
 	},
 
-	/**
-	 * Update a habit.
-	 */
 	async update(
 		habitId: string,
 		updates: Partial<Pick<Habit, "name" | "category" | "targetPerWeek">>,
 	): Promise<void> {
-		const validatedUpdates: Record<string, unknown> = {
-			updatedAt: toTimestamp(new Date()),
-		};
+		try {
+			const validatedUpdates: Record<string, unknown> = {
+				updatedAt: toTimestamp(new Date()),
+			};
 
-		if (updates.name !== undefined) {
-			validatedUpdates.name = validateHabitName(updates.name);
-		}
-		if (updates.category !== undefined) {
-			validatedUpdates.category = validateCategory(updates.category);
-		}
-		if (updates.targetPerWeek !== undefined) {
-			validatedUpdates.targetPerWeek = validateTargetPerWeek(
-				updates.targetPerWeek,
+			if (updates.name !== undefined) {
+				validatedUpdates.name = validateHabitName(updates.name);
+			}
+			if (updates.category !== undefined) {
+				validatedUpdates.category = validateCategory(updates.category);
+			}
+			if (updates.targetPerWeek !== undefined) {
+				validatedUpdates.targetPerWeek = validateTargetPerWeek(
+					updates.targetPerWeek,
+				);
+			}
+
+			await db.habits.update(habitId, validatedUpdates);
+		} catch (error) {
+			console.error(`[HabitRepository] Failed to update habit ${habitId}:`, {
+				updates,
+				error,
+			});
+			throw new Error(
+				`Failed to update habit: ${error instanceof Error ? error.message : String(error)}`,
 			);
 		}
-
-		await db.habits.update(habitId, validatedUpdates);
 	},
 
-	/**
-	 * Delete a habit.
-	 */
 	async delete(habitId: string): Promise<void> {
-		await db.habits.delete(habitId);
+		try {
+			await db.habits.delete(habitId);
+		} catch (error) {
+			console.error(
+				`[HabitRepository] Failed to delete habit ${habitId}:`,
+				error,
+			);
+			throw new Error(
+				`Failed to delete habit: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
 	},
 
-	/**
-	 * Bulk insert habits (for import).
-	 */
 	async bulkPut(habits: Habit[]): Promise<void> {
-		const records = habits.map((habit) => ({
-			id: habit.id,
-			name: habit.name,
-			category: habit.category,
-			targetPerWeek: habit.targetPerWeek,
-			trackingType: habit.trackingType,
-			userId: habit.userId,
-			createdAt: toTimestamp(habit.createdAt),
-			updatedAt: toTimestamp(habit.updatedAt),
-		}));
-		await db.habits.bulkPut(records as unknown as Habit[]);
+		try {
+			const records = habits.map((habit) => ({
+				id: habit.id,
+				name: habit.name,
+				category: habit.category,
+				targetPerWeek: habit.targetPerWeek,
+				trackingType: habit.trackingType,
+				userId: habit.userId,
+				createdAt: toTimestamp(habit.createdAt),
+				updatedAt: toTimestamp(habit.updatedAt),
+			}));
+			await db.habits.bulkPut(records as unknown as Habit[]);
+		} catch (error) {
+			console.error(
+				`[HabitRepository] Failed to bulk insert ${habits.length} habits:`,
+				error,
+			);
+			throw new Error(
+				`Failed to import habits: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
 	},
 
 	/**
@@ -198,7 +254,14 @@ export const habitRepository = {
 		const subscription = observable.subscribe({
 			next: (records) =>
 				callback(records.map((r) => toHabit(r as unknown as HabitRecord))),
-			error: (error) => console.error("Error in habits subscription:", error),
+			error: (error) => {
+				console.error("[HabitRepository] Error in habits subscription:", error);
+				// Return empty array so UI doesn't crash
+				callback([]);
+				throw new Error(
+					`Failed to load habit updates. Please refresh the page. Error: ${error instanceof Error ? error.message : String(error)}`,
+				);
+			},
 		});
 
 		return () => subscription.unsubscribe();
