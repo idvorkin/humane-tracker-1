@@ -2,7 +2,7 @@ import Dexie, { type Table } from "dexie";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Habit, HabitEntry } from "../types/habit";
 import type { ExportData } from "./dataService";
-import { validateExportData } from "./dataService";
+import { generateExportFilename, validateExportData } from "./dataService";
 
 // Create a test-only database without dexie-cloud addon
 class TestDB extends Dexie {
@@ -422,5 +422,38 @@ describe("importAllData", () => {
 			expect(entries).toHaveLength(2);
 			expect(habits.map((h) => h.name).sort()).toEqual(["Habit 1", "Habit 2"]);
 		});
+	});
+});
+
+describe("generateExportFilename", () => {
+	it("generates filename with correct format", () => {
+		const date = new Date("2024-11-29T17:35:42.123Z");
+		const filename = generateExportFilename(date);
+		expect(filename).toBe("habit-tracker-backup-2024-11-29T17-35-42.json");
+	});
+
+	it("replaces colons and periods in timestamp", () => {
+		const date = new Date("2024-01-15T08:30:15.999Z");
+		const filename = generateExportFilename(date);
+		expect(filename).not.toContain(":");
+		// Timestamp portion should not have periods (only .json extension)
+		const timestampPart = filename.replace(".json", "");
+		expect(timestampPart).not.toContain(".");
+		expect(filename).toMatch(
+			/habit-tracker-backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.json/,
+		);
+	});
+
+	it("uses current date when no argument provided", () => {
+		const filename = generateExportFilename();
+		expect(filename).toMatch(
+			/^habit-tracker-backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.json$/,
+		);
+	});
+
+	it("produces valid filename without special characters", () => {
+		const filename = generateExportFilename(new Date());
+		// Only alphanumeric, hyphens, and single period before extension
+		expect(filename).toMatch(/^[a-zA-Z0-9-]+\.json$/);
 	});
 });

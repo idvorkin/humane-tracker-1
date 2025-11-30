@@ -1,7 +1,7 @@
 import { format } from "date-fns";
 import React, { useState } from "react";
 import { useHabitTrackerVM } from "../hooks/useHabitTrackerVM";
-import { CATEGORY_MAP } from "../types/habit";
+import { buildCategoryInfo } from "../utils/categoryUtils";
 import { CleanupDuplicates } from "./CleanupDuplicates";
 import { HabitSettings } from "./HabitSettings";
 import { InitializeHabits } from "./InitializeHabits";
@@ -74,7 +74,7 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 				<div className="week-title">
 					{vm.zoomedSection ? (
 						<>
-							{CATEGORY_MAP[vm.zoomedSection as keyof typeof CATEGORY_MAP].name}
+							{buildCategoryInfo(vm.zoomedSection).name}
 							<button className="zoom-back-btn" onClick={vm.zoomOut}>
 								← Back
 							</button>

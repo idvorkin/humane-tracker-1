@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Import/Export Functionality", () => {
 	test("should export and re-import real data correctly", async ({ page }) => {
-		await page.goto("http://localhost:3000/?test=true");
+		await page.goto("/?test=true");
 		await page.waitForSelector("table", { timeout: 10000 });
 
 		// Get initial state - these have valid Dexie Cloud IDs

@@ -197,20 +197,82 @@
 .habits-list {
 	display: flex;
 	flex-direction: column;
-	gap: var(--space-md);
+	gap: var(--space-sm);
 }
 
-.habit-item {
+/* Category Groups */
+.category-group {
 	background: var(--color-deep-brown);
 	border: var(--border-subtle);
 	border-radius: var(--radius-lg);
+	overflow: hidden;
+}
+
+.category-header {
+	width: 100%;
+	display: flex;
+	align-items: center;
+	gap: var(--space-sm);
+	padding: var(--space-md);
+	background: rgba(0, 0, 0, 0.2);
+	border: none;
+	cursor: pointer;
+	transition: all var(--transition-fast);
+	text-align: left;
+}
+
+.category-header:hover {
+	background: rgba(0, 0, 0, 0.3);
+}
+
+.category-arrow {
+	color: var(--color-warm-gray);
+	font-size: 0.75rem;
+	transition: transform var(--transition-fast);
+}
+
+.category-arrow.collapsed {
+	transform: rotate(-90deg);
+}
+
+.category-dot {
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.category-name {
+	color: var(--color-cream);
+	font-weight: 600;
+	font-size: 0.95rem;
+}
+
+.category-count {
+	color: var(--color-warm-gray);
+	font-size: 0.85rem;
+	margin-left: auto;
+}
+
+.category-habits {
+	border-top: var(--border-subtle);
+}
+
+.habit-item {
+	background: transparent;
+	border: none;
+	border-bottom: var(--border-subtle);
+	border-radius: 0;
 	padding: var(--space-md);
 	transition: all var(--transition-fast);
 }
 
+.habit-item:last-child {
+	border-bottom: none;
+}
+
 .habit-item:hover {
-	border-color: var(--color-warm-gray);
-	box-shadow: var(--shadow-sm);
+	background: rgba(0, 0, 0, 0.1);
 }
 
 .habit-item.deleting {
@@ -292,6 +354,26 @@
 .type-select option {
 	background: var(--color-espresso);
 	color: var(--color-cream);
+}
+
+.habit-category-field {
+	width: 120px;
+}
+
+.habit-category-field .category-input {
+	width: 100%;
+	padding: 10px;
+	background: var(--color-espresso);
+	border: var(--border-subtle);
+	border-radius: var(--radius-md);
+	color: var(--color-cream);
+	font-size: 0.9rem;
+	transition: all var(--transition-fast);
+}
+
+.habit-category-field .category-input:focus {
+	outline: none;
+	border-color: var(--color-amber);
 }
 
 .habit-type-field {
@@ -447,6 +529,195 @@
 	padding: var(--space-2xl);
 	color: var(--color-amber-glow);
 	font-family: var(--font-display);
+}
+
+/* Migration Section */
+.migration-section {
+	margin-top: var(--space-lg);
+	padding: var(--space-md);
+	background: rgba(217, 119, 6, 0.1);
+	border: 1px solid var(--color-amber);
+	border-radius: var(--radius-md);
+	text-align: center;
+}
+
+.migration-info {
+	color: var(--color-amber-glow);
+	font-size: 0.9rem;
+	margin-bottom: var(--space-sm);
+}
+
+.btn-migrate {
+	padding: 10px 20px;
+	background: linear-gradient(
+		135deg,
+		var(--color-amber) 0%,
+		var(--color-terracotta) 100%
+	);
+	border: 1px solid var(--color-amber);
+	border-radius: var(--radius-md);
+	color: var(--color-cream);
+	font-size: 0.9rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all var(--transition-fast);
+}
+
+.btn-migrate:hover:not(:disabled) {
+	box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+	transform: translateY(-1px);
+}
+
+.btn-migrate:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.migration-status {
+	margin-top: var(--space-sm);
+	color: var(--color-sage);
+	font-size: 0.85rem;
+}
+
+/* Import/Export Section */
+.import-export-section {
+	margin-top: var(--space-lg);
+	padding-top: var(--space-lg);
+	border-top: 2px solid rgba(156, 148, 137, 0.15);
+}
+
+.import-export-buttons {
+	display: flex;
+	gap: var(--space-md);
+	justify-content: center;
+}
+
+.btn-export,
+.btn-import {
+	padding: 10px 20px;
+	border-radius: var(--radius-md);
+	font-size: 0.9rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all var(--transition-fast);
+	display: flex;
+	align-items: center;
+	gap: var(--space-sm);
+}
+
+.btn-export {
+	background: var(--color-charcoal);
+	border: var(--border-subtle);
+	color: var(--color-cream);
+}
+
+.btn-export:hover:not(:disabled) {
+	background: var(--color-espresso);
+	border-color: var(--color-warm-gray);
+}
+
+.btn-import {
+	background: var(--color-charcoal);
+	border: var(--border-subtle);
+	color: var(--color-cream);
+}
+
+.btn-import:hover:not(:disabled) {
+	background: var(--color-espresso);
+	border-color: var(--color-warm-gray);
+}
+
+.btn-export:disabled,
+.btn-import:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.import-status {
+	margin-top: var(--space-md);
+	padding: var(--space-sm) var(--space-md);
+	background: rgba(0, 0, 0, 0.2);
+	border-radius: var(--radius-md);
+	color: var(--color-warm-gray);
+	font-size: 0.85rem;
+	text-align: center;
+}
+
+/* Import Confirm Dialog */
+.import-confirm-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.7);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 3000;
+}
+
+.import-confirm-dialog {
+	background: var(--color-espresso);
+	border: var(--border-medium);
+	border-radius: var(--radius-lg);
+	padding: var(--space-xl);
+	max-width: 400px;
+	text-align: center;
+}
+
+.import-confirm-dialog h3 {
+	margin: 0 0 var(--space-md);
+	color: var(--color-cream);
+	font-size: 1.25rem;
+}
+
+.import-confirm-dialog p {
+	color: var(--color-warm-gray);
+	margin: 0 0 var(--space-sm);
+}
+
+.import-confirm-dialog .import-date {
+	font-size: 0.85rem;
+	opacity: 0.7;
+	margin-bottom: var(--space-lg);
+}
+
+.import-confirm-buttons {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-sm);
+}
+
+.btn-merge,
+.btn-replace {
+	padding: 12px 20px;
+	border-radius: var(--radius-md);
+	font-size: 0.9rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all var(--transition-fast);
+}
+
+.btn-merge {
+	background: linear-gradient(135deg, var(--color-sage) 0%, #3d6b0a 100%);
+	border: 1px solid var(--color-sage);
+	color: var(--color-cream);
+}
+
+.btn-merge:hover {
+	box-shadow: 0 4px 12px rgba(77, 124, 15, 0.3);
+}
+
+.btn-replace {
+	background: var(--color-danger-soft);
+	border: 1px solid var(--color-danger);
+	color: #fca5a5;
+}
+
+.btn-replace:hover {
+	background: var(--color-danger);
+	color: var(--color-cream);
 }
 
 /* Animations */

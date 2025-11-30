@@ -1,7 +1,7 @@
 import type React from "react";
 import { useState } from "react";
 import { HabitService } from "../services/habitService";
-import type { HabitCategory } from "../types/habit";
+import { buildCategoryInfo } from "../utils/categoryUtils";
 import "./HabitManager.css";
 
 const habitService = new HabitService();
@@ -9,26 +9,31 @@ const habitService = new HabitService();
 interface HabitManagerProps {
 	userId: string;
 	onClose: () => void;
+	existingCategories: string[];
 }
 
 export const HabitManager: React.FC<HabitManagerProps> = ({
 	userId,
 	onClose,
+	existingCategories,
 }) => {
 	const [habitName, setHabitName] = useState("");
-	const [category, setCategory] = useState<HabitCategory>("mobility");
+	const [category, setCategory] = useState("Mobility");
 	const [targetPerWeek, setTargetPerWeek] = useState(3);
 	const [loading, setLoading] = useState(false);
+
+	const categoryInfo = buildCategoryInfo(category);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!habitName.trim()) return;
+		if (!category.trim()) return;
 
 		setLoading(true);
 		try {
 			await habitService.createHabit({
-				name: habitName,
-				category,
+				name: habitName.trim(),
+				category: category.trim(),
 				targetPerWeek,
 				userId,
 			});
@@ -48,7 +53,7 @@ export const HabitManager: React.FC<HabitManagerProps> = ({
 				<div className="modal-header">
 					<h2>Add New Habit</h2>
 					<button className="close-btn" onClick={onClose}>
-						×
+						x
 					</button>
 				</div>
 
@@ -67,17 +72,26 @@ export const HabitManager: React.FC<HabitManagerProps> = ({
 
 					<div className="form-group">
 						<label htmlFor="category">Category</label>
-						<select
+						<input
 							id="category"
+							type="text"
+							list="manager-category-options"
 							value={category}
-							onChange={(e) => setCategory(e.target.value as HabitCategory)}
-						>
-							<option value="mobility">Movement & Mobility</option>
-							<option value="connection">Connections</option>
-							<option value="balance">Inner Balance</option>
-							<option value="joy">Joy & Play</option>
-							<option value="strength">Strength Building</option>
-						</select>
+							onChange={(e) => setCategory(e.target.value)}
+							placeholder="e.g., Mobility"
+						/>
+						<datalist id="manager-category-options">
+							{existingCategories.map((cat) => (
+								<option key={cat} value={cat} />
+							))}
+						</datalist>
+						<div className="category-preview">
+							<span
+								className="category-dot"
+								style={{ background: categoryInfo.color }}
+							/>
+							<span>{category || "No category"}</span>
+						</div>
 					</div>
 
 					<div className="form-group">
@@ -88,7 +102,11 @@ export const HabitManager: React.FC<HabitManagerProps> = ({
 							min="1"
 							max="7"
 							value={targetPerWeek}
-							onChange={(e) => setTargetPerWeek(parseInt(e.target.value))}
+							onChange={(e) =>
+								setTargetPerWeek(
+									Math.max(1, Math.min(7, parseInt(e.target.value) || 1)),
+								)
+							}
 							required
 						/>
 					</div>

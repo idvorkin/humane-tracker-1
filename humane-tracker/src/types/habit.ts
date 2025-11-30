@@ -1,7 +1,7 @@
 export interface Habit {
 	id: string;
 	name: string;
-	category: HabitCategory;
+	category: string;
 	targetPerWeek: number;
 	trackingType?: "binary" | "sets" | "hybrid";
 	userId: string;
@@ -19,57 +19,10 @@ export interface HabitEntry {
 	createdAt: Date;
 }
 
-export type HabitCategory =
-	| "mobility"
-	| "connection"
-	| "balance"
-	| "joy"
-	| "strength";
-
 export interface CategoryInfo {
-	value: HabitCategory;
-	label: string;
 	name: string;
 	color: string;
 }
-
-export const CATEGORIES: CategoryInfo[] = [
-	{
-		value: "mobility",
-		label: "Movement",
-		name: "Movement & Mobility",
-		color: "#60a5fa",
-	},
-	{
-		value: "connection",
-		label: "Connection",
-		name: "Connections",
-		color: "#a855f7",
-	},
-	{
-		value: "balance",
-		label: "Balance",
-		name: "Inner Balance",
-		color: "#fbbf24",
-	},
-	{ value: "joy", label: "Joy", name: "Joy & Play", color: "#f472b6" },
-	{
-		value: "strength",
-		label: "Strength",
-		name: "Strength Building",
-		color: "#34d399",
-	},
-];
-
-export const CATEGORY_MAP: Record<HabitCategory, CategoryInfo> =
-	Object.fromEntries(CATEGORIES.map((cat) => [cat.value, cat])) as Record<
-		HabitCategory,
-		CategoryInfo
-	>;
-
-export const ALL_CATEGORY_VALUES: HabitCategory[] = CATEGORIES.map(
-	(c) => c.value,
-);
 
 export type HabitStatus =
 	| "done"
@@ -94,7 +47,7 @@ export interface WeekData {
 }
 
 export interface CategorySection {
-	category: HabitCategory;
+	category: string;
 	name: string;
 	color: string;
 	habits: HabitWithStatus[];

@@ -3,20 +3,26 @@ import { test, expect } from '@playwright/test';
 test.describe('Habit Settings - Add New Habit', () => {
   test.beforeEach(async ({ page }) => {
     // Go to the app in test mode (no auth required)
-    await page.goto('http://localhost:3001?test=true');
+    await page.goto('/?test=true');
 
     // Wait for the app to load
     await page.waitForLoadState('networkidle');
 
     // Wait for habit tracker content to be visible (not just loading screen)
     await page.waitForSelector('table', { timeout: 15000 });
+
+    // Wait for user menu to be available
+    await page.waitForSelector('.user-menu-trigger', { timeout: 15000 });
   });
 
   test('should open habit settings and add a new habit', async ({ page }) => {
-    // Click the Manage Habits button
-    const manageButton = page.locator('button:has-text("Manage Habits")');
-    await expect(manageButton).toBeVisible();
-    await manageButton.click();
+    // Open user menu dropdown first
+    await page.click('.user-menu-trigger');
+    await page.waitForSelector('.user-menu-dropdown');
+
+    // Click Manage Habits in the dropdown
+    await page.click('button.user-menu-item:has-text("Manage Habits")');
+
 
     // Wait for the settings modal to open
     await page.waitForSelector('.habit-settings-modal');
@@ -31,9 +37,9 @@ test.describe('Habit Settings - Add New Habit', () => {
     await expect(nameInput).toBeVisible();
     await nameInput.fill('Test Habit');
 
-    // Select category
-    const categorySelect = page.locator('.add-new-form .category-select');
-    await categorySelect.selectOption('strength');
+    // Category is now a text input with datalist
+    const categoryInput = page.locator('.add-new-form .category-input');
+    await categoryInput.fill('Strength Building');
 
     // Select tracking type
     const trackingTypeSelect = page.locator('.add-new-form .type-select');
@@ -56,24 +62,27 @@ test.describe('Habit Settings - Add New Habit', () => {
   });
 
   test('should show all tracking type options', async ({ page }) => {
-    // Click the Manage Habits button
-    const manageButton = page.locator('button:has-text("Manage Habits")');
-    await manageButton.click();
-    
+    // Open user menu dropdown first
+    await page.click('.user-menu-trigger');
+    await page.waitForSelector('.user-menu-dropdown');
+
+    // Click Manage Habits in the dropdown
+    await page.click('button.user-menu-item:has-text("Manage Habits")');
+
     // Wait for the settings modal
     await page.waitForSelector('.habit-settings-modal');
-    
+
     // Click Add New Habit button
     const addNewButton = page.locator('button:has-text("+ Add New Habit")');
     await addNewButton.click();
-    
+
     // Check tracking type options
     const trackingTypeSelect = page.locator('.add-new-form .type-select');
     await expect(trackingTypeSelect).toBeVisible();
-    
+
     // Get all options
     const options = await trackingTypeSelect.locator('option').allTextContents();
-    
+
     // Should have Binary, Sets, and Hybrid options
     expect(options).toContain('✓ Binary');
     expect(options).toContain('123 Sets');
@@ -81,25 +90,28 @@ test.describe('Habit Settings - Add New Habit', () => {
   });
 
   test('should cancel adding a new habit', async ({ page }) => {
-    // Click the Manage Habits button
-    const manageButton = page.locator('button:has-text("Manage Habits")');
-    await manageButton.click();
-    
+    // Open user menu dropdown first
+    await page.click('.user-menu-trigger');
+    await page.waitForSelector('.user-menu-dropdown');
+
+    // Click Manage Habits in the dropdown
+    await page.click('button.user-menu-item:has-text("Manage Habits")');
+
     // Wait for the settings modal
     await page.waitForSelector('.habit-settings-modal');
-    
+
     // Click Add New Habit button
     const addNewButton = page.locator('button:has-text("+ Add New Habit")');
     await addNewButton.click();
-    
+
     // Fill in the name
     const nameInput = page.locator('.new-habit-input');
     await nameInput.fill('Test Habit');
-    
+
     // Click Cancel button
     const cancelButton = page.locator('.btn-cancel-add');
     await cancelButton.click();
-    
+
     // Form should disappear and Add New Habit button should reappear
     await expect(nameInput).not.toBeVisible();
     await expect(addNewButton).toBeVisible();
