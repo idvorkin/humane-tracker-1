@@ -1,6 +1,7 @@
 /// <reference types="vitest" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import basicSsl from "@vitejs/plugin-basic-ssl";
 import { VitePWA } from "vite-plugin-pwa";
 import { execSync } from "child_process";
 import { existsSync } from "fs";
@@ -40,14 +41,19 @@ const tailscaleIP = getTailscaleIP();
 const tailscaleHosts = getTailscaleHostnames();
 const devHost = inContainer && tailscaleIP ? "0.0.0.0" : "localhost";
 
+// Enable SSL when in container with Tailscale (some browser APIs require secure context)
+const useSsl = inContainer && tailscaleIP !== null;
+
 if (inContainer && tailscaleIP) {
 	console.log(`🐳 Container with Tailscale - binding to 0.0.0.0`);
-	console.log(`   Access via: http://${tailscaleHosts?.short || tailscaleIP}:3000/`);
+	const protocol = useSsl ? "https" : "http";
+	console.log(`   Access via: ${protocol}://${tailscaleHosts?.short || tailscaleIP}:3000/`);
 }
 
 export default defineConfig({
 	plugins: [
 		react(),
+		...(useSsl ? [basicSsl()] : []),
 		VitePWA({
 			registerType: "autoUpdate",
 			includeAssets: ["favicon.ico"],
