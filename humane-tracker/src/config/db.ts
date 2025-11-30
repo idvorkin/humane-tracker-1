@@ -4,6 +4,23 @@ import { SyncLogService } from "../services/syncLogService";
 import type { Habit, HabitEntry } from "../types/habit";
 import type { SyncLog } from "../types/syncLog";
 
+/**
+ * Convert a Date to an ISO date string (YYYY-MM-DD) for storage.
+ */
+function toDateString(date: Date): string {
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, "0");
+	const day = String(date.getDate()).padStart(2, "0");
+	return `${year}-${month}-${day}`;
+}
+
+/**
+ * Convert a Date to a full ISO timestamp string for storage.
+ */
+function toTimestamp(date: Date): string {
+	return date.toISOString();
+}
+
 // Extend Dexie with cloud addon
 export class HumaneTrackerDB extends Dexie {
 	habits!: Table<Habit, string>;
@@ -13,7 +30,7 @@ export class HumaneTrackerDB extends Dexie {
 	constructor() {
 		super("HumaneTrackerDB", { addons: [dexieCloud] });
 
-		// Define schema - using @id for Dexie Cloud compatible auto-generated string IDs
+		// Version 2: Original schema with Date objects
 		this.version(2).stores({
 			habits:
 				"@id, userId, name, category, targetPerWeek, createdAt, updatedAt",
@@ -27,6 +44,43 @@ export class HumaneTrackerDB extends Dexie {
 			entries: "@id, habitId, userId, date, value, createdAt",
 			syncLogs: "@id, timestamp, eventType, level",
 		});
+
+		// Version 4: Migrate Date objects to ISO strings
+		// Schema unchanged, just data migration
+		this.version(4)
+			.stores({
+				habits:
+					"@id, userId, name, category, targetPerWeek, createdAt, updatedAt",
+				entries: "@id, habitId, userId, date, value, createdAt",
+				syncLogs: "@id, timestamp, eventType, level",
+			})
+			.upgrade(async (tx) => {
+				// Migrate habits: convert Date objects to ISO strings
+				await tx
+					.table("habits")
+					.toCollection()
+					.modify((habit) => {
+						if (habit.createdAt instanceof Date) {
+							habit.createdAt = toTimestamp(habit.createdAt);
+						}
+						if (habit.updatedAt instanceof Date) {
+							habit.updatedAt = toTimestamp(habit.updatedAt);
+						}
+					});
+
+				// Migrate entries: convert Date objects to ISO strings
+				await tx
+					.table("entries")
+					.toCollection()
+					.modify((entry) => {
+						if (entry.date instanceof Date) {
+							entry.date = toDateString(entry.date);
+						}
+						if (entry.createdAt instanceof Date) {
+							entry.createdAt = toTimestamp(entry.createdAt);
+						}
+					});
+			});
 	}
 }
 

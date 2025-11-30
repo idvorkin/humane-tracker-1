@@ -1,5 +1,6 @@
 import { db } from "../config/db";
 import type { Habit, HabitEntry } from "../types/habit";
+import { habitRepository, entryRepository } from "../repositories";
 
 export interface ExportData {
 	version: 1;
@@ -9,13 +10,14 @@ export interface ExportData {
 }
 
 export async function exportAllData(): Promise<ExportData> {
+	// Get raw data from DB - repository converts dates to Date objects
 	const habits = await db.habits.toArray();
 	const entries = await db.entries.toArray();
 	return {
 		version: 1,
 		exportedAt: new Date().toISOString(),
-		habits,
-		entries,
+		habits: habits as unknown as Habit[],
+		entries: entries as unknown as HabitEntry[],
 	};
 }
 
@@ -28,22 +30,23 @@ export async function importAllData(
 		await db.entries.clear();
 	}
 
-	// Convert date strings back to Date objects (JSON parse loses Date type)
-	const habits = data.habits.map((h) => ({
+	// Convert date strings back to Date objects for domain types
+	// The repository will convert them back to ISO strings for storage
+	const habits: Habit[] = data.habits.map((h) => ({
 		...h,
 		createdAt: new Date(h.createdAt),
 		updatedAt: new Date(h.updatedAt),
 	}));
 
-	const entries = data.entries.map((e) => ({
+	const entries: HabitEntry[] = data.entries.map((e) => ({
 		...e,
 		date: new Date(e.date),
 		createdAt: new Date(e.createdAt),
 	}));
 
-	// Use bulkPut for both modes - it handles upsert correctly
-	await db.habits.bulkPut(habits);
-	await db.entries.bulkPut(entries);
+	// Use repositories for storage - they handle date conversion
+	await habitRepository.bulkPut(habits);
+	await entryRepository.bulkPut(entries);
 
 	return { habitsImported: habits.length, entriesImported: entries.length };
 }

@@ -1,10 +1,10 @@
 import { addDays, format, isSameDay, isToday, isYesterday } from "date-fns";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_HABITS } from "../data/defaultHabits";
+import { toDateString } from "../repositories";
 import { HabitService } from "../services/habitService";
 import type {
 	CategorySection,
-	HabitEntry,
 	HabitStatus,
 	HabitWithStatus,
 	SummaryStats,
@@ -77,8 +77,9 @@ export function getCellDisplay(
 	habit: HabitWithStatus,
 	date: Date,
 ): CellDisplay {
+	const targetDateStr = toDateString(date);
 	const entry = habit.entries.find(
-		(e) => format(e.date, "yyyy-MM-dd") === format(date, "yyyy-MM-dd"),
+		(e) => toDateString(e.date) === targetDateStr,
 	);
 
 	if (!entry) {
@@ -273,7 +274,7 @@ export function useHabitTrackerVM({
 			return;
 		}
 
-		// Non-mock mode: set up subscriptions
+		// Non-mock mode: set up subscriptions - liveQuery handles reactivity
 		let isInitialLoad = true;
 
 		const unsubscribeHabits = habitService.subscribeToHabits(userId, () => {
@@ -378,94 +379,35 @@ export function useHabitTrackerVM({
 				return;
 			}
 
+			const targetDateStr = toDateString(date);
 			const existingEntry = habit.entries.find(
-				(e) => format(e.date, "yyyy-MM-dd") === format(date, "yyyy-MM-dd"),
+				(e) => toDateString(e.date) === targetDateStr,
 			);
 
 			const currentValue = existingEntry?.value ?? null;
 			const nextValue = getNextEntryValue(currentValue);
 
-			// Store previous state for rollback
-			const previousHabits = habits;
-
-			// Optimistic UI update
-			setHabits((prevHabits) =>
-				prevHabits.map((h) => {
-					if (h.id !== habitId) return h;
-
-					const updatedEntries = [...h.entries];
-					const entryIndex = updatedEntries.findIndex(
-						(e) => format(e.date, "yyyy-MM-dd") === format(date, "yyyy-MM-dd"),
-					);
-
+			// Just write to DB - liveQuery will notify us and trigger a refresh
+			try {
+				if (existingEntry) {
 					if (nextValue === null) {
-						// Delete entry
-						if (entryIndex >= 0) {
-							updatedEntries.splice(entryIndex, 1);
-						}
-					} else if (entryIndex >= 0) {
-						// Update existing entry
-						updatedEntries[entryIndex] = {
-							...updatedEntries[entryIndex],
-							value: nextValue,
-						};
+						await habitService.deleteEntry(existingEntry.id);
 					} else {
-						// Add new entry
-						updatedEntries.push({
-							id: crypto.randomUUID(),
-							habitId,
-							userId,
-							date,
-							value: nextValue,
-							createdAt: new Date(),
-						} as HabitEntry);
+						await habitService.updateEntry(existingEntry.id, nextValue);
 					}
-
-					// Recalculate status
-					const newStatus = habitService.calculateHabitStatus(
-						h,
-						updatedEntries,
-					);
-					const daysWithEntries = new Set(
-						updatedEntries
-							.filter((e) => e.value > 0)
-							.map((e) => format(e.date, "yyyy-MM-dd")),
-					).size;
-
-					return {
-						...h,
-						entries: updatedEntries,
-						status: newStatus,
-						currentWeekCount: daysWithEntries,
-					};
-				}),
-			);
-
-			// Persist to database (for non-mock mode)
-			if (!useMockMode) {
-				try {
-					if (existingEntry) {
-						if (nextValue === null) {
-							await habitService.deleteEntry(existingEntry.id);
-						} else {
-							await habitService.updateEntry(existingEntry.id, nextValue);
-						}
-					} else if (nextValue !== null) {
-						await habitService.addEntry({
-							habitId,
-							userId,
-							date,
-							value: nextValue,
-						});
-					}
-				} catch (error) {
-					console.error("Error updating entry:", error);
-					// Rollback optimistic update on failure
-					setHabits(previousHabits);
+				} else if (nextValue !== null) {
+					await habitService.addEntry({
+						habitId,
+						userId,
+						date,
+						value: nextValue,
+					});
 				}
+			} catch (error) {
+				console.error("Error updating entry:", error);
 			}
 		},
-		[habits, userId, useMockMode, selectedDate],
+		[habits, userId, selectedDate],
 	);
 
 	return {
