@@ -68,6 +68,29 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 		}
 	};
 
+	// Helper to generate column/cell class names for date columns
+	const getDateColumnClass = (
+		baseClass: string,
+		isTodayDate: boolean,
+		isSelected: boolean,
+	): string => {
+		const classes = [baseClass];
+		if (isTodayDate) classes.push(`${baseClass.split("-")[0]}-today`);
+		if (isSelected && !isTodayDate)
+			classes.push(`${baseClass.split("-")[0]}-selected`);
+		return classes.join(" ");
+	};
+
+	// Helper to handle date header click
+	const handleDateHeaderClick = (
+		date: Date,
+		isTodayDate: boolean,
+		isSelected: boolean,
+	) => {
+		if (isTodayDate) return; // Today is not selectable
+		vm.selectDate(isSelected ? null : date);
+	};
+
 	return (
 		<div className="container">
 			<div className="week-header">
@@ -113,15 +136,15 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 						<th className="col-status">●</th>
 						{vm.weekDates.map((date) => {
 							const isTodayDate = isToday(date);
-							const isSelected =
-								vm.selectedDate && isSameDay(date, vm.selectedDate);
-							const colClass = `col-day ${isTodayDate ? "col-today" : ""} ${isSelected && !isTodayDate ? "col-selected" : ""}`;
+							const isSelected = Boolean(
+								vm.selectedDate && isSameDay(date, vm.selectedDate),
+							);
 							return (
 								<th
 									key={date.toISOString()}
-									className={colClass}
+									className={getDateColumnClass("col-day", isTodayDate, isSelected)}
 									onClick={() =>
-										vm.selectDate(isSelected ? null : isTodayDate ? null : date)
+										handleDateHeaderClick(date, isTodayDate, isSelected)
 									}
 									style={{ cursor: isTodayDate ? "default" : "pointer" }}
 									title={isTodayDate ? undefined : "Click to select this day"}
@@ -231,9 +254,15 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 													{vm.weekDates.map((date) => {
 														const cellDisplay = vm.getCellDisplay(habit, date);
 														const isTodayDate = isToday(date);
-														const isSelected =
-															vm.selectedDate && isSameDay(date, vm.selectedDate);
-														const cellClass = `${cellDisplay.className} ${isTodayDate ? "cell-today" : ""} ${isSelected && !isTodayDate ? "cell-selected" : ""}`;
+														const isSelected = Boolean(
+															vm.selectedDate && isSameDay(date, vm.selectedDate),
+														);
+														const cellClass = [
+															cellDisplay.className,
+															getDateColumnClass("cell", isTodayDate, isSelected),
+														]
+															.filter(Boolean)
+															.join(" ");
 														return (
 															<td
 																key={date.toISOString()}
