@@ -162,28 +162,43 @@ test.describe('Habit Tracker App', () => {
     expect(firstDay).toMatch(/[SMTWF]/);
   });
 
-  test('should allow selecting a past day and highlight the column', async ({ page }) => {
+  test('should allow selecting a past day and highlight the entire column', async ({ page }) => {
+    // Expand a section to see habit rows (click on the section title area, not the zoom button)
+    const sectionTitle = page.locator('.section-title').first();
+    await sectionTitle.click();
+    await page.waitForTimeout(200);
+
+    // Wait for habit rows to appear after expansion
+    await expect(page.locator('.section-row').first()).toBeVisible();
+
     // Get the second day column header (a past day, not today)
     const dayHeaders = page.locator('th.col-day');
     const secondDayHeader = dayHeaders.nth(1);
-    
+
     // Click on the second day to select it
     await secondDayHeader.click();
     await page.waitForTimeout(300);
-    
+
     // Verify the column header has the selected class
     await expect(secondDayHeader).toHaveClass(/col-selected/);
-    
+
+    // Verify cells in the column also have the selected class (entire column highlighted)
+    const selectedCells = page.locator('.section-row td.cell-selected');
+    await expect(selectedCells.first()).toBeVisible();
+
     // Verify the header title updates to show the selected date
     const headerTitle = page.locator('.week-title .current-day, .week-title .selected-day');
     await expect(headerTitle).toBeVisible();
-    
+
     // Click the header title to return to today
     await headerTitle.click();
     await page.waitForTimeout(300);
-    
+
     // Verify the column is no longer selected
     await expect(secondDayHeader).not.toHaveClass(/col-selected/);
+
+    // Verify cells no longer have the selected class
+    await expect(page.locator('.section-row td.cell-selected')).toHaveCount(0);
   });
 
   test('should display summary statistics', async ({ page }) => {
