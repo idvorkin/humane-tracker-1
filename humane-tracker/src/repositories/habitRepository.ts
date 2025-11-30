@@ -79,6 +79,21 @@ function toRecord(
  */
 export const habitRepository = {
 	/**
+	 * Get all habits (for export).
+	 */
+	async getAll(): Promise<Habit[]> {
+		const records = await db.habits.toArray();
+		return records.map((r) => toHabit(r as unknown as HabitRecord));
+	},
+
+	/**
+	 * Clear all habits (for import replace mode).
+	 */
+	async clear(): Promise<void> {
+		await db.habits.clear();
+	},
+
+	/**
 	 * Get all habits for a user.
 	 */
 	async getByUserId(userId: string): Promise<Habit[]> {

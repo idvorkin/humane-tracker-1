@@ -1,4 +1,3 @@
-import { db } from "../config/db";
 import type { Habit, HabitEntry } from "../types/habit";
 import { habitRepository, entryRepository } from "../repositories";
 
@@ -10,14 +9,14 @@ export interface ExportData {
 }
 
 export async function exportAllData(): Promise<ExportData> {
-	// Get raw data from DB - repository converts dates to Date objects
-	const habits = await db.habits.toArray();
-	const entries = await db.entries.toArray();
+	// Use repositories - they handle date conversion
+	const habits = await habitRepository.getAll();
+	const entries = await entryRepository.getAll();
 	return {
 		version: 1,
 		exportedAt: new Date().toISOString(),
-		habits: habits as unknown as Habit[],
-		entries: entries as unknown as HabitEntry[],
+		habits,
+		entries,
 	};
 }
 
@@ -26,8 +25,8 @@ export async function importAllData(
 	mode: "merge" | "replace",
 ): Promise<{ habitsImported: number; entriesImported: number }> {
 	if (mode === "replace") {
-		await db.habits.clear();
-		await db.entries.clear();
+		await habitRepository.clear();
+		await entryRepository.clear();
 	}
 
 	// Convert date strings back to Date objects for domain types

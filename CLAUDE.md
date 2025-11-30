@@ -47,10 +47,32 @@ React 18 + TypeScript + Vite application for tracking habits and behaviors with 
 
 - **Dexie** - IndexedDB wrapper for local-first storage
 - **dexie-cloud-addon** - Optional cloud sync capability
+- **Repository Pattern** - All DB access goes through repositories
+
+### Repository Pattern (IMPORTANT)
+
+**NEVER access `db.entries` or `db.habits` directly.** Always use the repository layer:
+
+```typescript
+// ❌ WRONG - direct DB access
+const entries = await db.entries.where("userId").equals(userId).toArray();
+
+// ✅ CORRECT - use repository
+const entries = await entryRepository.getByUserId(userId);
+```
+
+**Why?** Dates are stored as ISO strings in IndexedDB but used as `Date` objects in app code. The repositories handle this conversion automatically:
+
+- `entryRepository` - CRUD for habit entries (`src/repositories/entryRepository.ts`)
+- `habitRepository` - CRUD for habits (`src/repositories/habitRepository.ts`)
+
+The only place that should import `db` directly is the repositories themselves.
 
 ### Key Files
 
-- `src/db.ts` - Database schema and Dexie configuration
+- `src/config/db.ts` - Database schema and Dexie configuration
+- `src/repositories/` - Repository layer for DB access with date conversion
+- `src/services/habitService.ts` - Business logic (uses repositories)
 - `src/App.tsx` - Main application logic
 - `src/App.test.tsx` - Unit tests
 

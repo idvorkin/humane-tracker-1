@@ -47,6 +47,21 @@ function toRecord(
  */
 export const entryRepository = {
 	/**
+	 * Get all entries (for export).
+	 */
+	async getAll(): Promise<HabitEntry[]> {
+		const records = await db.entries.toArray();
+		return records.map((r) => toEntry(r as unknown as EntryRecord));
+	},
+
+	/**
+	 * Clear all entries (for import replace mode).
+	 */
+	async clear(): Promise<void> {
+		await db.entries.clear();
+	},
+
+	/**
 	 * Get all entries for a user.
 	 */
 	async getByUserId(userId: string): Promise<HabitEntry[]> {
