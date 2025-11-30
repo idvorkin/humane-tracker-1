@@ -20,9 +20,9 @@ export class SyncLogService {
 		data?: unknown,
 	): Promise<void> {
 		try {
-			// Add the new log
+			// Add the new log with 'syn' prefix for Dexie Cloud @id compatibility
 			await this.syncLogsTable.add({
-				id: crypto.randomUUID(),
+				id: `syn${crypto.randomUUID()}`,
 				timestamp: new Date(),
 				eventType,
 				level,
