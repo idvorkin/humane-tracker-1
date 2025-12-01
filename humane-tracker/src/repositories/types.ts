@@ -19,15 +19,15 @@ export interface EntryRecord {
 	id: string;
 	habitId: string;
 	userId: string;
-	date: string; // ISO timestamp (full date+time)
+	date: string; // ISO string (date portion only: YYYY-MM-DD)
 	value: number;
 	notes?: string;
 	createdAt: string; // ISO string
 }
 
 /**
- * Convert a Date to an ISO date string (YYYY-MM-DD) in local timezone.
- * Used for comparisons and display, NOT for storage.
+ * Convert a Date to an ISO date string (YYYY-MM-DD) for storage.
+ * Uses local timezone - the date you see is the date stored.
  */
 export function toDateString(date: Date): string {
 	if (!(date instanceof Date)) {
@@ -167,8 +167,8 @@ export function toDateRange(
 }
 
 /**
- * Normalize a date value from the database to YYYY-MM-DD string in local timezone.
- * Handles both Date objects, date-only strings (YYYY-MM-DD), and full ISO timestamps.
+ * Normalize a date-only value from the database to YYYY-MM-DD string.
+ * Handles both Date objects (legacy) and strings (new format).
  */
 export function normalizeDateString(value: Date | string): string {
 	if (value === null || value === undefined) {
@@ -187,12 +187,12 @@ export function normalizeDateString(value: Date | string): string {
 	if (!value.trim()) {
 		throw new Error("normalizeDateString: Empty string is not a valid date");
 	}
-	// Check if it's a date-only string (legacy format)
+	// Check if it's already a date-only string
 	if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
 		// Validate using fromDateString (includes round-trip validation for Feb 30, etc.)
 		fromDateString(value); // Will throw if invalid
 		return value;
 	}
-	// Full ISO timestamp - extract date portion in local timezone
+	// Full ISO timestamp - extract date portion
 	return toDateString(fromTimestamp(value));
 }

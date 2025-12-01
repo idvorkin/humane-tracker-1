@@ -266,6 +266,7 @@ export const habitRepository = {
 	subscribeByUserId(
 		userId: string,
 		callback: (habits: Habit[]) => void,
+		onError?: (error: unknown) => void,
 	): () => void {
 		const observable = liveQuery(() =>
 			db.habits.where("userId").equals(userId).toArray(),
@@ -275,10 +276,13 @@ export const habitRepository = {
 			next: (records) => callback(records.map(toHabit)),
 			error: (error) => {
 				console.error("[HabitRepository] Error in habits subscription:", error);
-				console.error(
-					"[HabitRepository] Failed to load habit updates. Please refresh the page.",
-				);
-				// Return empty array so UI doesn't crash
+
+				// Notify UI layer if error handler provided
+				if (onError) {
+					onError(error);
+				}
+
+				// Return empty array as fallback
 				callback([]);
 			},
 		});

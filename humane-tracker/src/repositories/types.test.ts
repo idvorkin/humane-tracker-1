@@ -4,6 +4,7 @@ import {
 	fromTimestamp,
 	normalizeDate,
 	normalizeDateString,
+	toDateRange,
 	toDateString,
 	toTimestamp,
 } from "./types";
@@ -299,5 +300,94 @@ describe("Round-trip conversions", () => {
 
 		expect(normalizeDateString(date)).toBe("2024-01-15");
 		expect(normalizeDateString(dateStr)).toBe("2024-01-15");
+	});
+});
+
+describe("toDateRange", () => {
+	it("creates range with start at midnight and end at last millisecond", () => {
+		const start = new Date(2024, 0, 15, 10, 30); // Jan 15, 2024 10:30 AM
+		const end = new Date(2024, 0, 20, 14, 45); // Jan 20, 2024 2:45 PM
+
+		const { rangeStart, rangeEnd } = toDateRange(start, end);
+
+		// Start should be at 00:00:00.000
+		expect(rangeStart.getFullYear()).toBe(2024);
+		expect(rangeStart.getMonth()).toBe(0);
+		expect(rangeStart.getDate()).toBe(15);
+		expect(rangeStart.getHours()).toBe(0);
+		expect(rangeStart.getMinutes()).toBe(0);
+		expect(rangeStart.getSeconds()).toBe(0);
+		expect(rangeStart.getMilliseconds()).toBe(0);
+
+		// End should be at 23:59:59.999
+		expect(rangeEnd.getFullYear()).toBe(2024);
+		expect(rangeEnd.getMonth()).toBe(0);
+		expect(rangeEnd.getDate()).toBe(20);
+		expect(rangeEnd.getHours()).toBe(23);
+		expect(rangeEnd.getMinutes()).toBe(59);
+		expect(rangeEnd.getSeconds()).toBe(59);
+		expect(rangeEnd.getMilliseconds()).toBe(999);
+	});
+
+	it("handles same day range", () => {
+		const date = new Date(2024, 5, 10, 12, 0); // June 10, 2024 noon
+		const { rangeStart, rangeEnd } = toDateRange(date, date);
+
+		expect(rangeStart.getDate()).toBe(10);
+		expect(rangeEnd.getDate()).toBe(10);
+		expect(rangeStart.getHours()).toBe(0);
+		expect(rangeEnd.getHours()).toBe(23);
+	});
+
+	it("does not mutate input dates", () => {
+		const start = new Date(2024, 0, 15, 10, 30);
+		const end = new Date(2024, 0, 20, 14, 45);
+		const originalStartTime = start.getTime();
+		const originalEndTime = end.getTime();
+
+		toDateRange(start, end);
+
+		expect(start.getTime()).toBe(originalStartTime);
+		expect(end.getTime()).toBe(originalEndTime);
+	});
+
+	it("handles dates across month boundaries", () => {
+		const start = new Date(2024, 0, 31); // Jan 31
+		const end = new Date(2024, 1, 1); // Feb 1
+
+		const { rangeStart, rangeEnd } = toDateRange(start, end);
+
+		expect(rangeStart.getMonth()).toBe(0);
+		expect(rangeStart.getDate()).toBe(31);
+		expect(rangeEnd.getMonth()).toBe(1);
+		expect(rangeEnd.getDate()).toBe(1);
+	});
+
+	it("handles dates across year boundaries", () => {
+		const start = new Date(2023, 11, 31); // Dec 31, 2023
+		const end = new Date(2024, 0, 1); // Jan 1, 2024
+
+		const { rangeStart, rangeEnd } = toDateRange(start, end);
+
+		expect(rangeStart.getFullYear()).toBe(2023);
+		expect(rangeStart.getMonth()).toBe(11);
+		expect(rangeStart.getDate()).toBe(31);
+		expect(rangeEnd.getFullYear()).toBe(2024);
+		expect(rangeEnd.getMonth()).toBe(0);
+		expect(rangeEnd.getDate()).toBe(1);
+	});
+
+	it("handles DST transition dates", () => {
+		// US DST typically starts second Sunday in March
+		// Testing around March 10, 2024 (DST transition)
+		const start = new Date(2024, 2, 9); // March 9 (before DST)
+		const end = new Date(2024, 2, 11); // March 11 (after DST)
+
+		const { rangeStart, rangeEnd } = toDateRange(start, end);
+
+		// Should still set correct boundary times regardless of DST
+		expect(rangeStart.getHours()).toBe(0);
+		expect(rangeEnd.getHours()).toBe(23);
+		expect(rangeEnd.getMinutes()).toBe(59);
 	});
 });

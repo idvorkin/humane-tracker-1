@@ -277,9 +277,20 @@ export function useHabitTrackerVM({
 		// Non-mock mode: set up subscriptions - liveQuery handles reactivity
 		let isInitialLoad = true;
 
-		const unsubscribeHabits = habitService.subscribeToHabits(userId, () => {
-			if (!isInitialLoad) loadHabits(true);
-		});
+		const handleSubscriptionError = (error: unknown) => {
+			const errorMsg = error instanceof Error ? error.message : String(error);
+			alert(
+				`Failed to load habit data: ${errorMsg}\n\nPlease refresh the page. If the problem persists, contact support.`,
+			);
+		};
+
+		const unsubscribeHabits = habitService.subscribeToHabits(
+			userId,
+			() => {
+				if (!isInitialLoad) loadHabits(true);
+			},
+			handleSubscriptionError,
+		);
 
 		const endDate = new Date();
 		endDate.setHours(23, 59, 59, 999);
@@ -294,6 +305,7 @@ export function useHabitTrackerVM({
 			() => {
 				if (!isInitialLoad) loadHabits(true);
 			},
+			handleSubscriptionError,
 		);
 
 		loadHabits().then(() => {
