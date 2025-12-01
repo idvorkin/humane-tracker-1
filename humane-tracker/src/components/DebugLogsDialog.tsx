@@ -1,9 +1,23 @@
+import {
+	Alert,
+	Badge,
+	Box,
+	Button,
+	Code,
+	Collapse,
+	Group,
+	Modal,
+	ScrollArea,
+	Stack,
+	Text,
+	UnstyledButton,
+} from "@mantine/core";
+import { IconAlertCircle, IconChevronRight, IconDownload, IconCopy, IconTrash } from "@tabler/icons-react";
 import { useLiveQuery } from "dexie-react-hooks";
 import type React from "react";
 import { useState } from "react";
 import { syncLogService } from "../config/db";
 import type { SyncLog } from "../types/syncLog";
-import "./DebugLogsDialog.css";
 
 interface DebugLogsDialogProps {
 	onClose: () => void;
@@ -18,12 +32,6 @@ export function DebugLogsDialog({ onClose }: DebugLogsDialogProps) {
 
 	// Live query to get logs (automatically updates when logs change)
 	const logs = useLiveQuery(() => syncLogService.getLogs(), []) ?? [];
-
-	const handleOverlayClick = (e: React.MouseEvent) => {
-		if (e.target === e.currentTarget) {
-			onClose();
-		}
-	};
 
 	const handleClearAll = async () => {
 		if (confirm("Are you sure you want to clear all debug logs?")) {
@@ -105,16 +113,16 @@ export function DebugLogsDialog({ onClose }: DebugLogsDialogProps) {
 		return `${diffDays}d ago`;
 	};
 
-	const getLevelBadgeClass = (level: SyncLog["level"]): string => {
+	const getLevelColor = (level: SyncLog["level"]): string => {
 		switch (level) {
 			case "success":
-				return "debug-log-badge-success";
+				return "green";
 			case "error":
-				return "debug-log-badge-error";
+				return "red";
 			case "warning":
-				return "debug-log-badge-warning";
+				return "yellow";
 			default:
-				return "debug-log-badge-info";
+				return "blue";
 		}
 	};
 
@@ -134,126 +142,135 @@ export function DebugLogsDialog({ onClose }: DebugLogsDialogProps) {
 	};
 
 	return (
-		<div className="debug-logs-overlay" onClick={handleOverlayClick}>
-			<div className="debug-logs-dialog">
-				<div className="debug-logs-header">
-					<h2>Debug Logs</h2>
-					<button className="debug-logs-close" onClick={onClose}>
-						✕
-					</button>
-				</div>
+		<Modal
+			opened
+			onClose={onClose}
+			title="Debug Logs"
+			size="lg"
+			styles={{
+				title: { fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600 },
+			}}
+			centered
+		>
+			<Stack gap="md">
+				<Text size="sm" c="dimmed">
+					Showing last {logs.length} sync events (max 2000). Logs are stored
+					locally and not synced to cloud.
+				</Text>
 
-				<div className="debug-logs-body">
-					<div className="debug-logs-info">
-						<p>
-							Showing last {logs.length} sync events (max 2000). Logs are stored
-							locally and not synced to cloud.
-						</p>
-					</div>
+				<Group>
+					<Button
+						variant="light"
+						size="xs"
+						leftSection={<IconDownload size={14} />}
+						onClick={handleDownloadLogs}
+						disabled={logs.length === 0}
+					>
+						{downloadSuccess ? "✓ Downloaded!" : "Download"}
+					</Button>
+					<Button
+						variant="light"
+						size="xs"
+						leftSection={<IconCopy size={14} />}
+						onClick={handleCopyLogs}
+						disabled={logs.length === 0}
+					>
+						{copySuccess ? "✓ Copied!" : "Copy All"}
+					</Button>
+					<Button
+						variant="light"
+						size="xs"
+						color="red"
+						leftSection={<IconTrash size={14} />}
+						onClick={handleClearAll}
+						disabled={logs.length === 0}
+					>
+						Clear All
+					</Button>
+				</Group>
 
-					<div className="debug-logs-actions">
-						<button
-							className="debug-logs-btn-secondary"
-							onClick={handleDownloadLogs}
-							disabled={logs.length === 0}
-						>
-							{downloadSuccess ? "✓ Downloaded!" : "Download Logs"}
-						</button>
-						<button
-							className="debug-logs-btn-secondary"
-							onClick={handleCopyLogs}
-							disabled={logs.length === 0}
-						>
-							{copySuccess ? "✓ Copied!" : "Copy All Logs"}
-						</button>
-						<button
-							className="debug-logs-btn-secondary"
-							onClick={handleClearAll}
-							disabled={logs.length === 0}
-						>
-							Clear All Logs
-						</button>
-					</div>
+				{(copyError || clearError) && (
+					<Alert icon={<IconAlertCircle size={16} />} color="red" variant="light">
+						{copyError || clearError}
+					</Alert>
+				)}
 
-					{(copyError || clearError) && (
-						<div
-							className="debug-logs-error"
-							style={{
-								padding: "12px",
-								marginTop: "12px",
-								backgroundColor: "#fee",
-								border: "1px solid #fcc",
-								borderRadius: "4px",
-								color: "#c00",
-							}}
-						>
-							{copyError && <p style={{ margin: "0 0 8px 0" }}>{copyError}</p>}
-							{clearError && <p style={{ margin: 0 }}>{clearError}</p>}
-						</div>
-					)}
-
-					{logs.length === 0 ? (
-						<div className="debug-logs-empty">
-							<p>No sync events logged yet.</p>
-							<p className="debug-logs-empty-hint">
-								Sync events will appear here as they occur.
-							</p>
-						</div>
-					) : (
-						<div className="debug-logs-list">
+				{logs.length === 0 ? (
+					<Stack align="center" py="xl" gap="xs">
+						<Text c="dimmed">No sync events logged yet.</Text>
+						<Text size="xs" c="dimmed">
+							Sync events will appear here as they occur.
+						</Text>
+					</Stack>
+				) : (
+					<ScrollArea h={400}>
+						<Stack gap="xs">
 							{logs.map((log) => (
-								<div key={log.id} className="debug-log-entry">
-									<div
-										className="debug-log-entry-header"
+								<Box
+									key={log.id}
+									p="xs"
+									style={{
+										border: "1px solid var(--mantine-color-dark-4)",
+										borderRadius: "var(--mantine-radius-sm)",
+									}}
+								>
+									<UnstyledButton
 										onClick={() => toggleExpanded(log.id)}
+										w="100%"
 									>
-										<div className="debug-log-entry-left">
-											<span
-												className={`debug-log-badge ${getLevelBadgeClass(log.level)}`}
-											>
-												{log.level}
-											</span>
-											<span className="debug-log-type">
-												{getEventTypeLabel(log.eventType)}
-											</span>
-										</div>
-										<div className="debug-log-entry-right">
-											<span
-												className="debug-log-time"
+										<Group justify="space-between">
+											<Group gap="xs">
+												<IconChevronRight
+													size={14}
+													style={{
+														transform:
+															expandedLogId === log.id
+																? "rotate(90deg)"
+																: "rotate(0deg)",
+														transition: "transform 0.2s",
+													}}
+												/>
+												<Badge size="xs" color={getLevelColor(log.level)}>
+													{log.level}
+												</Badge>
+												<Text size="xs" fw={500}>
+													{getEventTypeLabel(log.eventType)}
+												</Text>
+											</Group>
+											<Text
+												size="xs"
+												c="dimmed"
 												title={log.timestamp.toISOString()}
 											>
 												{formatRelativeTime(log.timestamp)}
-											</span>
-											<span className="debug-log-expand-icon">
-												{expandedLogId === log.id ? "▼" : "▶"}
-											</span>
-										</div>
-									</div>
+											</Text>
+										</Group>
+									</UnstyledButton>
 
-									<div className="debug-log-entry-message">{log.message}</div>
+									<Text size="xs" mt="xs">
+										{log.message}
+									</Text>
 
-									{expandedLogId === log.id && log.data ? (
-										<div className="debug-log-entry-details">
-											<div className="debug-log-entry-details-label">
+									<Collapse in={expandedLogId === log.id && Boolean(log.data)}>
+										<Box mt="xs">
+											<Text size="xs" fw={500} mb={4}>
 												Technical Details:
-											</div>
-											<pre className="debug-log-entry-details-data">
+											</Text>
+											<Code block style={{ fontSize: "11px" }}>
 												{JSON.stringify(log.data, null, 2)}
-											</pre>
-										</div>
-									) : null}
-								</div>
+											</Code>
+										</Box>
+									</Collapse>
+								</Box>
 							))}
-						</div>
-					)}
-				</div>
+						</Stack>
+					</ScrollArea>
+				)}
 
-				<div className="debug-logs-footer">
-					<button className="debug-logs-btn-primary" onClick={onClose}>
-						Close
-					</button>
-				</div>
-			</div>
-		</div>
+				<Button fullWidth onClick={onClose}>
+					Close
+				</Button>
+			</Stack>
+		</Modal>
 	);
 }
