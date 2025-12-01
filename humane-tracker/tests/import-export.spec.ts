@@ -5,14 +5,97 @@ test.describe("Import/Export Functionality", () => {
 		await page.goto("/?test=true");
 		await page.waitForSelector("table", { timeout: 10000 });
 
-		// Get initial state - these have valid Dexie Cloud IDs
+		// Clear any existing data first
+		await page.evaluate(async () => {
+			const { db } = await import("/src/config/db.ts");
+			await db.habits.clear();
+			await db.entries.clear();
+		});
+
+		// Create test data - 3 habits with entries
+		const testData = await page.evaluate(async () => {
+			const { db } = await import("/src/config/db.ts");
+			const userId = "test-user-123";
+
+			// Create 3 sample habits
+			const habitIds = await Promise.all([
+				db.habits.add({
+					name: "Morning Meditation",
+					category: "Wellness",
+					userId: userId,
+					createdAt: new Date(),
+				}),
+				db.habits.add({
+					name: "Daily Exercise",
+					category: "Health",
+					userId: userId,
+					createdAt: new Date(),
+				}),
+				db.habits.add({
+					name: "Read 30 Minutes",
+					category: "Learning",
+					userId: userId,
+					createdAt: new Date(),
+				}),
+			]);
+
+			// Create entries for each habit (3 entries per habit)
+			const today = new Date();
+			const yesterday = new Date(today);
+			yesterday.setDate(yesterday.getDate() - 1);
+			const twoDaysAgo = new Date(today);
+			twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+			await Promise.all(
+				habitIds.flatMap((habitId) => [
+					db.entries.add({
+						habitId: habitId,
+						userId: userId,
+						date: today,
+						value: 1,
+						createdAt: new Date(),
+					}),
+					db.entries.add({
+						habitId: habitId,
+						userId: userId,
+						date: yesterday,
+						value: 1,
+						createdAt: new Date(),
+					}),
+					db.entries.add({
+						habitId: habitId,
+						userId: userId,
+						date: twoDaysAgo,
+						value: 1,
+						createdAt: new Date(),
+					}),
+				])
+			);
+
+			const habits = await db.habits.toArray();
+			const entries = await db.entries.toArray();
+			return {
+				habitCount: habits.length,
+				entryCount: entries.length,
+			};
+		});
+
+		console.log("Created test data:");
+		console.log(`  - Habits: ${testData.habitCount}`);
+		console.log(`  - Entries: ${testData.entryCount}`);
+
+		// Wait for UI to update and take initial screenshot
+		await page.waitForTimeout(500);
+		await page.screenshot({ path: "test-results/import-export-01-initial-with-data.png", fullPage: true });
+
+		// Get initial state
 		const initialData = await page.evaluate(async () => {
 			const { db } = await import("/src/config/db.ts");
 			const habits = await db.habits.toArray();
 			const entries = await db.entries.toArray();
 			return {
-				habits: habits.slice(0, 5), // Just take first 5 for testing
-				entries: entries.slice(0, 5),
+				habits,
+				entries,
 				totalHabits: habits.length,
 				totalEntries: entries.length
 			};
@@ -25,27 +108,6 @@ test.describe("Import/Export Functionality", () => {
 		if (initialData.habits.length > 0) {
 			console.log(`  - Sample habit ID: ${initialData.habits[0].id}`);
 			console.log(`  - Sample habit name: ${initialData.habits[0].name}`);
-		}
-
-		// Skip if no entries to test with
-		if (initialData.totalEntries === 0) {
-			console.log("No entries in database - creating some test data first");
-
-			// First, let's add an entry to an existing habit
-			await page.evaluate(async () => {
-				const { db } = await import("/src/config/db.ts");
-				const habits = await db.habits.toArray();
-				if (habits.length > 0) {
-					// Use db.entries.add which will auto-generate a valid ID
-					await db.entries.add({
-						habitId: habits[0].id,
-						userId: habits[0].userId,
-						date: new Date(),
-						value: 1,
-						createdAt: new Date(),
-					});
-				}
-			});
 		}
 
 		// Now test export/import cycle
@@ -84,6 +146,10 @@ test.describe("Import/Export Functionality", () => {
 		console.log(`  - Habits: ${afterClear.habits}`);
 		console.log(`  - Entries: ${afterClear.entries}`);
 
+		// Wait for UI to update and take screenshot of empty state
+		await page.waitForTimeout(500);
+		await page.screenshot({ path: "test-results/import-export-02-after-clear.png", fullPage: true });
+
 		expect(afterClear.habits).toBe(0);
 		expect(afterClear.entries).toBe(0);
 
@@ -117,6 +183,10 @@ test.describe("Import/Export Functionality", () => {
 		console.log(`  - Entries: ${afterImport.entryCount}`);
 		console.log(`  - Sample habit: ${afterImport.sampleHabit}`);
 		console.log(`  - Sample entry ID: ${afterImport.sampleEntryId}`);
+
+		// Wait for UI to update and take screenshot of re-imported data
+		await page.waitForTimeout(500);
+		await page.screenshot({ path: "test-results/import-export-03-after-import.png", fullPage: true });
 
 		// Verify counts match
 		expect(afterImport.habitCount).toBe(exportedData.habits.length);
