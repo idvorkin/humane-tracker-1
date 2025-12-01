@@ -7,7 +7,7 @@ import {
 	toTimestamp,
 } from "../repositories/types";
 import { SyncLogService } from "../services/syncLogService";
-import type { SyncLog } from "../types/syncLog";
+import { syncLogDB } from "./syncLogDB";
 
 // Extend Dexie with cloud addon
 export class HumaneTrackerDB extends Dexie {
@@ -15,7 +15,6 @@ export class HumaneTrackerDB extends Dexie {
 	// The repository layer handles conversion between Record and domain types
 	habits!: Table<HabitRecord, string>;
 	entries!: Table<EntryRecord, string>;
-	syncLogs!: Table<SyncLog, string>;
 
 	constructor() {
 		super("HumaneTrackerDB", { addons: [dexieCloud] });
@@ -178,208 +177,25 @@ export class HumaneTrackerDB extends Dexie {
 				}
 			});
 
-		// Version 5: Fix syncLogs to be local-only (change @id to id)
-		// CRITICAL BUG FIX: syncLogs table was syncing to cloud, causing infinite loop.
-		// Using @id marks a table for sync eligibility; server config controls which tables
-		// actually sync. Since syncLogs was both @id-marked and server-configured to sync,
-		// every sync event created a log entry, which synced, creating more events, ad infinitum.
-		// Fix: Change @id to id (local-only) to prevent this table from ever syncing.
-		this.version(5)
-			.stores({
-				habits:
-					"@id, userId, name, category, targetPerWeek, createdAt, updatedAt",
-				entries: "@id, habitId, userId, date, value, createdAt",
-				syncLogs: "id, timestamp, eventType, level", // Changed from @id to id (local-only!)
-			})
-			.upgrade(async (tx) => {
-				try {
-					console.log(
-						"[Migration v5] Fixing syncLogs table to be local-only...",
-					);
-					// Clear all existing sync logs - they're corrupted from the sync loop
-					const count = await tx.table("syncLogs").count();
-					console.log(
-						`[Migration v5] Clearing ${count} corrupted sync logs...`,
-					);
-					await tx.table("syncLogs").clear();
-					console.log(
-						"[Migration v5] Migration complete! syncLogs is now local-only.",
-					);
-				} catch (error) {
-					// Log full error with stack trace for debugging
-					console.error(
-						"[Migration v5] CRITICAL: Failed to fix syncLogs table:",
-						error,
-					);
-					if (error instanceof Error && error.stack) {
-						console.error("[Migration v5] Stack trace:", error.stack);
-					}
-
-					// Notify user - alert is appropriate here for critical migration failure
-					// that would prevent the app from functioning correctly
-					const errorMsg =
-						error instanceof Error ? error.message : String(error);
-					console.error(
-						`[Migration v5] User notification: Database migration failed: ${errorMsg}. Please refresh the page or restore from backup.`,
-					);
-
-					// Only show alert in browser environment (not during tests)
-					if (
-						typeof window !== "undefined" &&
-						!window.location.search.includes("test=true")
-					) {
-						alert(
-							`Database migration failed: ${errorMsg}\n\nPlease try refreshing the page. If the problem persists, restore from backup or contact support.\n\nCheck the browser console for technical details.`,
-						);
-					}
-
-					throw error;
-				}
-			});
-
-		// Version 6: Convert entry dates from YYYY-MM-DD to full timestamps
-		// Migration: YYYY-MM-DD strings → timestamp at noon local time
-		this.version(6)
-			.stores({
-				habits:
-					"@id, userId, name, category, targetPerWeek, createdAt, updatedAt",
-				entries: "@id, habitId, userId, date, value, createdAt",
-				syncLogs: "id, timestamp, eventType, level",
-			})
-			.upgrade(async (tx) => {
-				try {
-					console.log("[Migration v6] Converting entry dates to timestamps...");
-
-					const entryCount = await tx.table("entries").count();
-					console.log(`[Migration v6] Migrating ${entryCount} entry dates...`);
-
-					let migratedCount = 0;
-					let skippedCount = 0;
-
-					await tx
-						.table("entries")
-						.toCollection()
-						.modify((entry) => {
-							try {
-								// Only migrate if it's a date-only string (YYYY-MM-DD)
-								if (
-									typeof entry.date === "string" &&
-									/^\d{4}-\d{2}-\d{2}$/.test(entry.date)
-								) {
-									// Parse YYYY-MM-DD with validation
-									const parts = entry.date.split("-");
-									if (parts.length !== 3) {
-										throw new Error(
-											`Invalid date format: "${entry.date}". Expected YYYY-MM-DD`,
-										);
-									}
-
-									const [year, month, day] = parts.map(Number);
-
-									// Validate parsed numbers
-									if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
-										throw new Error(
-											`Invalid date components in "${entry.date}": year=${year}, month=${month}, day=${day}`,
-										);
-									}
-
-									// Validate ranges
-									if (month < 1 || month > 12) {
-										throw new Error(
-											`Invalid month in "${entry.date}": ${month}. Must be 1-12`,
-										);
-									}
-									if (day < 1 || day > 31) {
-										throw new Error(
-											`Invalid day in "${entry.date}": ${day}. Must be 1-31`,
-										);
-									}
-
-									// Create date at noon local time (avoids DST edge cases)
-									const date = new Date(year, month - 1, day, 12, 0, 0, 0);
-
-									// Validate the Date object
-									if (Number.isNaN(date.getTime())) {
-										throw new Error(
-											`Created invalid date from "${entry.date}"`,
-										);
-									}
-
-									// Verify round-trip to catch invalid dates like Feb 30
-									if (
-										date.getFullYear() !== year ||
-										date.getMonth() !== month - 1 ||
-										date.getDate() !== day
-									) {
-										throw new Error(
-											`Invalid date (e.g., Feb 30): "${entry.date}"`,
-										);
-									}
-
-									entry.date = toTimestamp(date);
-									migratedCount++;
-								} else {
-									// Validate it's actually a valid timestamp, not corrupted data
-									try {
-										normalizeDate(entry.date);
-										skippedCount++;
-									} catch (error) {
-										throw new Error(
-											`Entry ${entry.id} has corrupted date: "${entry.date}". ${error instanceof Error ? error.message : String(error)}`,
-										);
-									}
-								}
-							} catch (error) {
-								console.error(
-									`[Migration v6] Failed to convert entry ${entry.id}:`,
-									error,
-								);
-								throw new Error(
-									`Migration failed for entry ${entry.id}: ${error instanceof Error ? error.message : String(error)}`,
-								);
-							}
-						});
-
-					console.log(
-						`[Migration v6] Migration complete! Migrated ${migratedCount} entries, skipped ${skippedCount} entries (already timestamps)`,
-					);
-				} catch (error) {
-					// Log full error with stack trace for debugging
-					console.error(
-						"[Migration v6] CRITICAL: Database migration failed:",
-						error,
-					);
-					if (error instanceof Error && error.stack) {
-						console.error("[Migration v6] Stack trace:", error.stack);
-					}
-
-					const errorMsg =
-						error instanceof Error ? error.message : String(error);
-					console.error(
-						`[Migration v6] User notification: Database migration failed: ${errorMsg}. Please refresh the page or restore from backup.`,
-					);
-
-					// Only show alert in browser environment (not during tests)
-					if (
-						typeof window !== "undefined" &&
-						!window.location.search.includes("test=true")
-					) {
-						alert(
-							`Database migration failed: ${errorMsg}\n\nPlease try refreshing the page. If the problem persists, restore from backup or contact support.\n\nCheck the browser console for technical details.`,
-						);
-					}
-
-					throw error;
-				}
-			});
+		// Version 7: Remove syncLogs table completely (moved to separate database)
+		// FINAL FIX: syncLogs is now in a completely separate IndexedDB database
+		// (HumaneTrackerSyncLogs) that has NO connection to Dexie Cloud whatsoever.
+		// This is the ultimate fix for issue #45 - no syncLogs data will ever sync to cloud.
+		this.version(7).stores({
+			habits:
+				"@id, userId, name, category, targetPerWeek, createdAt, updatedAt",
+			entries: "@id, habitId, userId, date, value, createdAt",
+			syncLogs: null, // Remove syncLogs table from this database
+		});
 	}
 }
 
 // Create database instance
 export const db = new HumaneTrackerDB();
 
-// Create sync log service with dependency injection (avoids circular dependency)
-export const syncLogService = new SyncLogService(db.syncLogs);
+// Create sync log service using the separate sync log database
+// This database is completely isolated from Dexie Cloud and will NEVER sync
+export const syncLogService = new SyncLogService(syncLogDB.syncLogs);
 
 // Configure Dexie Cloud (optional - works offline if not configured)
 const dexieCloudUrl = import.meta.env.VITE_DEXIE_CLOUD_URL;
@@ -406,6 +222,10 @@ if (
 
 	// Set up comprehensive sync monitoring and logging
 	console.log("[Dexie Cloud] Configuring sync with URL:", dexieCloudUrl);
+
+	// Track if we've already alerted the user about login issues (to avoid repeated alerts)
+	let hasAlertedAboutLogin = false;
+	let initialStateTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	// Monitor sync state changes
 	db.cloud.syncState.subscribe((syncState) => {
@@ -447,7 +267,53 @@ if (
 				const message = "⚠ Offline mode";
 				console.warn(`[Dexie Cloud] ${timestamp} ${message}`);
 				syncLogService.addLog("syncState", "warning", message, logData);
+			} else if (
+				syncState.phase === "initial" &&
+				syncState.status === "not-started"
+			) {
+				// Stuck in initial state - check if user is logged in
+				const currentUser = db.cloud.currentUser.value;
+				const isLoggedIn = currentUser?.isLoggedIn ?? false;
+				const message = isLoggedIn
+					? "⚠ Sync not started - authentication may be required"
+					: "⚠ Sync not started - please log in to enable cloud sync";
+				console.warn(`[Dexie Cloud] ${timestamp} ${message}`, {
+					isLoggedIn,
+					userId: currentUser?.userId,
+				});
+				syncLogService.addLog("syncState", "warning", message, logData);
+
+				// Alert user if sync is stuck (only after a delay, giving them time to log in)
+				if (
+					typeof window !== "undefined" &&
+					!window.location.search.includes("test=true")
+				) {
+					if (!isLoggedIn && !hasAlertedAboutLogin && !initialStateTimeout) {
+						// Wait 10 seconds before alerting - gives user time to see login UI and interact
+						initialStateTimeout = setTimeout(() => {
+							// Re-check state before alerting to avoid false positives
+							const stillNotStarted =
+								db.cloud.syncState.value?.phase === "initial";
+							const stillNotLoggedIn = !db.cloud.currentUser.value?.isLoggedIn;
+							if (
+								stillNotStarted &&
+								stillNotLoggedIn &&
+								!hasAlertedAboutLogin
+							) {
+								hasAlertedAboutLogin = true;
+								alert(
+									"Cloud sync is not started.\n\nPlease log in to enable cloud synchronization.\n\nCheck the Debug Logs for more details.",
+								);
+							}
+						}, 10000); // 10 second delay
+					}
+				}
 			} else {
+				// Clear the timeout if we progress past initial state
+				if (initialStateTimeout) {
+					clearTimeout(initialStateTimeout);
+					initialStateTimeout = null;
+				}
 				// Log all other state changes
 				const message = `Sync state: ${syncState.phase} (${syncState.status})`;
 				syncLogService.addLog("syncState", "info", message, logData);

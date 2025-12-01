@@ -30,8 +30,8 @@ generate-version:
 build: generate-version
     npm run build
 
-# Run unit tests (generates version info first)
-test: generate-version
+# Run unit tests
+test:
     npm run test
 
 # Run E2E tests (Playwright - chromium only)
