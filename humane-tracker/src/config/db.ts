@@ -236,6 +236,89 @@ export class HumaneTrackerDB extends Dexie {
 					throw error;
 				}
 			});
+
+		// Version 6: Convert entry dates from YYYY-MM-DD to full timestamps
+		// Migration: YYYY-MM-DD strings → timestamp at 8 AM PST (16:00 UTC)
+		this.version(6)
+			.stores({
+				habits:
+					"@id, userId, name, category, targetPerWeek, createdAt, updatedAt",
+				entries: "@id, habitId, userId, date, value, createdAt",
+				syncLogs: "id, timestamp, eventType, level",
+			})
+			.upgrade(async (tx) => {
+				try {
+					console.log("[Migration v6] Converting entry dates to timestamps...");
+
+					const entryCount = await tx.table("entries").count();
+					console.log(`[Migration v6] Migrating ${entryCount} entry dates...`);
+
+					let migratedCount = 0;
+					let skippedCount = 0;
+
+					await tx
+						.table("entries")
+						.toCollection()
+						.modify((entry) => {
+							try {
+								// Only migrate if it's a date-only string (YYYY-MM-DD)
+								if (
+									typeof entry.date === "string" &&
+									/^\d{4}-\d{2}-\d{2}$/.test(entry.date)
+								) {
+									// Parse YYYY-MM-DD
+									const [year, month, day] = entry.date.split("-").map(Number);
+									// Create date at 8 AM PST (UTC-8, which is 16:00 UTC)
+									const date = new Date(Date.UTC(year, month - 1, day, 16, 0, 0, 0));
+									entry.date = toTimestamp(date);
+									migratedCount++;
+								} else {
+									// Already a timestamp or invalid - skip
+									skippedCount++;
+								}
+							} catch (error) {
+								console.error(
+									`[Migration v6] Failed to convert entry ${entry.id}:`,
+									error,
+								);
+								throw new Error(
+									`Migration failed for entry ${entry.id}: ${error instanceof Error ? error.message : String(error)}`,
+								);
+							}
+						});
+
+					console.log(
+						`[Migration v6] Migration complete! Migrated ${migratedCount} entries, skipped ${skippedCount} entries (already timestamps)`,
+					);
+				} catch (error) {
+					// Log full error with stack trace for debugging
+					console.error(
+						"[Migration v6] CRITICAL: Database migration failed:",
+						error,
+					);
+					if (error instanceof Error && error.stack) {
+						console.error("[Migration v6] Stack trace:", error.stack);
+					}
+
+					const errorMsg =
+						error instanceof Error ? error.message : String(error);
+					console.error(
+						`[Migration v6] User notification: Database migration failed: ${errorMsg}. Please refresh the page or restore from backup.`,
+					);
+
+					// Only show alert in browser environment (not during tests)
+					if (
+						typeof window !== "undefined" &&
+						!window.location.search.includes("test=true")
+					) {
+						alert(
+							`Database migration failed: ${errorMsg}\n\nPlease try refreshing the page. If the problem persists, restore from backup or contact support.\n\nCheck the browser console for technical details.`,
+						);
+					}
+
+					throw error;
+				}
+			});
 	}
 }
 

@@ -34,7 +34,7 @@ function toRecord(
 	return {
 		habitId: entry.habitId,
 		userId: entry.userId,
-		date: toDateString(entry.date),
+		date: toTimestamp(entry.date),
 		value: entry.value,
 		notes: entry.notes,
 		createdAt: toTimestamp(entry.createdAt ?? new Date()),
@@ -113,15 +113,19 @@ export const entryRepository = {
 		endDate: Date,
 	): Promise<HabitEntry[]> {
 		try {
-			const startStr = toDateString(startDate);
-			const endStr = toDateString(endDate);
+			// Set time boundaries for the range
+			const rangeStart = new Date(startDate);
+			rangeStart.setHours(0, 0, 0, 0);
+			const rangeEnd = new Date(endDate);
+			rangeEnd.setHours(23, 59, 59, 999);
 
 			const records = await db.entries
 				.where("userId")
 				.equals(userId)
 				.and((record) => {
-					const dateStr = normalizeDateString(record.date as string | Date);
-					return dateStr >= startStr && dateStr <= endStr;
+					// Normalize to Date object (handles both legacy YYYY-MM-DD and new timestamps)
+					const entryDate = normalizeDate(record.date as string | Date);
+					return entryDate >= rangeStart && entryDate <= rangeEnd;
 				})
 				.toArray();
 
@@ -143,15 +147,19 @@ export const entryRepository = {
 		endDate: Date,
 	): Promise<HabitEntry[]> {
 		try {
-			const startStr = toDateString(startDate);
-			const endStr = toDateString(endDate);
+			// Set time boundaries for the range
+			const rangeStart = new Date(startDate);
+			rangeStart.setHours(0, 0, 0, 0);
+			const rangeEnd = new Date(endDate);
+			rangeEnd.setHours(23, 59, 59, 999);
 
 			const records = await db.entries
 				.where("habitId")
 				.equals(habitId)
 				.and((record) => {
-					const dateStr = normalizeDateString(record.date as string | Date);
-					return dateStr >= startStr && dateStr <= endStr;
+					// Normalize to Date object (handles both legacy YYYY-MM-DD and new timestamps)
+					const entryDate = normalizeDate(record.date as string | Date);
+					return entryDate >= rangeStart && entryDate <= rangeEnd;
 				})
 				.toArray();
 
@@ -247,16 +255,20 @@ export const entryRepository = {
 		endDate: Date,
 		callback: (entries: HabitEntry[]) => void,
 	): () => void {
-		const startStr = toDateString(startDate);
-		const endStr = toDateString(endDate);
+		// Set time boundaries for the range
+		const rangeStart = new Date(startDate);
+		rangeStart.setHours(0, 0, 0, 0);
+		const rangeEnd = new Date(endDate);
+		rangeEnd.setHours(23, 59, 59, 999);
 
 		const observable = liveQuery(() =>
 			db.entries
 				.where("userId")
 				.equals(userId)
 				.and((record) => {
-					const dateStr = normalizeDateString(record.date as string | Date);
-					return dateStr >= startStr && dateStr <= endStr;
+					// Normalize to Date object (handles both legacy YYYY-MM-DD and new timestamps)
+					const entryDate = normalizeDate(record.date as string | Date);
+					return entryDate >= rangeStart && entryDate <= rangeEnd;
 				})
 				.toArray(),
 		);
