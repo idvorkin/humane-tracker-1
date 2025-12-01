@@ -43,6 +43,21 @@ React 18 + TypeScript + Vite application for tracking habits and behaviors with 
 - **HabitCard** - Individual habit display and interaction
 - **HabitForm** - Form for creating/editing habits
 
+### UI Framework
+
+The app uses **Mantine v7** for UI components:
+
+- **Dialogs**: Use `<Modal>` from Mantine instead of custom overlays
+- **Forms**: Use Mantine form components (`TextInput`, `Textarea`, `NumberInput`, `Radio`, `Checkbox`, `Autocomplete`, etc.)
+- **Buttons**: Use `<Button>` with variants (`default`, `light`, `filled`)
+- **Layout**: Use `<Stack>`, `<Group>` for spacing and alignment
+- **Feedback**: Use `<Alert>`, `<Badge>`, `<Loader>` for status indicators
+- **Icons**: Use `@tabler/icons-react` for consistent iconography
+
+**Installation**: Mantine dependencies are in package.json - run `npm install` to install.
+
+**Provider**: `<MantineProvider>` is set up in `index.tsx` and wraps the entire app.
+
 ### Data Layer
 
 - **Dexie** - IndexedDB wrapper for local-first storage
