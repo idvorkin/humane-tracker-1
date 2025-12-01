@@ -268,19 +268,7 @@ export const entryRepository = {
 					error,
 				);
 
-				// Show user-facing error notification
-				const errorMsg = error instanceof Error ? error.message : String(error);
-				if (typeof window !== "undefined") {
-					console.error(
-						`[EntryRepository] CRITICAL: Failed to load entry updates: ${errorMsg}. User has been notified.`,
-					);
-					// Use alert as a temporary solution - ideally this would use a toast/notification system
-					alert(
-						`Failed to load habit entries: ${errorMsg}\n\nPlease refresh the page. If the problem persists, contact support.`,
-					);
-				}
-
-				// Return empty array as fallback after notifying user
+				// Return empty array as fallback - UI layer should handle error display
 				callback([]);
 			},
 		});
@@ -304,19 +292,7 @@ export const entryRepository = {
 					error,
 				);
 
-				// Show user-facing error notification
-				const errorMsg = error instanceof Error ? error.message : String(error);
-				if (typeof window !== "undefined") {
-					console.error(
-						`[EntryRepository] CRITICAL: Failed to load entry updates: ${errorMsg}. User has been notified.`,
-					);
-					// Use alert as a temporary solution - ideally this would use a toast/notification system
-					alert(
-						`Failed to load habit entries: ${errorMsg}\n\nPlease refresh the page. If the problem persists, contact support.`,
-					);
-				}
-
-				// Return empty array as fallback after notifying user
+				// Return empty array as fallback - UI layer should handle error display
 				callback([]);
 			},
 		});
