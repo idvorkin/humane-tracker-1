@@ -85,6 +85,73 @@ test.describe("Load Default Habits", () => {
 			path: "test-results/habit-tracker-with-defaults.png",
 			fullPage: true,
 		});
+
+		// TEST: Check some habits by clicking on today's cells
+		console.log("Testing habit checking functionality...");
+
+		// Find all rows with habits
+		const allHabitRows = page.locator("tr.section-row");
+		const totalRows = await allHabitRows.count();
+
+		// Check the first 5 habits for today (column with "cell-today" class)
+		for (let i = 0; i < Math.min(5, totalRows); i++) {
+			const row = allHabitRows.nth(i);
+			const todayCell = row.locator("td.cell-today").first();
+
+			if (await todayCell.isVisible()) {
+				await todayCell.click();
+				await page.waitForTimeout(200); // Brief pause for visual feedback
+			}
+		}
+
+		// Take screenshot showing checked habits
+		await page.screenshot({
+			path: "test-results/habits-checked.png",
+			fullPage: true,
+		});
+		console.log("Checked 5 habits for today");
+
+		// Verify entries were created
+		const entryCount = await page.evaluate(async () => {
+			const { db } = await import("/src/config/db.ts");
+			return await db.entries.count();
+		});
+		console.log(`Created ${entryCount} entries`);
+		expect(entryCount).toBeGreaterThan(0);
+
+		// TEST: Zoom functionality
+		console.log("Testing zoom functionality...");
+
+		// Find the first zoom button (magnifying glass emoji)
+		const firstZoomButton = page.locator("button.zoom-btn").first();
+		await firstZoomButton.click();
+		await page.waitForTimeout(500);
+
+		// Verify we're in zoom mode by checking for "Back" button
+		const backButton = page.getByText("Back");
+		await expect(backButton).toBeVisible();
+
+		// Take screenshot of zoomed view
+		await page.screenshot({
+			path: "test-results/zoomed-category.png",
+			fullPage: true,
+		});
+		console.log("Zoomed into first category");
+
+		// Zoom out by clicking the Back button
+		await backButton.click();
+		await page.waitForTimeout(500);
+
+		// Verify we're back to full view
+		const expandCollapseButton = page.getByText("Collapse All");
+		await expect(expandCollapseButton).toBeVisible();
+
+		// Take final screenshot after zoom out
+		await page.screenshot({
+			path: "test-results/zoomed-out.png",
+			fullPage: true,
+		});
+		console.log("Zoomed out to full view");
 	});
 
 	test("should display habit categories after loading defaults", async ({
