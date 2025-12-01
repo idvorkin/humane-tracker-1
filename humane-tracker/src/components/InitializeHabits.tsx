@@ -7,7 +7,6 @@ import {
 	Progress,
 	Stack,
 	Text,
-	Title,
 } from "@mantine/core";
 import type React from "react";
 import { useState } from "react";
@@ -77,13 +76,12 @@ export const InitializeHabits: React.FC<InitializeHabitsProps> = ({
 		<Modal
 			opened
 			onClose={onComplete}
-			title={
-				<Title order={3} style={{ fontFamily: "'Fraunces', Georgia, serif" }}>
-					Welcome to Humane Tracker!
-				</Title>
-			}
+			title="Welcome to Humane Tracker!"
 			size="md"
 			centered
+			styles={{
+				title: { fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600 },
+			}}
 		>
 			<Stack gap="lg">
 				<Text>Would you like to start with the default habit set?</Text>

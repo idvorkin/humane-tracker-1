@@ -1,8 +1,18 @@
+import {
+	Alert,
+	Badge,
+	Button,
+	Group,
+	Modal,
+	Progress,
+	Stack,
+	Text,
+} from "@mantine/core";
+import { IconAlertCircle, IconRefresh } from "@tabler/icons-react";
 import type { SyncState } from "dexie-cloud-addon";
 import { useObservable } from "dexie-react-hooks";
 import type React from "react";
 import { db } from "../config/db";
-import "./SyncStatusDialog.css";
 
 interface SyncStatusDialogProps {
 	onClose: () => void;
@@ -34,79 +44,66 @@ function getStatusDisplay(
 	syncState: SyncState | null,
 	wsStatus: WebSocketStatus | null,
 	hasSyncedBefore: boolean,
-): { label: string; className: string; icon: string; hint?: string } {
+): { label: string; color: string; hint?: string } {
 	if (!syncState) {
-		return { label: "Not configured", className: "status-gray", icon: "○" };
+		return { label: "Not configured", color: "gray" };
 	}
 
 	const phase = syncState.phase as SyncStatePhase;
 
 	if (phase === "error" || syncState.status === "error") {
-		return { label: "Error", className: "status-red", icon: "●" };
+		return { label: "Error", color: "red" };
 	}
 	if (phase === "offline" || syncState.status === "offline") {
-		return { label: "Offline", className: "status-gray", icon: "○" };
+		return { label: "Offline", color: "gray" };
 	}
 	if (phase === "pushing") {
-		return { label: "Uploading...", className: "status-blue", icon: "↑" };
+		return { label: "Uploading...", color: "blue" };
 	}
 	if (phase === "pulling") {
-		return { label: "Downloading...", className: "status-blue", icon: "↓" };
+		return { label: "Downloading...", color: "blue" };
 	}
 	if (phase === "in-sync" && wsStatus === "connected") {
-		return { label: "Synced (live)", className: "status-green", icon: "●" };
+		return { label: "Synced (live)", color: "green" };
 	}
 	if (phase === "in-sync") {
 		return {
 			label: "Synced",
-			className: "status-green",
-			icon: "●",
+			color: "green",
 			hint: "WebSocket not connected - no live updates",
 		};
 	}
 
-	// Handle "initial" phase with more context
 	if (phase === "initial" || syncState.status === "connecting") {
-		// WebSocket stuck connecting but we've synced before
 		if (wsStatus === "connecting" && hasSyncedBefore) {
 			return {
 				label: "WebSocket connecting...",
-				className: "status-yellow",
-				icon: "○",
+				color: "yellow",
 				hint: "Data synced via HTTP. WebSocket may be blocked - check domain whitelist.",
 			};
 		}
-		// WebSocket error
 		if (wsStatus === "error") {
 			return {
 				label: "WebSocket failed",
-				className: "status-red",
-				icon: "●",
+				color: "red",
 				hint: "Live sync unavailable. Check domain whitelist in Dexie Cloud.",
 			};
 		}
-		// First time connecting
 		if (!hasSyncedBefore) {
-			return {
-				label: "First sync...",
-				className: "status-yellow",
-				icon: "○",
-			};
+			return { label: "First sync...", color: "yellow" };
 		}
-		// Generic connecting
-		return { label: "Connecting...", className: "status-yellow", icon: "○" };
+		return { label: "Connecting...", color: "yellow" };
 	}
 
 	if (syncState.status === "disconnected") {
 		return {
 			label: "Disconnected",
-			className: "status-gray",
-			icon: "○",
+			color: "gray",
 			hint: wsStatus === "disconnected" ? "WebSocket disconnected" : undefined,
 		};
 	}
 
-	return { label: syncState.status, className: "status-gray", icon: "○" };
+	return { label: syncState.status, color: "gray" };
 }
 
 function formatTimestamp(date: Date | null | undefined): string {
@@ -212,97 +209,96 @@ export function SyncStatusDialog({ onClose }: SyncStatusDialogProps) {
 		}
 	};
 
-	const handleOverlayClick = (e: React.MouseEvent) => {
-		if (e.target === e.currentTarget) {
-			onClose();
-		}
-	};
-
 	const showProgress = phase === "pushing" || phase === "pulling";
 	const showError = phase === "error" || syncState?.status === "error";
 
 	return (
-		<div className="sync-status-overlay" onClick={handleOverlayClick}>
-			<div className="sync-status-dialog">
-				<div className="sync-status-header">
-					<h2>Sync Status</h2>
-					<button className="sync-status-close" onClick={onClose}>
-						✕
-					</button>
-				</div>
+		<Modal
+			opened
+			onClose={onClose}
+			title="Sync Status"
+			size="sm"
+			centered
+			styles={{
+				title: { fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600 },
+			}}
+		>
+			<Stack gap="md">
+				<Group justify="center" py="sm">
+					<Badge size="lg" color={statusDisplay.color} variant="light">
+						{statusDisplay.label}
+					</Badge>
+				</Group>
 
-				<div className="sync-status-body">
-					<div className={`sync-status-indicator ${statusDisplay.className}`}>
-						<span className="sync-status-icon">{statusDisplay.icon}</span>
-						<span className="sync-status-label">{statusDisplay.label}</span>
-					</div>
+				{statusDisplay.hint && (
+					<Text size="xs" c="dimmed" ta="center">
+						{statusDisplay.hint}
+					</Text>
+				)}
 
-					{statusDisplay.hint && (
-						<div className="sync-status-hint">{statusDisplay.hint}</div>
+				<Stack gap="xs">
+					<Group justify="space-between">
+						<Text size="sm" c="dimmed">
+							Phase
+						</Text>
+						<Text size="sm">{getPhaseLabel(phase)}</Text>
+					</Group>
+					<Group justify="space-between">
+						<Text size="sm" c="dimmed">
+							Last synced
+						</Text>
+						<Text size="sm">{formatTimestamp(lastSynced)}</Text>
+					</Group>
+					<Group justify="space-between">
+						<Text size="sm" c="dimmed">
+							WebSocket
+						</Text>
+						<Text size="sm">{getWsStatusLabel(wsStatus)}</Text>
+					</Group>
+					{license && (
+						<Group justify="space-between">
+							<Text size="sm" c="dimmed">
+								License
+							</Text>
+							<Text size="sm" c={license !== "ok" ? "yellow" : undefined}>
+								{getLicenseLabel(license)}
+							</Text>
+						</Group>
 					)}
+				</Stack>
 
-					<div className="sync-status-details">
-						<div className="sync-status-row">
-							<span className="sync-status-key">Phase:</span>
-							<span className="sync-status-value">{getPhaseLabel(phase)}</span>
-						</div>
-						<div className="sync-status-row">
-							<span className="sync-status-key">Last synced:</span>
-							<span className="sync-status-value">
-								{formatTimestamp(lastSynced)}
-							</span>
-						</div>
-						<div className="sync-status-row">
-							<span className="sync-status-key">WebSocket:</span>
-							<span className="sync-status-value">
-								{getWsStatusLabel(wsStatus)}
-							</span>
-						</div>
-						{license && (
-							<div className="sync-status-row">
-								<span className="sync-status-key">License:</span>
-								<span
-									className={`sync-status-value ${license !== "ok" ? "sync-status-warning" : ""}`}
-								>
-									{getLicenseLabel(license)}
-								</span>
-							</div>
-						)}
-					</div>
+				{showProgress && (
+					<Stack gap="xs">
+						<Progress value={progress ?? 0} color="blue" animated />
+						<Text size="xs" c="dimmed" ta="center">
+							{progress ?? 0}%
+						</Text>
+					</Stack>
+				)}
 
-					{showProgress && (
-						<div className="sync-status-progress">
-							<div className="sync-status-progress-bar">
-								<div
-									className="sync-status-progress-fill"
-									style={{ width: `${progress ?? 0}%` }}
-								/>
-							</div>
-							<span className="sync-status-progress-text">
-								{progress ?? 0}%
-							</span>
-						</div>
-					)}
+				{showError && error && (
+					<Alert
+						icon={<IconAlertCircle size={16} />}
+						color="red"
+						variant="light"
+						title="Error Details"
+					>
+						{error.message || String(error)}
+					</Alert>
+				)}
 
-					{showError && error && (
-						<div className="sync-status-error">
-							<div className="sync-status-error-title">Error Details</div>
-							<div className="sync-status-error-message">
-								{error.message || String(error)}
-							</div>
-						</div>
-					)}
-				</div>
-
-				<div className="sync-status-footer">
-					<button className="sync-status-btn-secondary" onClick={onClose}>
+				<Group justify="flex-end">
+					<Button variant="subtle" onClick={onClose}>
 						Close
-					</button>
-					<button className="sync-status-btn-primary" onClick={handleSyncNow}>
+					</Button>
+					<Button
+						leftSection={<IconRefresh size={16} />}
+						onClick={handleSyncNow}
+					>
 						Sync Now
-					</button>
-				</div>
-			</div>
-		</div>
+					</Button>
+				</Group>
+			</Stack>
+		</Modal>
 	);
 }

@@ -39,9 +39,9 @@ export function AboutDialog({ isOpen, onClose }: AboutDialogProps) {
 			title={
 				<Group gap="xs">
 					<IconInfoCircle size={22} />
-					<Title order={3} style={{ fontFamily: "'Fraunces', Georgia, serif" }}>
+					<Text fw={600} style={{ fontFamily: "'Fraunces', Georgia, serif" }}>
 						About
-					</Title>
+					</Text>
 				</Group>
 			}
 			size="sm"

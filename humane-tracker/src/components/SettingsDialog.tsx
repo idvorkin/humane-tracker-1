@@ -7,7 +7,6 @@ import {
 	Stack,
 	Switch,
 	Text,
-	Title,
 } from "@mantine/core";
 import {
 	IconBug,
@@ -135,13 +134,12 @@ export function SettingsDialog({
 		<Modal
 			opened
 			onClose={onClose}
-			title={
-				<Title order={3} style={{ fontFamily: "'Fraunces', Georgia, serif" }}>
-					Settings
-				</Title>
-			}
+			title="Settings"
 			size="sm"
 			centered
+			styles={{
+				title: { fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600 },
+			}}
 		>
 			<Stack gap="lg">
 				{/* Updates Section */}

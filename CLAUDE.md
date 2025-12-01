@@ -37,6 +37,36 @@ Pre-commit runs Biome checks and unit tests automatically.
 
 React 18 + TypeScript + Vite application for tracking habits and behaviors with local-first storage.
 
+### UI Framework
+
+- **Mantine v7** - Component library for UI elements
+- **@tabler/icons-react** - Icon library for consistent iconography
+- Custom theme in `src/config/theme.ts` with warmAmber primary color
+
+### Mantine Usage Guidelines
+
+```typescript
+// ✅ Use Mantine components for UI
+import { Button, Modal, Stack, Text, Group } from "@mantine/core";
+
+// ✅ Use Mantine hooks for common patterns
+import { useDisclosure } from "@mantine/hooks";
+
+// ✅ Use Tabler icons for consistent iconography
+import { IconSettings, IconBug } from "@tabler/icons-react";
+```
+
+**Modal titles**: Use string titles with custom styles, not nested Title components:
+```typescript
+// ✅ CORRECT
+<Modal title="Settings" styles={{ title: { fontFamily: "'Fraunces', Georgia, serif" } }}>
+
+// ❌ WRONG - causes nested heading warnings
+<Modal title={<Title order={3}>Settings</Title>}>
+```
+
+**Custom colors**: Use theme colors like `warmAmber`, `terracotta`, `sage` defined in theme.ts
+
 ### Core Components
 
 - **App.tsx** - Main application component with routing and state management
@@ -71,6 +101,7 @@ The only place that should import `db` directly is the repositories themselves.
 ### Key Files
 
 - `src/config/db.ts` - Database schema and Dexie configuration
+- `src/config/theme.ts` - Mantine theme configuration
 - `src/repositories/` - Repository layer for DB access with date conversion
 - `src/services/habitService.ts` - Business logic (uses repositories)
 - `src/App.tsx` - Main application logic
@@ -116,6 +147,7 @@ Follow the `useHabitTrackerVM` + `HabitTracker` pattern:
 - Tests must comprehensively cover functionality
 - Never delete a failing test - fix the code or discuss
 - Test output must be clean - capture and validate expected errors
+- Wrap components using Mantine with `MantineProvider` in tests (see `src/App.test.tsx`)
 
 ### Debugging
 
