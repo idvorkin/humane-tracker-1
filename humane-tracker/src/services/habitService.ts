@@ -100,8 +100,12 @@ export class HabitService {
 	}
 
 	// Subscribe to habits changes
-	subscribeToHabits(userId: string, callback: (habits: Habit[]) => void) {
-		return habitRepository.subscribeByUserId(userId, callback);
+	subscribeToHabits(
+		userId: string,
+		callback: (habits: Habit[]) => void,
+		onError?: (error: unknown) => void,
+	) {
+		return habitRepository.subscribeByUserId(userId, callback, onError);
 	}
 
 	// Add a habit entry
@@ -124,12 +128,14 @@ export class HabitService {
 		startDate: Date,
 		endDate: Date,
 		callback: (entries: HabitEntry[]) => void,
+		onError?: (error: unknown) => void,
 	) {
 		return entryRepository.subscribeForDateRange(
 			userId,
 			startDate,
 			endDate,
 			callback,
+			onError,
 		);
 	}
 

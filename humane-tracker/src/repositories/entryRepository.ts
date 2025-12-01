@@ -245,6 +245,7 @@ export const entryRepository = {
 		startDate: Date,
 		endDate: Date,
 		callback: (entries: HabitEntry[]) => void,
+		onError?: (error: unknown) => void,
 	): () => void {
 		const { rangeStart, rangeEnd } = toDateRange(startDate, endDate);
 
@@ -268,7 +269,12 @@ export const entryRepository = {
 					error,
 				);
 
-				// Return empty array as fallback - UI layer should handle error display
+				// Notify UI layer if error handler provided
+				if (onError) {
+					onError(error);
+				}
+
+				// Return empty array as fallback
 				callback([]);
 			},
 		});
@@ -279,6 +285,7 @@ export const entryRepository = {
 	subscribeByUserId(
 		userId: string,
 		callback: (entries: HabitEntry[]) => void,
+		onError?: (error: unknown) => void,
 	): () => void {
 		const observable = liveQuery(() =>
 			db.entries.where("userId").equals(userId).toArray(),
@@ -292,7 +299,12 @@ export const entryRepository = {
 					error,
 				);
 
-				// Return empty array as fallback - UI layer should handle error display
+				// Notify UI layer if error handler provided
+				if (onError) {
+					onError(error);
+				}
+
+				// Return empty array as fallback
 				callback([]);
 			},
 		});
