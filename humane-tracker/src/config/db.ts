@@ -7,7 +7,7 @@ import {
 	toTimestamp,
 } from "../repositories/types";
 import { SyncLogService } from "../services/syncLogService";
-import type { SyncLog } from "../types/syncLog";
+import { syncLogDB } from "./syncLogDB";
 
 // Extend Dexie with cloud addon
 export class HumaneTrackerDB extends Dexie {
@@ -15,7 +15,6 @@ export class HumaneTrackerDB extends Dexie {
 	// The repository layer handles conversion between Record and domain types
 	habits!: Table<HabitRecord, string>;
 	entries!: Table<EntryRecord, string>;
-	syncLogs!: Table<SyncLog, string>;
 
 	constructor() {
 		super("HumaneTrackerDB", { addons: [dexieCloud] });
@@ -391,7 +390,6 @@ export const db = new HumaneTrackerDB();
 
 // Create sync log service using the separate sync log database
 // This database is completely isolated from Dexie Cloud and will NEVER sync
-import { syncLogDB } from "./syncLogDB";
 export const syncLogService = new SyncLogService(syncLogDB.syncLogs);
 
 // Configure Dexie Cloud (optional - works offline if not configured)
