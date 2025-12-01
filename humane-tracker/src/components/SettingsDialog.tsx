@@ -1,8 +1,17 @@
-import { useObservable } from "dexie-react-hooks";
+import { useLiveQuery, useObservable } from "dexie-react-hooks";
 import type React from "react";
-import { db } from "../config/db";
+import { useState } from "react";
+import { db, syncLogService } from "../config/db";
 import { useVersionCheck } from "../hooks/useVersionCheck";
 import { getModifierKey } from "../services/githubService";
+import {
+	computeSyncStatus,
+	formatTimeAgo,
+	getDetailedSyncInfo,
+	type SyncState,
+	type WebSocketStatus,
+} from "../services/syncStatusService";
+import type { SyncLog } from "../types/syncLog";
 import "./SettingsDialog.css";
 
 interface SettingsDialogProps {
@@ -18,77 +27,41 @@ interface SettingsDialogProps {
 	onRequestShakePermission?: () => Promise<boolean>;
 }
 
-type SyncStatePhase =
-	| "initial"
-	| "not-in-sync"
-	| "pushing"
-	| "pulling"
-	| "in-sync"
-	| "error"
-	| "offline";
-
-type WebSocketStatus =
-	| "not-started"
-	| "connecting"
-	| "connected"
-	| "disconnected"
-	| "error";
-
-interface SyncState {
-	status: string;
-	phase: SyncStatePhase;
+interface PersistedSyncState {
+	timestamp?: Date;
+	serverRevision?: unknown;
+	initiallySynced?: boolean;
 }
 
-function formatTimeAgo(date: Date | null): string {
-	if (!date) return "Never";
-	const now = new Date();
-	const diffMs = now.getTime() - date.getTime();
-	const diffSecs = Math.floor(diffMs / 1000);
-	if (diffSecs < 10) return "Just now";
-	if (diffSecs < 60) return `${diffSecs}s ago`;
-	const diffMins = Math.floor(diffSecs / 60);
-	if (diffMins < 60) return `${diffMins}m ago`;
-	const diffHours = Math.floor(diffMins / 60);
-	if (diffHours < 24) return `${diffHours}h ago`;
-	return date.toLocaleDateString();
-}
+function ConnectionQualityIndicator({
+	quality,
+	label,
+}: {
+	quality: "good" | "fair" | "poor" | "none";
+	label: string;
+}) {
+	const barCount = 4;
+	const activeBars = {
+		good: 4,
+		fair: 2,
+		poor: 1,
+		none: 0,
+	}[quality];
 
-function getSyncStatusLabel(
-	syncState: SyncState | null,
-	wsStatus: WebSocketStatus | null,
-	isLocalMode: boolean,
-): { label: string; status: "success" | "warning" | "error" | "neutral" } {
-	if (isLocalMode) {
-		return { label: "Local Only", status: "neutral" };
-	}
-	if (!syncState) {
-		return { label: "Not configured", status: "neutral" };
-	}
-
-	const phase = syncState.phase;
-	if (phase === "error" || syncState.status === "error") {
-		return { label: "Error", status: "error" };
-	}
-	if (phase === "offline" || syncState.status === "offline") {
-		return { label: "Offline", status: "warning" };
-	}
-	if (syncState.status === "connecting" || phase === "initial") {
-		return { label: "Connecting...", status: "warning" };
-	}
-	if (phase === "pushing") {
-		return { label: "Uploading...", status: "warning" };
-	}
-	if (phase === "pulling") {
-		return { label: "Downloading...", status: "warning" };
-	}
-	if (phase === "in-sync" && wsStatus === "connected") {
-		return { label: "Synced (Live)", status: "success" };
-	}
-	if (phase === "in-sync") {
-		return { label: "Synced", status: "success" };
-	}
-
-	return { label: syncState.phase, status: "neutral" };
+	return (
+		<div className={`settings-connection-quality ${quality}`}>
+			<div className="settings-connection-bars">
+				{Array.from({ length: barCount }).map((_, i) => (
+					<div
+						key={i}
+						className={`settings-connection-bar ${i < activeBars ? "active" : ""}`}
+						style={{ height: `${((i + 1) / barCount) * 100}%` }}
+					/>
+				))}
+			</div>
+			<span>{label}</span>
+		</div>
+	);
 }
 
 export function SettingsDialog({
@@ -105,16 +78,44 @@ export function SettingsDialog({
 }: SettingsDialogProps) {
 	const { checkForUpdate, isChecking, lastCheckTime } = useVersionCheck();
 
+	// Expandable sections state
+	const [detailsExpanded, setDetailsExpanded] = useState(false);
+	const [diagnosticsExpanded, setDiagnosticsExpanded] = useState(false);
+
+	// Sync state observables
 	const syncStateFromCloud = useObservable(() => db.cloud.syncState, []) as
 		| SyncState
 		| undefined;
 	const wsStatusFromCloud = useObservable(() => db.cloud.webSocketStatus, []) as
 		| WebSocketStatus
 		| undefined;
+	const persistedState = useObservable(
+		() => db.cloud.persistedSyncState,
+		[],
+	) as PersistedSyncState | null;
+
+	// Recent logs for diagnostics (live query)
+	const recentLogs = useLiveQuery(
+		() => syncLogService.getRecentLogs(5),
+		[],
+	) as SyncLog[] | undefined;
 
 	const syncState = isLocalMode ? null : (syncStateFromCloud ?? null);
 	const wsStatus = isLocalMode ? null : (wsStatusFromCloud ?? null);
-	const syncStatus = getSyncStatusLabel(syncState, wsStatus, isLocalMode);
+
+	const lastSynced = persistedState?.timestamp
+		? new Date(persistedState.timestamp)
+		: null;
+	const hasSyncedBefore =
+		lastSynced !== null || persistedState?.initiallySynced === true;
+
+	const syncStatus = computeSyncStatus(
+		syncState,
+		wsStatus,
+		isLocalMode,
+		hasSyncedBefore,
+	);
+	const detailedInfo = getDetailedSyncInfo(syncState, wsStatus);
 
 	const handleOverlayClick = (e: React.MouseEvent) => {
 		if (e.target === e.currentTarget) {
@@ -130,6 +131,38 @@ export function SettingsDialog({
 	const handleViewDebugLogs = () => {
 		onClose();
 		onOpenDebugLogs?.();
+	};
+
+	const handleSyncNow = async () => {
+		try {
+			await db.cloud.sync();
+		} catch (err) {
+			console.error("Manual sync failed:", err);
+		}
+	};
+
+	const handleExportDiagnostics = async () => {
+		try {
+			const diagnostics = await syncLogService.exportDiagnostics(
+				syncState,
+				wsStatus,
+				persistedState,
+			);
+			const blob = new Blob([diagnostics], { type: "application/json" });
+			const url = URL.createObjectURL(blob);
+			const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+			const filename = `humane-tracker-diagnostics-${timestamp}.json`;
+
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = filename;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+		} catch (error) {
+			console.error("Failed to export diagnostics:", error);
+		}
 	};
 
 	return (
@@ -194,7 +227,7 @@ export function SettingsDialog({
 						</div>
 					</div>
 
-					{/* Sync Section */}
+					{/* Sync Section with Expandable Details */}
 					<div className="settings-section">
 						<div className="settings-section-header">
 							<div className="settings-section-icon">
@@ -216,24 +249,136 @@ export function SettingsDialog({
 							<div className="settings-info-row">
 								<span className="settings-info-label">Status</span>
 								<span
-									className={`settings-status-badge settings-status-${syncStatus.status}`}
+									className={`settings-status-badge settings-status-${syncStatus.badgeStatus}`}
 								>
 									<span className="settings-status-dot" />
 									{syncStatus.label}
 								</span>
 							</div>
-							<button
-								className="settings-action-button settings-action-secondary"
-								onClick={handleViewSyncDetails}
-							>
-								View Sync Details
-							</button>
-							<button
-								className="settings-action-button settings-action-secondary"
-								onClick={handleViewDebugLogs}
-							>
-								View Debug Logs
-							</button>
+
+							{/* Expandable Details Section */}
+							{!isLocalMode && (
+								<div className="settings-expandable">
+									<div
+										className="settings-expandable-header"
+										onClick={() => setDetailsExpanded(!detailsExpanded)}
+									>
+										<span className="settings-expandable-title">Details</span>
+										<span
+											className={`settings-expandable-icon ${detailsExpanded ? "expanded" : ""}`}
+										>
+											▼
+										</span>
+									</div>
+									<div
+										className={`settings-expandable-content ${detailsExpanded ? "expanded" : ""}`}
+									>
+										<div className="settings-expandable-body">
+											<div className="settings-sync-detail-row">
+												<span className="settings-sync-detail-label">
+													Current activity
+												</span>
+												<span className="settings-sync-detail-value">
+													{detailedInfo.phaseLabel}
+												</span>
+											</div>
+											<div className="settings-sync-detail-row">
+												<span className="settings-sync-detail-label">
+													Last synced
+												</span>
+												<span className="settings-sync-detail-value">
+													{formatTimeAgo(lastSynced)}
+												</span>
+											</div>
+											<div className="settings-sync-detail-row">
+												<span className="settings-sync-detail-label">
+													Connection
+												</span>
+												<span className="settings-sync-detail-value">
+													<ConnectionQualityIndicator
+														quality={detailedInfo.connectionQuality}
+														label={detailedInfo.connectionLabel}
+													/>
+												</span>
+											</div>
+											<button
+												className="settings-action-button"
+												onClick={handleSyncNow}
+												style={{ marginTop: "8px" }}
+											>
+												Sync Now
+											</button>
+										</div>
+									</div>
+								</div>
+							)}
+
+							{/* Expandable Advanced Diagnostics Section */}
+							{!isLocalMode && (
+								<div className="settings-expandable">
+									<div
+										className="settings-expandable-header"
+										onClick={() => setDiagnosticsExpanded(!diagnosticsExpanded)}
+									>
+										<span className="settings-expandable-title">
+											Advanced Diagnostics
+										</span>
+										<span
+											className={`settings-expandable-icon ${diagnosticsExpanded ? "expanded" : ""}`}
+										>
+											▼
+										</span>
+									</div>
+									<div
+										className={`settings-expandable-content ${diagnosticsExpanded ? "expanded" : ""}`}
+									>
+										<div className="settings-expandable-body">
+											<div className="settings-recent-logs">
+												{recentLogs && recentLogs.length > 0 ? (
+													recentLogs.map((log) => (
+														<div
+															key={log.id}
+															className="settings-recent-log-entry"
+														>
+															<div className="settings-recent-log-header">
+																<span
+																	className={`settings-recent-log-badge ${log.level}`}
+																>
+																	{log.level}
+																</span>
+																<span className="settings-recent-log-time">
+																	{formatTimeAgo(log.timestamp)}
+																</span>
+															</div>
+															<div className="settings-recent-log-message">
+																{log.message}
+															</div>
+														</div>
+													))
+												) : (
+													<div className="settings-recent-logs-empty">
+														No recent sync events
+													</div>
+												)}
+											</div>
+											<div className="settings-button-row" style={{ marginTop: "12px" }}>
+												<button
+													className="settings-action-button settings-action-secondary"
+													onClick={handleViewDebugLogs}
+												>
+													View Full Log
+												</button>
+												<button
+													className="settings-action-button settings-action-secondary"
+													onClick={handleExportDiagnostics}
+												>
+													Export for Support
+												</button>
+											</div>
+										</div>
+									</div>
+								</div>
+							)}
 						</div>
 					</div>
 

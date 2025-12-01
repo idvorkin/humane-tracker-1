@@ -65,6 +65,18 @@ export class SyncLogService {
 	}
 
 	/**
+	 * Get recent logs (limited number), newest first
+	 */
+	async getRecentLogs(limit: number = 10): Promise<SyncLog[]> {
+		const logs = await this.syncLogsTable
+			.orderBy("timestamp")
+			.reverse()
+			.limit(limit)
+			.toArray();
+		return logs;
+	}
+
+	/**
 	 * Get log count
 	 */
 	async getCount(): Promise<number> {
@@ -110,5 +122,33 @@ export class SyncLogService {
 	async exportLogs(): Promise<string> {
 		const logs = await this.getLogs();
 		return JSON.stringify(logs, null, 2);
+	}
+
+	/**
+	 * Export diagnostics bundle for support
+	 * Includes system info, recent logs, and current state
+	 */
+	async exportDiagnostics(
+		syncState: unknown,
+		wsStatus: unknown,
+		persistedState: unknown,
+	): Promise<string> {
+		const recentLogs = await this.getRecentLogs(50);
+		const diagnostics = {
+			timestamp: new Date().toISOString(),
+			environment: {
+				userAgent: navigator.userAgent,
+				online: navigator.onLine,
+				language: navigator.language,
+				screenResolution: `${window.screen.width}x${window.screen.height}`,
+			},
+			syncStatus: {
+				syncState,
+				wsStatus,
+				persistedState,
+			},
+			recentLogs,
+		};
+		return JSON.stringify(diagnostics, null, 2);
 	}
 }
