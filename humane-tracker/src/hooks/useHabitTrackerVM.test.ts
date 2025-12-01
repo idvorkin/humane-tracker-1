@@ -41,9 +41,20 @@ describe("getCategorySummary", () => {
 	});
 
 	it("returns good status when all habits done today", () => {
+		const today = new Date();
 		const habits = [
-			createMockHabit({ status: "done" }),
-			createMockHabit({ status: "done" }),
+			createMockHabit({
+				status: "done",
+				entries: [{ id: "e1", habitId: "h1", userId: "u1", date: today, value: 1, createdAt: new Date() }],
+				currentWeekCount: 3,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				status: "done",
+				entries: [{ id: "e2", habitId: "h2", userId: "u1", date: today, value: 1, createdAt: new Date() }],
+				currentWeekCount: 3,
+				targetPerWeek: 3,
+			}),
 		];
 
 		const summary = getCategorySummary(habits);
@@ -54,10 +65,26 @@ describe("getCategorySummary", () => {
 	});
 
 	it("returns warn status when some but not all done", () => {
+		const today = new Date();
 		const habits = [
-			createMockHabit({ status: "done" }),
-			createMockHabit({ status: "today" }),
-			createMockHabit({ status: "met" }),
+			createMockHabit({
+				status: "done",
+				entries: [{ id: "e1", habitId: "h1", userId: "u1", date: today, value: 1, createdAt: new Date() }],
+				currentWeekCount: 3,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				status: "today",
+				entries: [],
+				currentWeekCount: 0,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				status: "met",
+				entries: [],
+				currentWeekCount: 3,
+				targetPerWeek: 3,
+			}),
 		];
 
 		const summary = getCategorySummary(habits);
@@ -69,8 +96,18 @@ describe("getCategorySummary", () => {
 
 	it("returns bad status when none done", () => {
 		const habits = [
-			createMockHabit({ status: "today" }),
-			createMockHabit({ status: "met" }),
+			createMockHabit({
+				status: "today",
+				entries: [],
+				currentWeekCount: 0,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				status: "met",
+				entries: [],
+				currentWeekCount: 3,
+				targetPerWeek: 3,
+			}),
 		];
 
 		const summary = getCategorySummary(habits);
@@ -82,9 +119,21 @@ describe("getCategorySummary", () => {
 
 	it("calculates total status correctly", () => {
 		const habits = [
-			createMockHabit({ status: "met" }),
-			createMockHabit({ status: "met" }),
-			createMockHabit({ status: "today" }),
+			createMockHabit({
+				status: "met",
+				currentWeekCount: 3,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				status: "met",
+				currentWeekCount: 3,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				status: "today",
+				currentWeekCount: 0,
+				targetPerWeek: 3,
+			}),
 		];
 
 		const summary = getCategorySummary(habits);
@@ -96,8 +145,16 @@ describe("getCategorySummary", () => {
 
 	it("returns good total status when all met", () => {
 		const habits = [
-			createMockHabit({ status: "met" }),
-			createMockHabit({ status: "met" }),
+			createMockHabit({
+				status: "met",
+				currentWeekCount: 3,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				status: "met",
+				currentWeekCount: 3,
+				targetPerWeek: 3,
+			}),
 		];
 
 		const summary = getCategorySummary(habits);
@@ -106,10 +163,26 @@ describe("getCategorySummary", () => {
 	});
 
 	it("counts done status as met for weekly total", () => {
+		const today = new Date();
 		const habits = [
-			createMockHabit({ status: "done" }), // met target AND done today
-			createMockHabit({ status: "done" }), // met target AND done today
-			createMockHabit({ status: "met" }), // met target but not done today
+			createMockHabit({
+				status: "done",
+				entries: [{ id: "e1", habitId: "h1", userId: "u1", date: today, value: 1, createdAt: new Date() }],
+				currentWeekCount: 3,
+				targetPerWeek: 3,
+			}), // met target AND done today
+			createMockHabit({
+				status: "done",
+				entries: [{ id: "e2", habitId: "h2", userId: "u1", date: today, value: 1, createdAt: new Date() }],
+				currentWeekCount: 3,
+				targetPerWeek: 3,
+			}), // met target AND done today
+			createMockHabit({
+				status: "met",
+				entries: [],
+				currentWeekCount: 3,
+				targetPerWeek: 3,
+			}), // met target but not done today
 		];
 
 		const summary = getCategorySummary(habits);
@@ -128,15 +201,72 @@ describe("getCategorySummary", () => {
 		// L-Sit Hangs: 0/2 - not met -> "tomorrow"
 		// Pull Ups: 0/3 - not met -> "overdue" (needs 3, only 2 days left)
 		// Kettlebility: 0/2 - not met -> "tomorrow"
+		const today = new Date();
 		const habits = [
-			createMockHabit({ id: "1", name: "TGU 28KG", status: "tomorrow" }),
-			createMockHabit({ id: "2", name: "TGU 32KG", status: "met" }),
-			createMockHabit({ id: "3", name: "1H Swings 28KG", status: "done" }),
-			createMockHabit({ id: "4", name: "1H Swings 32KG", status: "tomorrow" }),
-			createMockHabit({ id: "5", name: "Pistols", status: "done" }),
-			createMockHabit({ id: "6", name: "L-Sit Hangs", status: "tomorrow" }),
-			createMockHabit({ id: "7", name: "Pull Ups", status: "overdue" }),
-			createMockHabit({ id: "8", name: "Kettlebility", status: "tomorrow" }),
+			createMockHabit({
+				id: "1",
+				name: "TGU 28KG",
+				status: "tomorrow",
+				entries: [],
+				currentWeekCount: 0,
+				targetPerWeek: 2,
+			}),
+			createMockHabit({
+				id: "2",
+				name: "TGU 32KG",
+				status: "met",
+				entries: [],
+				currentWeekCount: 1,
+				targetPerWeek: 1,
+			}),
+			createMockHabit({
+				id: "3",
+				name: "1H Swings 28KG",
+				status: "done",
+				entries: [{ id: "e3", habitId: "3", userId: "u1", date: today, value: 1, createdAt: new Date() }],
+				currentWeekCount: 2,
+				targetPerWeek: 2,
+			}),
+			createMockHabit({
+				id: "4",
+				name: "1H Swings 32KG",
+				status: "tomorrow",
+				entries: [],
+				currentWeekCount: 0,
+				targetPerWeek: 1,
+			}),
+			createMockHabit({
+				id: "5",
+				name: "Pistols",
+				status: "done",
+				entries: [{ id: "e5", habitId: "5", userId: "u1", date: today, value: 1, createdAt: new Date() }],
+				currentWeekCount: 2,
+				targetPerWeek: 2,
+			}),
+			createMockHabit({
+				id: "6",
+				name: "L-Sit Hangs",
+				status: "tomorrow",
+				entries: [],
+				currentWeekCount: 0,
+				targetPerWeek: 2,
+			}),
+			createMockHabit({
+				id: "7",
+				name: "Pull Ups",
+				status: "overdue",
+				entries: [],
+				currentWeekCount: 0,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				id: "8",
+				name: "Kettlebility",
+				status: "tomorrow",
+				entries: [],
+				currentWeekCount: 0,
+				targetPerWeek: 2,
+			}),
 		];
 
 		const summary = getCategorySummary(habits);
@@ -152,8 +282,16 @@ describe("getCategorySummary", () => {
 
 	it("returns bad total status when none met", () => {
 		const habits = [
-			createMockHabit({ status: "today" }),
-			createMockHabit({ status: "overdue" }),
+			createMockHabit({
+				status: "today",
+				currentWeekCount: 0,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				status: "overdue",
+				currentWeekCount: 0,
+				targetPerWeek: 3,
+			}),
 		];
 
 		const summary = getCategorySummary(habits);
@@ -352,21 +490,52 @@ describe("groupHabitsByCategory", () => {
 
 describe("calculateSummaryStats", () => {
 	it("calculates all stats correctly", () => {
+		const today = new Date();
 		const habits = [
-			createMockHabit({ status: "today" }),
-			createMockHabit({ status: "today" }),
-			createMockHabit({ status: "overdue" }),
-			createMockHabit({ status: "done" }),
-			createMockHabit({ status: "met" }),
-			createMockHabit({ status: "met" }),
+			createMockHabit({
+				status: "today",
+				entries: [],
+				currentWeekCount: 0,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				status: "today",
+				entries: [],
+				currentWeekCount: 1,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				status: "overdue",
+				entries: [],
+				currentWeekCount: 0,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				status: "done",
+				entries: [{ id: "e1", habitId: "h1", userId: "u1", date: today, value: 1, createdAt: new Date() }],
+				currentWeekCount: 3,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				status: "met",
+				entries: [],
+				currentWeekCount: 3,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				status: "met",
+				entries: [],
+				currentWeekCount: 2,
+				targetPerWeek: 2,
+			}),
 		];
 
 		const stats = calculateSummaryStats(habits);
 
 		expect(stats.dueToday).toBe(2);
 		expect(stats.overdue).toBe(1);
-		expect(stats.doneToday).toBe(1);
-		expect(stats.onTrack).toBe(3); // done + 2 met = 3 on track
+		expect(stats.doneToday).toBe(1); // Only 1 habit has entry today
+		expect(stats.onTrack).toBe(3); // 3 habits met their weekly target (currentWeekCount >= targetPerWeek)
 	});
 
 	it("returns zeros for empty habits", () => {
