@@ -1,3 +1,4 @@
+import { Box, Center, Loader, Stack, Text } from "@mantine/core";
 import { useObservable } from "dexie-react-hooks";
 import React, { useEffect, useState } from "react";
 import { HabitTracker } from "./components/HabitTracker";
@@ -5,7 +6,6 @@ import { Login } from "./components/Login";
 import { UserMenu } from "./components/UserMenu";
 import { VersionNotification } from "./components/VersionNotification";
 import { db } from "./config/db";
-import "./App.css";
 
 const DEXIE_CLOUD_URL = import.meta.env.VITE_DEXIE_CLOUD_URL;
 const isCloudConfigured =
@@ -47,9 +47,12 @@ function App() {
 
 	if (loading) {
 		return (
-			<div className="loading-container">
-				<div className="loading-spinner">Loading...</div>
-			</div>
+			<Center mih="100vh">
+				<Stack align="center" gap="lg">
+					<Loader color="warmAmber" size="lg" />
+					<Text c="dimmed">Loading...</Text>
+				</Stack>
+			</Center>
 		);
 	}
 
@@ -62,7 +65,7 @@ function App() {
 		}
 
 		return (
-			<div className="App">
+			<Box mih="100vh" p="md">
 				<HabitTracker
 					userId={localUserId}
 					userMenu={(menuProps) => (
@@ -78,7 +81,7 @@ function App() {
 					)}
 				/>
 				<VersionNotification />
-			</div>
+			</Box>
 		);
 	}
 
@@ -93,7 +96,7 @@ function App() {
 		: "?";
 
 	return (
-		<div className="App">
+		<Box mih="100vh" p="md">
 			<HabitTracker
 				userId={currentUser.userId}
 				userMenu={(menuProps) => (
@@ -109,7 +112,7 @@ function App() {
 				)}
 			/>
 			<VersionNotification />
-		</div>
+		</Box>
 	);
 }
 

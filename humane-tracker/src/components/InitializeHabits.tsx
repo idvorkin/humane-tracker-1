@@ -1,9 +1,19 @@
+import {
+	Box,
+	Button,
+	Card,
+	Group,
+	Modal,
+	Progress,
+	Stack,
+	Text,
+	Title,
+} from "@mantine/core";
 import type React from "react";
 import { useState } from "react";
 import { DEFAULT_HABITS } from "../data/defaultHabits";
 import { HabitService } from "../services/habitService";
 import { buildCategoryInfo, extractCategories } from "../utils/categoryUtils";
-import "./InitializeHabits.css";
 
 const habitService = new HabitService();
 
@@ -64,55 +74,70 @@ export const InitializeHabits: React.FC<InitializeHabitsProps> = ({
 	};
 
 	return (
-		<div className="initialize-habits">
-			<div className="init-card">
-				<h2>Welcome to Humane Tracker!</h2>
-				<p>Would you like to start with the default habit set?</p>
-				<p className="habit-count">
-					{DEFAULT_HABITS.length} habits across {categories.length} categories
-				</p>
+		<Modal
+			opened
+			onClose={onComplete}
+			title={
+				<Title order={3} style={{ fontFamily: "'Fraunces', Georgia, serif" }}>
+					Welcome to Humane Tracker!
+				</Title>
+			}
+			size="md"
+			centered
+		>
+			<Stack gap="lg">
+				<Text>Would you like to start with the default habit set?</Text>
 
-				<div className="categories-preview">
-					{categories.map((category) => {
-						const info = buildCategoryInfo(category);
-						const count = DEFAULT_HABITS.filter(
-							(h) => h.category === category,
-						).length;
-						return (
-							<div key={category} className="category-item">
-								<span
-									className="category-dot"
-									style={{ background: info.color }}
-								/>
-								{info.name} ({count} habits)
-							</div>
-						);
-					})}
-				</div>
+				<Text size="sm" c="dimmed">
+					{DEFAULT_HABITS.length} habits across {categories.length} categories
+				</Text>
+
+				<Card withBorder radius="md" p="sm">
+					<Stack gap="xs">
+						{categories.map((category) => {
+							const info = buildCategoryInfo(category);
+							const count = DEFAULT_HABITS.filter(
+								(h) => h.category === category,
+							).length;
+							return (
+								<Group key={category} gap="sm">
+									<Box
+										w={8}
+										h={8}
+										style={{ background: info.color, borderRadius: "50%" }}
+									/>
+									<Text size="sm">
+										{info.name} ({count} habits)
+									</Text>
+								</Group>
+							);
+						})}
+					</Stack>
+				</Card>
 
 				{loading && (
-					<div className="progress-bar">
-						<div
-							className="progress-fill"
-							style={{ width: `${progress}%` }}
-						></div>
-						<span className="progress-text">{progress}%</span>
-					</div>
+					<Stack gap="xs">
+						<Progress value={progress} color="warmAmber" animated />
+						<Text size="sm" c="dimmed" ta="center">
+							{progress}%
+						</Text>
+					</Stack>
 				)}
 
-				<div className="init-actions">
-					<button className="btn-skip" onClick={onComplete} disabled={loading}>
+				<Group justify="flex-end">
+					<Button variant="subtle" onClick={onComplete} disabled={loading}>
 						Skip for now
-					</button>
-					<button
-						className="btn-initialize"
+					</Button>
+					<Button
+						color="warmAmber"
 						onClick={initializeDefaultHabits}
 						disabled={loading}
+						loading={loading}
 					>
-						{loading ? "Initializing..." : "Initialize Default Habits"}
-					</button>
-				</div>
-			</div>
-		</div>
+						Initialize Default Habits
+					</Button>
+				</Group>
+			</Stack>
+		</Modal>
 	);
 };

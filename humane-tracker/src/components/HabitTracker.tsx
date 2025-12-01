@@ -1,3 +1,21 @@
+import {
+	ActionIcon,
+	Badge,
+	Box,
+	Button,
+	Center,
+	Container,
+	Flex,
+	Group,
+	Loader,
+	Paper,
+	Stack,
+	Table,
+	Text,
+	Title,
+	Tooltip,
+} from "@mantine/core";
+import { IconArrowLeft, IconZoomIn, IconZoomOut } from "@tabler/icons-react";
 import { format, isSameDay, isToday } from "date-fns";
 import React, { useState } from "react";
 import { useHabitTrackerVM } from "../hooks/useHabitTrackerVM";
@@ -31,32 +49,17 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 	// Loading screen
 	if (vm.isLoading) {
 		return (
-			<div
-				className="container"
-				style={{
-					display: "flex",
-					flexDirection: "column",
-					justifyContent: "center",
-					alignItems: "center",
-					minHeight: "400px",
-					gap: "20px",
-				}}
-			>
-				<div
-					style={{
-						fontSize: "48px",
-						animation: "pulse 1.5s ease-in-out infinite",
-					}}
-				>
-					⏳
-				</div>
-				<div style={{ fontSize: "18px", color: "#94a3b8" }}>
-					Loading your habits...
-				</div>
-				<div style={{ fontSize: "14px", color: "#64748b" }}>
-					Setting up your tracking dashboard
-				</div>
-			</div>
+			<Center mih={400}>
+				<Stack align="center" gap="lg">
+					<Loader color="warmAmber" size="xl" />
+					<Text size="lg" c="dimmed">
+						Loading your habits...
+					</Text>
+					<Text size="sm" c="dimmed">
+						Setting up your tracking dashboard
+					</Text>
+				</Stack>
+			</Center>
 		);
 	}
 
@@ -92,43 +95,57 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 	};
 
 	return (
-		<div className="container">
-			<div className="week-header">
-				<div className="week-title">
+		<Container size="lg" px={0}>
+			{/* Header */}
+			<Flex justify="space-between" align="center" mb="md" wrap="wrap" gap="sm">
+				<Group gap="sm">
 					{vm.zoomedSection ? (
 						<>
-							{buildCategoryInfo(vm.zoomedSection).name}
-							<button className="zoom-back-btn" onClick={vm.zoomOut}>
-								← Back
-							</button>
+							<Title order={4} style={{ fontFamily: "'Fraunces', Georgia, serif" }}>
+								{buildCategoryInfo(vm.zoomedSection).name}
+							</Title>
+							<Button
+								variant="subtle"
+								size="compact-sm"
+								leftSection={<IconArrowLeft size={14} />}
+								onClick={vm.zoomOut}
+							>
+								Back
+							</Button>
 						</>
 					) : (
-						<span
-							className={`current-day ${vm.selectedDate && !isToday(vm.selectedDate) ? "selected-day" : ""}`}
+						<Title
+							order={4}
+							c={vm.selectedDate && !isToday(vm.selectedDate) ? "blue" : "warmAmber"}
+							style={{
+								fontFamily: "'Fraunces', Georgia, serif",
+								fontStyle: "italic",
+								cursor: vm.selectedDate ? "pointer" : "default",
+							}}
 							onClick={() => vm.selectDate(null)}
-							style={{ cursor: vm.selectedDate ? "pointer" : "default" }}
 							title={vm.selectedDate ? "Click to return to today" : undefined}
 						>
 							{vm.selectedDate
 								? format(vm.selectedDate, "EEEE, MMM d")
 								: format(new Date(), "EEEE, MMM d")}
-						</span>
+						</Title>
 					)}
-				</div>
-				<div className="view-toggle">
+				</Group>
+				<Group gap="xs">
 					{!vm.zoomedSection && (
-						<button className="toggle-btn" onClick={toggleExpandCollapse}>
+						<Button variant="default" size="compact-sm" onClick={toggleExpandCollapse}>
 							{vm.allExpanded ? "Collapse All" : "Expand All"}
-						</button>
+						</Button>
 					)}
 					{userMenu?.({
 						onManageHabits: () => setShowSettings(true),
 						onLoadDefaults: () => setShowInitializer(true),
 						showLoadDefaults: vm.hasNoHabits,
 					})}
-				</div>
-			</div>
+				</Group>
+			</Flex>
 
+			{/* Main Table - keep existing CSS structure for stability */}
 			<table>
 				<thead>
 					<tr>
@@ -294,41 +311,37 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 				</tbody>
 			</table>
 
-			<div className="legend-strip">
-				<div className="legend-item">● = done</div>
-				<div className="legend-item">✓ = met target</div>
-				<div className="legend-item">⏰ = due today</div>
-				<div className="legend-item">→ = tomorrow</div>
-				<div className="legend-item">! = overdue</div>
-				<div className="legend-item">½ = partial</div>
-			</div>
+			{/* Legend */}
+			<Group gap="md" mt="md" p="xs" justify="center" wrap="wrap">
+				<Text size="xs" c="dimmed">● = done</Text>
+				<Text size="xs" c="dimmed">✓ = met target</Text>
+				<Text size="xs" c="dimmed">⏰ = due today</Text>
+				<Text size="xs" c="dimmed">→ = tomorrow</Text>
+				<Text size="xs" c="dimmed">! = overdue</Text>
+				<Text size="xs" c="dimmed">½ = partial</Text>
+			</Group>
 
-			<div className="summary-bar">
-				<div className="summary-item">
-					<span className="summary-label">Due Today:</span>
-					<span className="summary-value value-today">
-						{vm.summaryStats.dueToday}
-					</span>
-				</div>
-				<div className="summary-item">
-					<span className="summary-label">Overdue:</span>
-					<span className="summary-value value-overdue">
-						{vm.summaryStats.overdue}
-					</span>
-				</div>
-				<div className="summary-item">
-					<span className="summary-label">Done Today:</span>
-					<span className="summary-value value-done">
-						{vm.summaryStats.doneToday}
-					</span>
-				</div>
-				<div className="summary-item">
-					<span className="summary-label">On Track:</span>
-					<span className="summary-value value-track">
-						{vm.summaryStats.onTrack}
-					</span>
-				</div>
-			</div>
+			{/* Summary Bar */}
+			<Paper shadow="sm" p="md" mt="md" radius="md" withBorder>
+				<Group gap="xl" wrap="wrap">
+					<Group gap="xs">
+						<Text size="sm" c="dimmed">Due Today:</Text>
+						<Text size="sm" fw={600} c="blue">{vm.summaryStats.dueToday}</Text>
+					</Group>
+					<Group gap="xs">
+						<Text size="sm" c="dimmed">Overdue:</Text>
+						<Text size="sm" fw={600} c="red">{vm.summaryStats.overdue}</Text>
+					</Group>
+					<Group gap="xs">
+						<Text size="sm" c="dimmed">Done Today:</Text>
+						<Text size="sm" fw={600} c="green">{vm.summaryStats.doneToday}</Text>
+					</Group>
+					<Group gap="xs">
+						<Text size="sm" c="dimmed">On Track:</Text>
+						<Text size="sm" fw={600} c="teal">{vm.summaryStats.onTrack}</Text>
+					</Group>
+				</Group>
+			</Paper>
 
 			{showInitializer && (
 				<InitializeHabits
@@ -357,6 +370,6 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 					}}
 				/>
 			)}
-		</div>
+		</Container>
 	);
 };

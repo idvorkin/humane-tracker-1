@@ -1,11 +1,34 @@
+import {
+	Box,
+	Button,
+	Card,
+	Divider,
+	Group,
+	Stack,
+	Text,
+	Title,
+} from "@mantine/core";
+import {
+	IconChartBar,
+	IconCloud,
+	IconDeviceMobile,
+	IconLock,
+	IconTarget,
+} from "@tabler/icons-react";
 import type React from "react";
 import { db } from "../config/db";
-import "./Login.css";
+
+const features = [
+	{ icon: IconChartBar, text: "Track 27+ habits across 5 categories" },
+	{ icon: IconTarget, text: "Set weekly targets and monitor progress" },
+	{ icon: IconCloud, text: "Sync across all your devices" },
+	{ icon: IconLock, text: "Your data is private and secure" },
+	{ icon: IconDeviceMobile, text: "Works offline with automatic sync" },
+];
 
 export const Login: React.FC = () => {
 	const handleLogin = async () => {
 		try {
-			// Dexie Cloud provides a login UI
 			await db.cloud.login();
 		} catch (error) {
 			console.error("Error signing in:", error);
@@ -14,45 +37,87 @@ export const Login: React.FC = () => {
 	};
 
 	return (
-		<div className="login-container">
-			<div className="login-card">
-				<div className="login-header">
-					<h1>Humane Tracker</h1>
-					<p>Track your wellness habits and build healthy routines</p>
-				</div>
+		<Box
+			style={{
+				minHeight: "100vh",
+				display: "flex",
+				justifyContent: "center",
+				alignItems: "center",
+				padding: "var(--mantine-spacing-lg)",
+				background:
+					"linear-gradient(180deg, var(--mantine-color-dark-8) 0%, var(--mantine-color-dark-7) 100%)",
+			}}
+		>
+			<Card
+				shadow="xl"
+				padding="xl"
+				radius="lg"
+				style={{ width: "100%", maxWidth: 460 }}
+			>
+				<Stack gap="lg" align="center">
+					<Box ta="center">
+						<Title
+							order={1}
+							style={{
+								fontFamily: "'Fraunces', Georgia, serif",
+								background:
+									"linear-gradient(135deg, var(--mantine-color-warmAmber-5) 0%, var(--mantine-color-warmAmber-6) 50%, var(--mantine-color-terracotta-5) 100%)",
+								WebkitBackgroundClip: "text",
+								WebkitTextFillColor: "transparent",
+								backgroundClip: "text",
+							}}
+						>
+							Humane Tracker
+						</Title>
+						<Text c="dimmed" size="md" mt="xs">
+							Track your wellness habits and build healthy routines
+						</Text>
+					</Box>
 
-				<div className="login-features">
-					<div className="feature-item">
-						<span className="feature-icon">📊</span>
-						<span>Track 27+ habits across 5 categories</span>
-					</div>
-					<div className="feature-item">
-						<span className="feature-icon">🎯</span>
-						<span>Set weekly targets and monitor progress</span>
-					</div>
-					<div className="feature-item">
-						<span className="feature-icon">☁️</span>
-						<span>Sync across all your devices</span>
-					</div>
-					<div className="feature-item">
-						<span className="feature-icon">🔒</span>
-						<span>Your data is private and secure</span>
-					</div>
-					<div className="feature-item">
-						<span className="feature-icon">📱</span>
-						<span>Works offline with automatic sync</span>
-					</div>
-				</div>
+					<Card
+						withBorder
+						p="md"
+						radius="md"
+						w="100%"
+						style={{ background: "var(--mantine-color-dark-8)" }}
+					>
+						<Stack gap="xs">
+							{features.map((feature, index) => (
+								<Group key={index} gap="md" py="xs" wrap="nowrap">
+									<feature.icon size={24} style={{ flexShrink: 0 }} />
+									<Text size="sm">{feature.text}</Text>
+									{index < features.length - 1 && (
+										<Divider
+											pos="absolute"
+											left={0}
+											right={0}
+											style={{ display: "none" }}
+										/>
+									)}
+								</Group>
+							))}
+						</Stack>
+					</Card>
 
-				<button className="google-signin-btn" onClick={handleLogin}>
-					Sign In
-				</button>
+					<Button
+						fullWidth
+						size="md"
+						color="gray.0"
+						c="dark"
+						onClick={handleLogin}
+						style={{
+							fontWeight: 600,
+						}}
+					>
+						Sign In
+					</Button>
 
-				<p className="privacy-note">
-					We only store your email and name to identify your account. Your habit
-					data stays private and syncs across your devices.
-				</p>
-			</div>
-		</div>
+					<Text size="xs" c="dimmed" ta="center" px="md">
+						We only store your email and name to identify your account. Your
+						habit data stays private and syncs across your devices.
+					</Text>
+				</Stack>
+			</Card>
+		</Box>
 	);
 };
