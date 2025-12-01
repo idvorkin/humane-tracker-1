@@ -17,7 +17,6 @@ import {
 import {
 	IconAlertCircle,
 	IconBrandGithub,
-	IconBug,
 	IconCamera,
 } from "@tabler/icons-react";
 import type React from "react";
@@ -75,16 +74,12 @@ export function BugReportDialog({
 		<Modal
 			opened={isOpen}
 			onClose={onClose}
-			title={
-				<Group gap="xs">
-					<IconBug size={20} />
-					<Text fw={600} style={{ fontFamily: "'Fraunces', Georgia, serif" }}>
-						Report a Bug
-					</Text>
-				</Group>
-			}
+			title="Report a Bug"
 			size="md"
 			centered
+			styles={{
+				title: { fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600 },
+			}}
 		>
 			<form onSubmit={handleSubmit}>
 				<Stack gap="md">

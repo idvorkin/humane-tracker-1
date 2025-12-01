@@ -8,7 +8,7 @@ import {
 	Text,
 	Title,
 } from "@mantine/core";
-import { IconBrandGithub, IconInfoCircle } from "@tabler/icons-react";
+import { IconBrandGithub } from "@tabler/icons-react";
 import type React from "react";
 import { getBuildInfo, getGitHubLinks } from "../services/githubService";
 
@@ -36,16 +36,12 @@ export function AboutDialog({ isOpen, onClose }: AboutDialogProps) {
 		<Modal
 			opened={isOpen}
 			onClose={onClose}
-			title={
-				<Group gap="xs">
-					<IconInfoCircle size={22} />
-					<Text fw={600} style={{ fontFamily: "'Fraunces', Georgia, serif" }}>
-						About
-					</Text>
-				</Group>
-			}
+			title="About"
 			size="sm"
 			centered
+			styles={{
+				title: { fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600 },
+			}}
 		>
 			<Stack gap="md">
 				<Stack gap={4} align="center" py="md">
