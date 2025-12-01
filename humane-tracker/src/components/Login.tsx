@@ -2,7 +2,6 @@ import {
 	Box,
 	Button,
 	Card,
-	Divider,
 	Group,
 	Stack,
 	Text,
@@ -86,14 +85,6 @@ export const Login: React.FC = () => {
 								<Group key={index} gap="md" py="xs" wrap="nowrap">
 									<feature.icon size={24} style={{ flexShrink: 0 }} />
 									<Text size="sm">{feature.text}</Text>
-									{index < features.length - 1 && (
-										<Divider
-											pos="absolute"
-											left={0}
-											right={0}
-											style={{ display: "none" }}
-										/>
-									)}
 								</Group>
 							))}
 						</Stack>
