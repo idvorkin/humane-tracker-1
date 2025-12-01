@@ -177,6 +177,65 @@ export class HumaneTrackerDB extends Dexie {
 					throw error;
 				}
 			});
+
+		// Version 5: Fix syncLogs to be local-only (change @id to id)
+		// CRITICAL BUG FIX: syncLogs table was syncing to cloud, causing infinite loop.
+		// Using @id marks a table for sync eligibility; server config controls which tables
+		// actually sync. Since syncLogs was both @id-marked and server-configured to sync,
+		// every sync event created a log entry, which synced, creating more events, ad infinitum.
+		// Fix: Change @id to id (local-only) to prevent this table from ever syncing.
+		this.version(5)
+			.stores({
+				habits:
+					"@id, userId, name, category, targetPerWeek, createdAt, updatedAt",
+				entries: "@id, habitId, userId, date, value, createdAt",
+				syncLogs: "id, timestamp, eventType, level", // Changed from @id to id (local-only!)
+			})
+			.upgrade(async (tx) => {
+				try {
+					console.log(
+						"[Migration v5] Fixing syncLogs table to be local-only...",
+					);
+					// Clear all existing sync logs - they're corrupted from the sync loop
+					const count = await tx.table("syncLogs").count();
+					console.log(
+						`[Migration v5] Clearing ${count} corrupted sync logs...`,
+					);
+					await tx.table("syncLogs").clear();
+					console.log(
+						"[Migration v5] Migration complete! syncLogs is now local-only.",
+					);
+				} catch (error) {
+					// Log full error with stack trace for debugging
+					console.error(
+						"[Migration v5] CRITICAL: Failed to fix syncLogs table:",
+						error,
+					);
+					if (error instanceof Error && error.stack) {
+						console.error("[Migration v5] Stack trace:", error.stack);
+					}
+
+					// Notify user - alert is appropriate here for critical migration failure
+					// that would prevent the app from functioning correctly
+					const errorMsg =
+						error instanceof Error ? error.message : String(error);
+					console.error(
+						`[Migration v5] User notification: Database migration failed: ${errorMsg}. Please refresh the page or restore from backup.`,
+					);
+
+					// Only show alert in browser environment (not during tests)
+					if (
+						typeof window !== "undefined" &&
+						!window.location.search.includes("test=true")
+					) {
+						alert(
+							`Database migration failed: ${errorMsg}\n\nPlease try refreshing the page. If the problem persists, restore from backup or contact support.\n\nCheck the browser console for technical details.`,
+						);
+					}
+
+					throw error;
+				}
+			});
 	}
 }
 

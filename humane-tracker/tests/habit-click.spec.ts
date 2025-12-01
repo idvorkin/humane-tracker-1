@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Habit Tracker Click Functionality', () => {
   test.beforeEach(async ({ page }) => {
     // Go to the app in test mode (no auth required)
-    await page.goto('http://localhost:3001?test=true');
+    await page.goto('/?test=true');
 
     // Wait for the app to load
     await page.waitForLoadState('networkidle');
