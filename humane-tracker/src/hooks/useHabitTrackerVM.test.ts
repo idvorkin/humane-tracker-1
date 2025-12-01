@@ -490,21 +490,52 @@ describe("groupHabitsByCategory", () => {
 
 describe("calculateSummaryStats", () => {
 	it("calculates all stats correctly", () => {
+		const today = new Date();
 		const habits = [
-			createMockHabit({ status: "today" }),
-			createMockHabit({ status: "today" }),
-			createMockHabit({ status: "overdue" }),
-			createMockHabit({ status: "done" }),
-			createMockHabit({ status: "met" }),
-			createMockHabit({ status: "met" }),
+			createMockHabit({
+				status: "today",
+				entries: [],
+				currentWeekCount: 0,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				status: "today",
+				entries: [],
+				currentWeekCount: 1,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				status: "overdue",
+				entries: [],
+				currentWeekCount: 0,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				status: "done",
+				entries: [{ id: "e1", habitId: "h1", userId: "u1", date: today, value: 1, createdAt: new Date() }],
+				currentWeekCount: 3,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				status: "met",
+				entries: [],
+				currentWeekCount: 3,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				status: "met",
+				entries: [],
+				currentWeekCount: 2,
+				targetPerWeek: 2,
+			}),
 		];
 
 		const stats = calculateSummaryStats(habits);
 
 		expect(stats.dueToday).toBe(2);
 		expect(stats.overdue).toBe(1);
-		expect(stats.doneToday).toBe(1);
-		expect(stats.onTrack).toBe(3); // done + 2 met = 3 on track
+		expect(stats.doneToday).toBe(1); // Only 1 habit has entry today
+		expect(stats.onTrack).toBe(3); // 3 habits met their weekly target (currentWeekCount >= targetPerWeek)
 	});
 
 	it("returns zeros for empty habits", () => {

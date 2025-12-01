@@ -104,12 +104,21 @@ export function getCellDisplay(
 }
 
 export function calculateSummaryStats(habits: HabitWithStatus[]): SummaryStats {
+	// Count habits with entries for today (not just status "done")
+	const todayStr = toDateString(new Date());
+	const doneToday = habits.filter((h) =>
+		h.entries.some((e) => toDateString(e.date) === todayStr && e.value >= 1),
+	).length;
+
+	// Count habits that met their weekly target
+	const onTrack = habits.filter((h) => h.currentWeekCount >= h.targetPerWeek)
+		.length;
+
 	return {
 		dueToday: habits.filter((h) => h.status === "today").length,
 		overdue: habits.filter((h) => h.status === "overdue").length,
-		doneToday: habits.filter((h) => h.status === "done").length,
-		onTrack: habits.filter((h) => h.status === "met" || h.status === "done")
-			.length,
+		doneToday,
+		onTrack,
 	};
 }
 
