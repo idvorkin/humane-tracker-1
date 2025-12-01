@@ -1,4 +1,3 @@
-import { format } from "date-fns";
 import type {
 	Habit,
 	HabitEntry,
@@ -38,7 +37,7 @@ export function calculateHabitStatus(
 	weekStart.setDate(weekStart.getDate() - 6);
 	weekStart.setHours(0, 0, 0, 0);
 
-	const todayStr = format(currentDate, "yyyy-MM-dd");
+	const todayStr = toDateString(currentDate);
 
 	const weekEntries = entries.filter((e) => {
 		// Handle both Date objects and ISO strings
@@ -53,14 +52,14 @@ export function calculateHabitStatus(
 			.filter((e) => e.value > 0)
 			.map((e) => {
 				const entryDate = e.date instanceof Date ? e.date : new Date(e.date);
-				return format(entryDate, "yyyy-MM-dd");
+				return toDateString(entryDate);
 			}),
 	).size;
 
 	// Check if there's an entry for today (using currentDate, not real today)
 	const todayEntry = weekEntries.find((e) => {
 		const entryDate = e.date instanceof Date ? e.date : new Date(e.date);
-		return format(entryDate, "yyyy-MM-dd") === todayStr;
+		return toDateString(entryDate) === todayStr;
 	});
 	const doneToday = todayEntry && todayEntry.value >= 1;
 	const targetMet = daysWithEntries >= habit.targetPerWeek;

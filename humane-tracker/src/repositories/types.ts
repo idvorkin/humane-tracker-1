@@ -152,21 +152,6 @@ export function normalizeDate(value: Date | string): Date {
 }
 
 /**
- * Create start-of-day and end-of-day Date boundaries for a date range.
- * Useful for querying entries within a specific date range.
- */
-export function toDateRange(
-	startDate: Date,
-	endDate: Date,
-): { rangeStart: Date; rangeEnd: Date } {
-	const rangeStart = new Date(startDate);
-	rangeStart.setHours(0, 0, 0, 0);
-	const rangeEnd = new Date(endDate);
-	rangeEnd.setHours(23, 59, 59, 999);
-	return { rangeStart, rangeEnd };
-}
-
-/**
  * Normalize a date-only value from the database to YYYY-MM-DD string.
  * Handles both Date objects (legacy) and strings (new format).
  */
