@@ -29,12 +29,17 @@ export interface CategorySummary {
 }
 
 export function getCategorySummary(habits: HabitWithStatus[]): CategorySummary {
-	const doneToday = habits.filter((h) => h.status === "done").length;
-	const total = habits.length;
-	// "done" means met target AND done today, "met" means met target but not done today
-	const met = habits.filter(
-		(h) => h.status === "met" || h.status === "done",
+	// Count habits with entries for today (not just status "done")
+	const todayStr = toDateString(new Date());
+	const doneToday = habits.filter((h) =>
+		h.entries.some((e) => toDateString(e.date) === todayStr && e.value >= 1),
 	).length;
+
+	const total = habits.length;
+
+	// Count habits that met their weekly target
+	const met = habits.filter((h) => h.currentWeekCount >= h.targetPerWeek)
+		.length;
 
 	const todayStatus: StatStatus =
 		total === 0
