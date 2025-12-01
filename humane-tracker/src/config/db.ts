@@ -177,6 +177,199 @@ export class HumaneTrackerDB extends Dexie {
 				}
 			});
 
+		// Version 5: Fix syncLogs table to be local-only (stop cloud sync loop)
+		// Change from @id (synced) to id (local-only) - clears corrupted sync logs
+		this.version(5)
+			.stores({
+				habits:
+					"@id, userId, name, category, targetPerWeek, createdAt, updatedAt",
+				entries: "@id, habitId, userId, date, value, createdAt",
+				syncLogs: "id, timestamp, eventType, level", // Changed from @id to id (local-only!)
+			})
+			.upgrade(async (tx) => {
+				try {
+					console.log(
+						"[Migration v5] Fixing syncLogs table to be local-only...",
+					);
+					// Clear all existing sync logs - they're corrupted from the sync loop
+					const count = await tx.table("syncLogs").count();
+					console.log(
+						`[Migration v5] Clearing ${count} corrupted sync logs...`,
+					);
+					await tx.table("syncLogs").clear();
+					console.log(
+						"[Migration v5] Migration complete! syncLogs is now local-only.",
+					);
+				} catch (error) {
+					// Log full error with stack trace for debugging
+					console.error(
+						"[Migration v5] CRITICAL: Failed to fix syncLogs table:",
+						error,
+					);
+					if (error instanceof Error && error.stack) {
+						console.error("[Migration v5] Stack trace:", error.stack);
+					}
+
+					// Notify user - alert is appropriate here for critical migration failure
+					// that would prevent the app from functioning correctly
+					const errorMsg =
+						error instanceof Error ? error.message : String(error);
+					console.error(
+						`[Migration v5] User notification: Database migration failed: ${errorMsg}. Please refresh the page or restore from backup.`,
+					);
+
+					// Only show alert in browser environment (not during tests)
+					if (
+						typeof window !== "undefined" &&
+						!window.location.search.includes("test=true")
+					) {
+						alert(
+							`Database migration failed: ${errorMsg}\n\nPlease try refreshing the page. If the problem persists, restore from backup or contact support.\n\nCheck the browser console for technical details.`,
+						);
+					}
+
+					throw error;
+				}
+			});
+
+		// Version 6: Convert entry dates from YYYY-MM-DD to full timestamps
+		// Migration: YYYY-MM-DD strings → timestamp at noon local time
+		this.version(6)
+			.stores({
+				habits:
+					"@id, userId, name, category, targetPerWeek, createdAt, updatedAt",
+				entries: "@id, habitId, userId, date, value, createdAt",
+				syncLogs: "id, timestamp, eventType, level",
+			})
+			.upgrade(async (tx) => {
+				try {
+					console.log("[Migration v6] Converting entry dates to timestamps...");
+
+					const entryCount = await tx.table("entries").count();
+					console.log(`[Migration v6] Migrating ${entryCount} entry dates...`);
+
+					let migratedCount = 0;
+					let skippedCount = 0;
+
+					await tx
+						.table("entries")
+						.toCollection()
+						.modify((entry) => {
+							try {
+								// Only migrate if it's a date-only string (YYYY-MM-DD)
+								if (
+									typeof entry.date === "string" &&
+									/^\d{4}-\d{2}-\d{2}$/.test(entry.date)
+								) {
+									// Parse YYYY-MM-DD with validation
+									const parts = entry.date.split("-");
+									if (parts.length !== 3) {
+										throw new Error(
+											`Invalid date format: "${entry.date}". Expected YYYY-MM-DD`,
+										);
+									}
+
+									const [year, month, day] = parts.map(Number);
+
+									// Validate parsed numbers
+									if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
+										throw new Error(
+											`Invalid date components in "${entry.date}": year=${year}, month=${month}, day=${day}`,
+										);
+									}
+
+									// Validate ranges
+									if (month < 1 || month > 12) {
+										throw new Error(
+											`Invalid month in "${entry.date}": ${month}. Must be 1-12`,
+										);
+									}
+									if (day < 1 || day > 31) {
+										throw new Error(
+											`Invalid day in "${entry.date}": ${day}. Must be 1-31`,
+										);
+									}
+
+									// Create date at noon local time (avoids DST edge cases)
+									const date = new Date(year, month - 1, day, 12, 0, 0, 0);
+
+									// Validate the Date object
+									if (Number.isNaN(date.getTime())) {
+										throw new Error(
+											`Created invalid date from "${entry.date}"`,
+										);
+									}
+
+									// Verify round-trip to catch invalid dates like Feb 30
+									if (
+										date.getFullYear() !== year ||
+										date.getMonth() !== month - 1 ||
+										date.getDate() !== day
+									) {
+										throw new Error(
+											`Invalid date (e.g., Feb 30): "${entry.date}"`,
+										);
+									}
+
+									entry.date = toTimestamp(date);
+									migratedCount++;
+								} else {
+									// Validate it's actually a valid timestamp, not corrupted data
+									try {
+										normalizeDate(entry.date);
+										skippedCount++;
+									} catch (error) {
+										throw new Error(
+											`Entry ${entry.id} has corrupted date: "${entry.date}". ${error instanceof Error ? error.message : String(error)}`,
+										);
+									}
+								}
+							} catch (error) {
+								console.error(
+									`[Migration v6] Failed to convert entry ${entry.id}:`,
+									error,
+								);
+								throw new Error(
+									`Migration failed for entry ${entry.id}: ${error instanceof Error ? error.message : String(error)}`,
+								);
+							}
+						});
+
+					console.log(
+						`[Migration v6] Migration complete! Migrated ${migratedCount} entries, skipped ${skippedCount} entries (already timestamps)`,
+					);
+				} catch (error) {
+					// Log full error with stack trace for debugging
+					console.error(
+						"[Migration v6] CRITICAL: Database migration failed:",
+						error,
+					);
+					if (error instanceof Error && error.stack) {
+						console.error("[Migration v6] Stack trace:", error.stack);
+					}
+
+					// Notify user - alert is appropriate here for critical migration failure
+					// that would prevent the app from functioning correctly
+					const errorMsg =
+						error instanceof Error ? error.message : String(error);
+					console.error(
+						`[Migration v6] User notification: Database migration failed: ${errorMsg}. Please refresh the page or restore from backup.`,
+					);
+
+					// Only show alert in browser environment (not during tests)
+					if (
+						typeof window !== "undefined" &&
+						!window.location.search.includes("test=true")
+					) {
+						alert(
+							`Database migration failed: ${errorMsg}\n\nPlease try refreshing the page. If the problem persists, restore from backup or contact support.\n\nCheck the browser console for technical details.`,
+						);
+					}
+
+					throw error;
+				}
+			});
+
 		// Version 7: Remove syncLogs table completely (moved to separate database)
 		// FINAL FIX: syncLogs is now in a completely separate IndexedDB database
 		// (HumaneTrackerSyncLogs) that has NO connection to Dexie Cloud whatsoever.
