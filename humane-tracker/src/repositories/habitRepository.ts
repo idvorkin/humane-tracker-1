@@ -84,7 +84,7 @@ export const habitRepository = {
 	async getAll(): Promise<Habit[]> {
 		try {
 			const records = await db.habits.toArray();
-			return records.map((r) => toHabit(r as unknown as HabitRecord));
+			return records.map(toHabit);
 		} catch (error) {
 			console.error("[HabitRepository] Failed to get all habits:", error);
 			throw new Error(
@@ -112,7 +112,7 @@ export const habitRepository = {
 	async getByUserId(userId: string): Promise<Habit[]> {
 		try {
 			const records = await db.habits.where("userId").equals(userId).toArray();
-			return records.map((r) => toHabit(r as unknown as HabitRecord));
+			return records.map(toHabit);
 		} catch (error) {
 			console.error(
 				`[HabitRepository] Failed to get habits for user ${userId}:`,
@@ -127,7 +127,7 @@ export const habitRepository = {
 	async getById(habitId: string): Promise<Habit | undefined> {
 		try {
 			const record = await db.habits.get(habitId);
-			return record ? toHabit(record as unknown as HabitRecord) : undefined;
+			return record ? toHabit(record) : undefined;
 		} catch (error) {
 			console.error(`[HabitRepository] Failed to get habit ${habitId}:`, error);
 			throw new Error(
@@ -141,7 +141,7 @@ export const habitRepository = {
 	): Promise<string> {
 		try {
 			const record = toRecord(habit);
-			const id = await db.habits.add(record as unknown as Habit);
+			const id = await db.habits.add(record);
 			return id;
 		} catch (error) {
 			console.error("[HabitRepository] Failed to create habit:", {
@@ -162,7 +162,7 @@ export const habitRepository = {
 		habits: Array<Omit<Habit, "id" | "createdAt" | "updatedAt">>,
 	): Promise<string[]> {
 		const records = habits.map(toRecord);
-		const ids = await db.habits.bulkAdd(records as unknown as Habit[], {
+		const ids = await db.habits.bulkAdd(records, {
 			allKeys: true,
 		});
 		return ids;
@@ -217,7 +217,7 @@ export const habitRepository = {
 
 	async bulkPut(habits: Habit[]): Promise<void> {
 		try {
-			const records = habits.map((habit) => ({
+			const records: HabitRecord[] = habits.map((habit) => ({
 				id: habit.id,
 				name: habit.name,
 				category: habit.category,
@@ -227,7 +227,7 @@ export const habitRepository = {
 				createdAt: toTimestamp(habit.createdAt),
 				updatedAt: toTimestamp(habit.updatedAt),
 			}));
-			await db.habits.bulkPut(records as unknown as Habit[]);
+			await db.habits.bulkPut(records);
 		} catch (error) {
 			console.error(
 				`[HabitRepository] Failed to bulk insert ${habits.length} habits:`,
@@ -252,8 +252,7 @@ export const habitRepository = {
 		);
 
 		const subscription = observable.subscribe({
-			next: (records) =>
-				callback(records.map((r) => toHabit(r as unknown as HabitRecord))),
+			next: (records) => callback(records.map(toHabit)),
 			error: (error) => {
 				console.error("[HabitRepository] Error in habits subscription:", error);
 				// Return empty array so UI doesn't crash

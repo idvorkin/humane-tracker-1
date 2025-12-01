@@ -49,7 +49,7 @@ export const entryRepository = {
 	async getAll(): Promise<HabitEntry[]> {
 		try {
 			const records = await db.entries.toArray();
-			return records.map((r) => toEntry(r as unknown as EntryRecord));
+			return records.map(toEntry);
 		} catch (error) {
 			console.error("[EntryRepository] Failed to get all entries:", error);
 			throw new Error(
@@ -77,7 +77,7 @@ export const entryRepository = {
 	async getByUserId(userId: string): Promise<HabitEntry[]> {
 		try {
 			const records = await db.entries.where("userId").equals(userId).toArray();
-			return records.map((r) => toEntry(r as unknown as EntryRecord));
+			return records.map(toEntry);
 		} catch (error) {
 			console.error(
 				`[EntryRepository] Failed to get entries for user ${userId}:`,
@@ -95,7 +95,7 @@ export const entryRepository = {
 				.where("habitId")
 				.equals(habitId)
 				.toArray();
-			return records.map((r) => toEntry(r as unknown as EntryRecord));
+			return records.map(toEntry);
 		} catch (error) {
 			console.error(
 				`[EntryRepository] Failed to get entries for habit ${habitId}:`,
@@ -125,7 +125,7 @@ export const entryRepository = {
 				})
 				.toArray();
 
-			return records.map((r) => toEntry(r as unknown as EntryRecord));
+			return records.map(toEntry);
 		} catch (error) {
 			console.error(
 				`[EntryRepository] Failed to get entries for user ${userId} in date range:`,
@@ -155,7 +155,7 @@ export const entryRepository = {
 				})
 				.toArray();
 
-			return records.map((r) => toEntry(r as unknown as EntryRecord));
+			return records.map(toEntry);
 		} catch (error) {
 			console.error(
 				`[EntryRepository] Failed to get entries for habit ${habitId} in date range:`,
@@ -179,7 +179,7 @@ export const entryRepository = {
 				...entry,
 				createdAt: new Date(),
 			});
-			const id = await db.entries.add(record as unknown as HabitEntry);
+			const id = await db.entries.add(record);
 			return id;
 		} catch (error) {
 			console.error("[EntryRepository] Failed to add entry:", {
@@ -224,11 +224,11 @@ export const entryRepository = {
 
 	async bulkPut(entries: HabitEntry[]): Promise<void> {
 		try {
-			const records = entries.map((entry) => ({
+			const records: EntryRecord[] = entries.map((entry) => ({
 				id: entry.id,
 				...toRecord(entry),
 			}));
-			await db.entries.bulkPut(records as unknown as HabitEntry[]);
+			await db.entries.bulkPut(records);
 		} catch (error) {
 			console.error(
 				`[EntryRepository] Failed to bulk insert ${entries.length} entries:`,
@@ -261,8 +261,7 @@ export const entryRepository = {
 		);
 
 		const subscription = observable.subscribe({
-			next: (records) =>
-				callback(records.map((r) => toEntry(r as unknown as EntryRecord))),
+			next: (records) => callback(records.map(toEntry)),
 			error: (error) => {
 				console.error(
 					"[EntryRepository] Error in entries subscription:",
@@ -288,8 +287,7 @@ export const entryRepository = {
 		);
 
 		const subscription = observable.subscribe({
-			next: (records) =>
-				callback(records.map((r) => toEntry(r as unknown as EntryRecord))),
+			next: (records) => callback(records.map(toEntry)),
 			error: (error) => {
 				console.error(
 					"[EntryRepository] Error in entries subscription:",

@@ -1,14 +1,16 @@
 import Dexie, { type Table } from "dexie";
 import dexieCloud from "dexie-cloud-addon";
+import type { EntryRecord, HabitRecord } from "../repositories/types";
 import { toDateString, toTimestamp } from "../repositories/types";
 import { SyncLogService } from "../services/syncLogService";
-import type { Habit, HabitEntry } from "../types/habit";
 import type { SyncLog } from "../types/syncLog";
 
 // Extend Dexie with cloud addon
 export class HumaneTrackerDB extends Dexie {
-	habits!: Table<Habit, string>;
-	entries!: Table<HabitEntry, string>;
+	// Use Record types (ISO strings) instead of domain types (Date objects)
+	// The repository layer handles conversion between Record and domain types
+	habits!: Table<HabitRecord, string>;
+	entries!: Table<EntryRecord, string>;
 	syncLogs!: Table<SyncLog, string>;
 
 	constructor() {
