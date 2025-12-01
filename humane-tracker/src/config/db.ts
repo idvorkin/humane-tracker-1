@@ -238,7 +238,7 @@ export class HumaneTrackerDB extends Dexie {
 			});
 
 		// Version 6: Convert entry dates from YYYY-MM-DD to full timestamps
-		// Migration: YYYY-MM-DD strings → timestamp at 8 AM PST (16:00 UTC)
+		// Migration: YYYY-MM-DD strings → timestamp at noon local time
 		this.version(6)
 			.stores({
 				habits:
@@ -266,15 +266,68 @@ export class HumaneTrackerDB extends Dexie {
 									typeof entry.date === "string" &&
 									/^\d{4}-\d{2}-\d{2}$/.test(entry.date)
 								) {
-									// Parse YYYY-MM-DD
-									const [year, month, day] = entry.date.split("-").map(Number);
-									// Create date at 8 AM PST (UTC-8, which is 16:00 UTC)
-									const date = new Date(Date.UTC(year, month - 1, day, 16, 0, 0, 0));
+									// Parse YYYY-MM-DD with validation
+									const parts = entry.date.split("-");
+									if (parts.length !== 3) {
+										throw new Error(
+											`Invalid date format: "${entry.date}". Expected YYYY-MM-DD`,
+										);
+									}
+
+									const [year, month, day] = parts.map(Number);
+
+									// Validate parsed numbers
+									if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
+										throw new Error(
+											`Invalid date components in "${entry.date}": year=${year}, month=${month}, day=${day}`,
+										);
+									}
+
+									// Validate ranges
+									if (month < 1 || month > 12) {
+										throw new Error(
+											`Invalid month in "${entry.date}": ${month}. Must be 1-12`,
+										);
+									}
+									if (day < 1 || day > 31) {
+										throw new Error(
+											`Invalid day in "${entry.date}": ${day}. Must be 1-31`,
+										);
+									}
+
+									// Create date at noon local time (avoids DST edge cases)
+									const date = new Date(year, month - 1, day, 12, 0, 0, 0);
+
+									// Validate the Date object
+									if (Number.isNaN(date.getTime())) {
+										throw new Error(
+											`Created invalid date from "${entry.date}"`,
+										);
+									}
+
+									// Verify round-trip to catch invalid dates like Feb 30
+									if (
+										date.getFullYear() !== year ||
+										date.getMonth() !== month - 1 ||
+										date.getDate() !== day
+									) {
+										throw new Error(
+											`Invalid date (e.g., Feb 30): "${entry.date}"`,
+										);
+									}
+
 									entry.date = toTimestamp(date);
 									migratedCount++;
 								} else {
-									// Already a timestamp or invalid - skip
-									skippedCount++;
+									// Validate it's actually a valid timestamp, not corrupted data
+									try {
+										normalizeDate(entry.date);
+										skippedCount++;
+									} catch (error) {
+										throw new Error(
+											`Entry ${entry.id} has corrupted date: "${entry.date}". ${error instanceof Error ? error.message : String(error)}`,
+										);
+									}
 								}
 							} catch (error) {
 								console.error(

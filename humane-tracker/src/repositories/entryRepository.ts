@@ -4,8 +4,7 @@ import type { HabitEntry } from "../types/habit";
 import {
 	type EntryRecord,
 	normalizeDate,
-	normalizeDateString,
-	toDateString,
+	toDateRange,
 	toTimestamp,
 } from "./types";
 
@@ -113,11 +112,7 @@ export const entryRepository = {
 		endDate: Date,
 	): Promise<HabitEntry[]> {
 		try {
-			// Set time boundaries for the range
-			const rangeStart = new Date(startDate);
-			rangeStart.setHours(0, 0, 0, 0);
-			const rangeEnd = new Date(endDate);
-			rangeEnd.setHours(23, 59, 59, 999);
+			const { rangeStart, rangeEnd } = toDateRange(startDate, endDate);
 
 			const records = await db.entries
 				.where("userId")
@@ -147,11 +142,7 @@ export const entryRepository = {
 		endDate: Date,
 	): Promise<HabitEntry[]> {
 		try {
-			// Set time boundaries for the range
-			const rangeStart = new Date(startDate);
-			rangeStart.setHours(0, 0, 0, 0);
-			const rangeEnd = new Date(endDate);
-			rangeEnd.setHours(23, 59, 59, 999);
+			const { rangeStart, rangeEnd } = toDateRange(startDate, endDate);
 
 			const records = await db.entries
 				.where("habitId")
@@ -255,11 +246,7 @@ export const entryRepository = {
 		endDate: Date,
 		callback: (entries: HabitEntry[]) => void,
 	): () => void {
-		// Set time boundaries for the range
-		const rangeStart = new Date(startDate);
-		rangeStart.setHours(0, 0, 0, 0);
-		const rangeEnd = new Date(endDate);
-		rangeEnd.setHours(23, 59, 59, 999);
+		const { rangeStart, rangeEnd } = toDateRange(startDate, endDate);
 
 		const observable = liveQuery(() =>
 			db.entries
@@ -280,10 +267,20 @@ export const entryRepository = {
 					"[EntryRepository] Error in entries subscription:",
 					error,
 				);
-				console.error(
-					"[EntryRepository] Failed to load entry updates. Please refresh the page.",
-				);
-				// Return empty array so UI doesn't crash
+
+				// Show user-facing error notification
+				const errorMsg = error instanceof Error ? error.message : String(error);
+				if (typeof window !== "undefined") {
+					console.error(
+						`[EntryRepository] CRITICAL: Failed to load entry updates: ${errorMsg}. User has been notified.`,
+					);
+					// Use alert as a temporary solution - ideally this would use a toast/notification system
+					alert(
+						`Failed to load habit entries: ${errorMsg}\n\nPlease refresh the page. If the problem persists, contact support.`,
+					);
+				}
+
+				// Return empty array as fallback after notifying user
 				callback([]);
 			},
 		});
@@ -306,10 +303,20 @@ export const entryRepository = {
 					"[EntryRepository] Error in entries subscription:",
 					error,
 				);
-				console.error(
-					"[EntryRepository] Failed to load entry updates. Please refresh the page.",
-				);
-				// Return empty array so UI doesn't crash
+
+				// Show user-facing error notification
+				const errorMsg = error instanceof Error ? error.message : String(error);
+				if (typeof window !== "undefined") {
+					console.error(
+						`[EntryRepository] CRITICAL: Failed to load entry updates: ${errorMsg}. User has been notified.`,
+					);
+					// Use alert as a temporary solution - ideally this would use a toast/notification system
+					alert(
+						`Failed to load habit entries: ${errorMsg}\n\nPlease refresh the page. If the problem persists, contact support.`,
+					);
+				}
+
+				// Return empty array as fallback after notifying user
 				callback([]);
 			},
 		});
