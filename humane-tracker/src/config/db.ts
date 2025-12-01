@@ -177,6 +177,39 @@ export class HumaneTrackerDB extends Dexie {
 					throw error;
 				}
 			});
+
+		// Version 5: Fix syncLogs to be local-only (change @id to id)
+		// CRITICAL BUG FIX: @id was causing infinite sync loop - every log entry
+		// triggered a sync, which created more log entries, ad infinitum
+		this.version(5)
+			.stores({
+				habits:
+					"@id, userId, name, category, targetPerWeek, createdAt, updatedAt",
+				entries: "@id, habitId, userId, date, value, createdAt",
+				syncLogs: "id, timestamp, eventType, level", // Changed from @id to id (local-only!)
+			})
+			.upgrade(async (tx) => {
+				try {
+					console.log(
+						"[Migration v5] Fixing syncLogs table to be local-only...",
+					);
+					// Clear all existing sync logs - they're corrupted from the sync loop
+					const count = await tx.table("syncLogs").count();
+					console.log(
+						`[Migration v5] Clearing ${count} corrupted sync logs...`,
+					);
+					await tx.table("syncLogs").clear();
+					console.log(
+						"[Migration v5] Migration complete! syncLogs is now local-only.",
+					);
+				} catch (error) {
+					console.error(
+						"[Migration v5] CRITICAL: Failed to fix syncLogs table:",
+						error,
+					);
+					throw error;
+				}
+			});
 	}
 }
 

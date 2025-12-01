@@ -144,34 +144,34 @@ describe("SyncLogService", () => {
 	});
 
 	describe("enforceLimit", () => {
-		it("keeps logs under 500 entries", async () => {
-			// Add 505 logs
-			for (let i = 0; i < 505; i++) {
+		it("keeps logs under 2000 entries", async () => {
+			// Add 2005 logs
+			for (let i = 0; i < 2005; i++) {
 				await syncLogService.addLog("syncState", "info", `Log ${i}`);
 			}
 
-			// Should have enforced limit to 500
+			// Should have enforced limit to 2000
 			const count = await syncLogService.getCount();
-			expect(count).toBe(500);
+			expect(count).toBe(2000);
 		});
 
 		it("removes oldest logs when limit exceeded", async () => {
-			// Add 510 logs
-			for (let i = 0; i < 510; i++) {
+			// Add 2010 logs
+			for (let i = 0; i < 2010; i++) {
 				await syncLogService.addLog("syncState", "info", `Log ${i}`);
 			}
 
 			// Verify the limit was enforced
 			const count = await syncLogService.getCount();
-			expect(count).toBe(500);
+			expect(count).toBe(2000);
 
 			// Get the logs to verify content
 			const logs = await syncLogService.getLogs();
-			expect(logs).toHaveLength(500);
+			expect(logs).toHaveLength(2000);
 
 			// Verify we have recent logs (at least some from the high numbers)
 			const hasRecentLogs = logs.some((l) =>
-				l.message.match(/Log (50[0-9]|49[5-9])/),
+				l.message.match(/Log (200[0-9]|199[5-9])/),
 			);
 			expect(hasRecentLogs).toBe(true);
 		});

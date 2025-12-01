@@ -14,6 +14,7 @@ export function DebugLogsDialog({ onClose }: DebugLogsDialogProps) {
 	const [copySuccess, setCopySuccess] = useState(false);
 	const [copyError, setCopyError] = useState<string | null>(null);
 	const [clearError, setClearError] = useState<string | null>(null);
+	const [downloadSuccess, setDownloadSuccess] = useState(false);
 
 	// Live query to get logs (automatically updates when logs change)
 	const logs = useLiveQuery(() => syncLogService.getLogs(), []) ?? [];
@@ -54,6 +55,34 @@ export function DebugLogsDialog({ onClose }: DebugLogsDialogProps) {
 		}
 	};
 
+	const handleDownloadLogs = async () => {
+		try {
+			setCopyError(null);
+			setDownloadSuccess(false);
+			const logsJson = await syncLogService.exportLogs();
+			const blob = new Blob([logsJson], { type: "application/json" });
+			const url = URL.createObjectURL(blob);
+			const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+			const filename = `sync-logs-${timestamp}.json`;
+
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = filename;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+
+			setDownloadSuccess(true);
+			setTimeout(() => setDownloadSuccess(false), 2000);
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : "Unknown error occurred";
+			setCopyError(`Failed to download logs: ${errorMessage}`);
+			console.error("Failed to download logs:", error);
+		}
+	};
+
 	const toggleExpanded = (logId: string) => {
 		setExpandedLogId(expandedLogId === logId ? null : logId);
 	};
@@ -84,7 +113,6 @@ export function DebugLogsDialog({ onClose }: DebugLogsDialogProps) {
 				return "debug-log-badge-error";
 			case "warning":
 				return "debug-log-badge-warning";
-			case "info":
 			default:
 				return "debug-log-badge-info";
 		}
@@ -118,12 +146,19 @@ export function DebugLogsDialog({ onClose }: DebugLogsDialogProps) {
 				<div className="debug-logs-body">
 					<div className="debug-logs-info">
 						<p>
-							Showing last {logs.length} sync events (max 500). Logs are stored
-							locally and automatically cleared when limit is reached.
+							Showing last {logs.length} sync events (max 2000). Logs are stored
+							locally and not synced to cloud.
 						</p>
 					</div>
 
 					<div className="debug-logs-actions">
+						<button
+							className="debug-logs-btn-secondary"
+							onClick={handleDownloadLogs}
+							disabled={logs.length === 0}
+						>
+							{downloadSuccess ? "✓ Downloaded!" : "Download Logs"}
+						</button>
 						<button
 							className="debug-logs-btn-secondary"
 							onClick={handleCopyLogs}

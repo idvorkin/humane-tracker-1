@@ -1,7 +1,7 @@
 import type { Table } from "dexie";
 import type { SyncLog, SyncLogEventType, SyncLogLevel } from "../types/syncLog";
 
-const MAX_LOGS = 500;
+const MAX_LOGS = 2000;
 
 /**
  * Service for managing sync debug logs
@@ -20,9 +20,9 @@ export class SyncLogService {
 		data?: unknown,
 	): Promise<void> {
 		try {
-			// Add the new log with 'syn' prefix for Dexie Cloud @id compatibility
+			// Add the new log (local-only, not synced)
 			await this.syncLogsTable.add({
-				id: `syn${crypto.randomUUID()}`,
+				id: crypto.randomUUID(),
 				timestamp: new Date(),
 				eventType,
 				level,
