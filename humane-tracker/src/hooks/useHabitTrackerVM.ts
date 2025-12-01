@@ -372,9 +372,7 @@ export function useHabitTrackerVM({
 	const toggleEntry = useCallback(
 		async (habitId: string, date: Date) => {
 			// Check if date is older than yesterday and confirm
-			// Skip confirmation if the date is the currently selected date
-			const isSelectedDate = selectedDate && isSameDay(date, selectedDate);
-			if (!isToday(date) && !isYesterday(date) && !isSelectedDate) {
+			if (!isToday(date) && !isYesterday(date)) {
 				const dateStr = format(date, "MMM d");
 				if (
 					!window.confirm(
@@ -419,7 +417,7 @@ export function useHabitTrackerVM({
 				console.error("Error updating entry:", error);
 			}
 		},
-		[habits, userId, selectedDate],
+		[habits, userId],
 	);
 
 	return {
