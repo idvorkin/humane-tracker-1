@@ -37,6 +37,19 @@ test: generate-version
 # Run E2E tests (Playwright - chromium only)
 e2e:
     npx playwright test --project=chromium
+    @# Copy screenshot viewer if screenshots were generated
+    @if [ -f test-results/screenshots/screenshots.json ]; then \
+        cp tests/screenshot-viewer.html test-results/screenshots/index.html; \
+        echo "Screenshot viewer copied to test-results/screenshots/index.html"; \
+    fi
+
+# View E2E test screenshots in browser
+screenshots:
+    #!/usr/bin/env bash
+    cd test-results/screenshots 2>/dev/null || { echo "No screenshots directory found. Run 'just e2e' first."; exit 1; }
+    echo "Starting screenshot viewer on http://localhost:8080"
+    echo "Press Ctrl+C to stop the server"
+    python3 -m http.server 8080 --bind 0.0.0.0
 
 # Deploy to staging
 deploy-stage: test build
