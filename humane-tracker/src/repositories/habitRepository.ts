@@ -28,18 +28,35 @@ function validateHabitName(name: string): string {
 /**
  * Validate targetPerWeek is within bounds.
  * Returns a default value of 3 for invalid input, clamps to 1-7 range.
+ * Logs warnings when correcting invalid input.
  */
 function validateTargetPerWeek(target: number): number {
 	if (typeof target !== "number" || Number.isNaN(target)) {
+		console.warn(
+			`[HabitRepository] Invalid targetPerWeek value: ${target}. Using default value 3.`,
+		);
 		return 3;
 	}
-	return Math.max(1, Math.min(7, target));
+	if (target < 1) {
+		console.warn(
+			`[HabitRepository] targetPerWeek ${target} is below minimum. Clamping to 1.`,
+		);
+		return 1;
+	}
+	if (target > 7) {
+		console.warn(
+			`[HabitRepository] targetPerWeek ${target} is above maximum. Clamping to 7.`,
+		);
+		return 7;
+	}
+	return target;
 }
 
 /**
  * Convert a database record to a domain object.
+ * During migration period, date fields may be Date objects or ISO strings.
  */
-function toHabit(record: HabitRecord | Habit): Habit {
+function toHabit(record: HabitRecord): Habit {
 	return {
 		id: record.id,
 		name: record.name,
@@ -255,11 +272,11 @@ export const habitRepository = {
 			next: (records) => callback(records.map(toHabit)),
 			error: (error) => {
 				console.error("[HabitRepository] Error in habits subscription:", error);
+				console.error(
+					"[HabitRepository] Failed to load habit updates. Please refresh the page.",
+				);
 				// Return empty array so UI doesn't crash
 				callback([]);
-				throw new Error(
-					`Failed to load habit updates. Please refresh the page. Error: ${error instanceof Error ? error.message : String(error)}`,
-				);
 			},
 		});
 

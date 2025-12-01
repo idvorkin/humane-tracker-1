@@ -1,7 +1,11 @@
 import Dexie, { type Table } from "dexie";
 import dexieCloud from "dexie-cloud-addon";
 import type { EntryRecord, HabitRecord } from "../repositories/types";
-import { toDateString, toTimestamp } from "../repositories/types";
+import {
+	normalizeDate,
+	toDateString,
+	toTimestamp,
+} from "../repositories/types";
 import { SyncLogService } from "../services/syncLogService";
 import type { SyncLog } from "../types/syncLog";
 
@@ -53,6 +57,7 @@ export class HumaneTrackerDB extends Dexie {
 						.toCollection()
 						.modify((habit) => {
 							try {
+								// Handle createdAt: could be Date (not migrated) or string (already migrated)
 								if (habit.createdAt instanceof Date) {
 									if (Number.isNaN(habit.createdAt.getTime())) {
 										throw new Error(
@@ -60,7 +65,12 @@ export class HumaneTrackerDB extends Dexie {
 										);
 									}
 									habit.createdAt = toTimestamp(habit.createdAt);
+								} else if (typeof habit.createdAt === "string") {
+									// Already migrated or from cloud sync - validate and keep
+									normalizeDate(habit.createdAt); // Will throw if invalid
 								}
+
+								// Handle updatedAt: could be Date (not migrated) or string (already migrated)
 								if (habit.updatedAt instanceof Date) {
 									if (Number.isNaN(habit.updatedAt.getTime())) {
 										throw new Error(
@@ -68,6 +78,9 @@ export class HumaneTrackerDB extends Dexie {
 										);
 									}
 									habit.updatedAt = toTimestamp(habit.updatedAt);
+								} else if (typeof habit.updatedAt === "string") {
+									// Already migrated or from cloud sync - validate and keep
+									normalizeDate(habit.updatedAt); // Will throw if invalid
 								}
 							} catch (error) {
 								console.error(
@@ -93,12 +106,18 @@ export class HumaneTrackerDB extends Dexie {
 						.toCollection()
 						.modify((entry) => {
 							try {
+								// Handle date: could be Date (not migrated) or string (already migrated)
 								if (entry.date instanceof Date) {
 									if (Number.isNaN(entry.date.getTime())) {
 										throw new Error(`Invalid date in entry ${entry.id}`);
 									}
 									entry.date = toDateString(entry.date);
+								} else if (typeof entry.date === "string") {
+									// Already migrated or from cloud sync - validate and keep
+									normalizeDate(entry.date); // Will throw if invalid
 								}
+
+								// Handle createdAt: could be Date (not migrated) or string (already migrated)
 								if (entry.createdAt instanceof Date) {
 									if (Number.isNaN(entry.createdAt.getTime())) {
 										throw new Error(
@@ -106,6 +125,9 @@ export class HumaneTrackerDB extends Dexie {
 										);
 									}
 									entry.createdAt = toTimestamp(entry.createdAt);
+								} else if (typeof entry.createdAt === "string") {
+									// Already migrated or from cloud sync - validate and keep
+									normalizeDate(entry.createdAt); // Will throw if invalid
 								}
 							} catch (error) {
 								console.error(
@@ -125,13 +147,33 @@ export class HumaneTrackerDB extends Dexie {
 						`[Migration v4] Migration complete! Migrated ${habitCount} habits and ${entryCount} entries`,
 					);
 				} catch (error) {
+					// Log full error with stack trace for debugging
 					console.error(
 						"[Migration v4] CRITICAL: Database migration failed:",
 						error,
 					);
-					alert(
-						`Database migration failed: ${error instanceof Error ? error.message : String(error)}.\n\nPlease restore from backup if you have one, or contact support.`,
+					if (error instanceof Error && error.stack) {
+						console.error("[Migration v4] Stack trace:", error.stack);
+					}
+
+					// Notify user - alert is appropriate here for critical migration failure
+					// that would prevent the app from functioning correctly
+					const errorMsg =
+						error instanceof Error ? error.message : String(error);
+					console.error(
+						`[Migration v4] User notification: Database migration failed: ${errorMsg}. Please refresh the page or restore from backup.`,
 					);
+
+					// Only show alert in browser environment (not during tests)
+					if (
+						typeof window !== "undefined" &&
+						!window.location.search.includes("test=true")
+					) {
+						alert(
+							`Database migration failed: ${errorMsg}\n\nPlease try refreshing the page. If the problem persists, restore from backup or contact support.\n\nCheck the browser console for technical details.`,
+						);
+					}
+
 					throw error;
 				}
 			});

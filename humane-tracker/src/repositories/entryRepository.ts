@@ -11,9 +11,9 @@ import {
 
 /**
  * Convert a database record to a domain object.
- * Handles legacy Date objects and new ISO string format.
+ * During migration period, date fields may be Date objects or ISO strings.
  */
-function toEntry(record: EntryRecord | HabitEntry): HabitEntry {
+function toEntry(record: EntryRecord): HabitEntry {
 	return {
 		id: record.id,
 		habitId: record.habitId,
@@ -267,11 +267,11 @@ export const entryRepository = {
 					"[EntryRepository] Error in entries subscription:",
 					error,
 				);
+				console.error(
+					"[EntryRepository] Failed to load entry updates. Please refresh the page.",
+				);
 				// Return empty array so UI doesn't crash
 				callback([]);
-				throw new Error(
-					`Failed to load entry updates. Please refresh the page. Error: ${error instanceof Error ? error.message : String(error)}`,
-				);
 			},
 		});
 
@@ -293,11 +293,11 @@ export const entryRepository = {
 					"[EntryRepository] Error in entries subscription:",
 					error,
 				);
+				console.error(
+					"[EntryRepository] Failed to load entry updates. Please refresh the page.",
+				);
 				// Return empty array so UI doesn't crash
 				callback([]);
-				throw new Error(
-					`Failed to load entry updates. Please refresh the page. Error: ${error instanceof Error ? error.message : String(error)}`,
-				);
 			},
 		});
 

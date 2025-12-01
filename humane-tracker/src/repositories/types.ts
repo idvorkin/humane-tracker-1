@@ -174,13 +174,10 @@ export function normalizeDateString(value: Date | string): string {
 	}
 	// Check if it's already a date-only string
 	if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-		// Validate it's actually a valid date
-		const date = new Date(value);
-		if (Number.isNaN(date.getTime())) {
-			throw new Error(`normalizeDateString: Invalid date string: "${value}"`);
-		}
+		// Validate using fromDateString (includes round-trip validation for Feb 30, etc.)
+		fromDateString(value); // Will throw if invalid
 		return value;
 	}
 	// Full ISO timestamp - extract date portion
-	return toDateString(new Date(value));
+	return toDateString(fromTimestamp(value));
 }
