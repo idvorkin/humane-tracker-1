@@ -47,8 +47,15 @@ function App() {
 
 	if (loading) {
 		return (
-			<div className="loading-container">
-				<div className="loading-spinner">Loading...</div>
+			<div
+				style={{
+					display: "flex",
+					justifyContent: "center",
+					alignItems: "center",
+					height: "100vh",
+				}}
+			>
+				<div>Loading...</div>
 			</div>
 		);
 	}

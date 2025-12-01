@@ -1,9 +1,22 @@
+import {
+	Alert,
+	Autocomplete,
+	Button,
+	Group,
+	Loader,
+	Modal,
+	NumberInput,
+	Radio,
+	Stack,
+	Text,
+	TextInput,
+} from "@mantine/core";
+import { IconPencil } from "@tabler/icons-react";
 import type React from "react";
 import { useState } from "react";
 import { HabitService } from "../services/habitService";
 import type { Habit } from "../types/habit";
 import { buildCategoryInfo } from "../utils/categoryUtils";
-import "./HabitSettings.css";
 
 interface HabitEditorProps {
 	habit: Habit;
@@ -105,128 +118,136 @@ export const HabitEditor: React.FC<HabitEditorProps> = ({
 	};
 
 	return (
-		<div className="habit-editor-overlay">
-			<div className="habit-editor-modal">
-				<div className="modal-header">
-					<h2>Edit Habit</h2>
-					<button className="close-btn" onClick={onClose}>
-						✕
-					</button>
+		<Modal
+			opened={true}
+			onClose={onClose}
+			title={
+				<Group gap="xs">
+					<IconPencil size={20} />
+					<span>Edit Habit</span>
+				</Group>
+			}
+			centered
+			size="md"
+		>
+			<Stack gap="md">
+				{error && (
+					<Alert color="red" title="Error">
+						{error}
+					</Alert>
+				)}
+
+				<TextInput
+					label="Habit Name"
+					placeholder="e.g., Morning Meditation"
+					value={name}
+					onChange={(e) => setName(e.currentTarget.value)}
+					maxLength={50}
+					description={`${name.length}/50 characters`}
+					required
+				/>
+
+				<div>
+					<Autocomplete
+						label="Category"
+						placeholder="e.g., Mobility"
+						value={category}
+						onChange={setCategory}
+						data={existingCategories}
+						maxLength={50}
+						required
+					/>
+					<Group gap="xs" mt="xs">
+						<div
+							style={{
+								width: "12px",
+								height: "12px",
+								borderRadius: "50%",
+								background: categoryInfo.color,
+							}}
+						/>
+						<Text size="sm" c="dimmed">
+							{category || "No category"}
+						</Text>
+					</Group>
 				</div>
 
-				<div className="modal-body">
-					{error && <div className="error-message">{error}</div>}
-
-					<div className="form-group">
-						<label htmlFor="habitName">Habit Name</label>
-						<input
-							id="habitName"
-							type="text"
-							value={name}
-							onChange={(e) => setName(e.target.value)}
-							placeholder="e.g., Morning Meditation"
-							maxLength={50}
-						/>
-						<span className="char-count">{name.length}/50</span>
-					</div>
-
-					<div className="form-group">
-						<label htmlFor="category">Category</label>
-						<input
-							id="category"
-							type="text"
-							list="category-options"
-							value={category}
-							onChange={(e) => setCategory(e.target.value)}
-							placeholder="e.g., Mobility"
-							maxLength={50}
-						/>
-						<datalist id="category-options">
-							{existingCategories.map((cat) => (
-								<option key={cat} value={cat} />
-							))}
-						</datalist>
-						<div className="category-preview">
-							<span
-								className="category-dot"
-								style={{
-									background: categoryInfo.color,
-								}}
-							/>
-							<span>{category || "No category"}</span>
-						</div>
-					</div>
-
-					<div className="form-group">
-						<label htmlFor="trackingType">Tracking Type</label>
-						<div className="tracking-type-options">
-							{TRACKING_TYPES.map((type) => (
-								<label key={type.value} className="tracking-type-option">
-									<input
-										type="radio"
-										name="trackingType"
-										value={type.value}
-										checked={trackingType === type.value}
-										onChange={(e) => setTrackingType(e.target.value as any)}
-									/>
-									<div className="tracking-type-info">
-										<strong>{type.label}</strong>
-										<small>{type.description}</small>
+				<Radio.Group
+					label="Tracking Type"
+					value={trackingType}
+					onChange={setTrackingType}
+				>
+					<Stack gap="xs" mt="xs">
+						{TRACKING_TYPES.map((type) => (
+							<Radio
+								key={type.value}
+								value={type.value}
+								label={
+									<div>
+										<Text size="sm" fw={500}>
+											{type.label}
+										</Text>
+										<Text size="xs" c="dimmed">
+											{type.description}
+										</Text>
 									</div>
-								</label>
-							))}
-						</div>
-					</div>
+								}
+							/>
+						))}
+					</Stack>
+				</Radio.Group>
 
-					<div className="form-group">
-						<label htmlFor="target">Target Days per Week</label>
-						<input
-							id="target"
-							type="number"
-							value={targetPerWeek}
-							onChange={(e) =>
-								setTargetPerWeek(
-									Math.max(1, Math.min(7, parseInt(e.target.value) || 1)),
-								)
-							}
-							min="1"
-							max="7"
-						/>
-						<small>
-							How many days per week do you want to complete this habit?
-						</small>
-					</div>
+				<NumberInput
+					label="Target Days per Week"
+					value={targetPerWeek}
+					onChange={(value) =>
+						setTargetPerWeek(Math.max(1, Math.min(7, Number(value) || 1)))
+					}
+					min={1}
+					max={7}
+					description="How many days per week do you want to complete this habit?"
+					required
+				/>
 
-					<div className="danger-zone">
-						<h3>Danger Zone</h3>
-						<button
-							className={`btn-delete ${isDeleting ? "confirming" : ""}`}
-							onClick={handleDelete}
-						>
-							{isDeleting ? "Click again to confirm deletion" : "Delete Habit"}
-						</button>
-						{isDeleting && (
-							<small className="delete-warning">
-								This will permanently delete the habit and all its history. This
-								cannot be undone.
-							</small>
-						)}
-					</div>
+				<div
+					style={{
+						borderTop: "1px solid #e0e0e0",
+						paddingTop: "16px",
+						marginTop: "8px",
+					}}
+				>
+					<Text size="sm" fw={600} c="red" mb="xs">
+						Danger Zone
+					</Text>
+					<Button
+						color="red"
+						variant={isDeleting ? "filled" : "light"}
+						onClick={handleDelete}
+						fullWidth
+					>
+						{isDeleting ? "Click again to confirm deletion" : "Delete Habit"}
+					</Button>
+					{isDeleting && (
+						<Text size="xs" c="dimmed" mt="xs">
+							This will permanently delete the habit and all its history. This
+							cannot be undone.
+						</Text>
+					)}
 				</div>
 
-				<div className="modal-footer">
-					<button className="btn-cancel" onClick={onClose}>
+				<Group justify="flex-end" gap="sm" mt="md">
+					<Button variant="default" onClick={onClose}>
 						Cancel
-					</button>
-					<button
-						className="btn-save"
+					</Button>
+					<Button
 						onClick={handleSave}
 						disabled={isSaving || !name.trim()}
+						leftSection={isSaving ? <Loader size="xs" /> : null}
 					>
 						{isSaving ? "Saving..." : "Save Changes"}
-					</button>
-				</div>
-			</div>
-		</div>
+					</Button>
+				</Group>
+			</Stack>
+		</Modal>
 	);
 };

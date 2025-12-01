@@ -1,9 +1,25 @@
+import {
+	Badge,
+	Button,
+	Group,
+	Loader,
+	Modal,
+	Stack,
+	Switch,
+	Text,
+	Title,
+} from "@mantine/core";
+import {
+	IconBug,
+	IconCloudCheck,
+	IconRefresh,
+	IconSettings,
+} from "@tabler/icons-react";
 import { useObservable } from "dexie-react-hooks";
 import type React from "react";
 import { db } from "../config/db";
 import { useVersionCheck } from "../hooks/useVersionCheck";
 import { getModifierKey } from "../services/githubService";
-import "./SettingsDialog.css";
 
 interface SettingsDialogProps {
 	isLocalMode: boolean;
@@ -57,38 +73,38 @@ function getSyncStatusLabel(
 	syncState: SyncState | null,
 	wsStatus: WebSocketStatus | null,
 	isLocalMode: boolean,
-): { label: string; status: "success" | "warning" | "error" | "neutral" } {
+): { label: string; color: string } {
 	if (isLocalMode) {
-		return { label: "Local Only", status: "neutral" };
+		return { label: "Local Only", color: "gray" };
 	}
 	if (!syncState) {
-		return { label: "Not configured", status: "neutral" };
+		return { label: "Not configured", color: "gray" };
 	}
 
 	const phase = syncState.phase;
 	if (phase === "error" || syncState.status === "error") {
-		return { label: "Error", status: "error" };
+		return { label: "Error", color: "red" };
 	}
 	if (phase === "offline" || syncState.status === "offline") {
-		return { label: "Offline", status: "warning" };
+		return { label: "Offline", color: "yellow" };
 	}
 	if (syncState.status === "connecting" || phase === "initial") {
-		return { label: "Connecting...", status: "warning" };
+		return { label: "Connecting...", color: "yellow" };
 	}
 	if (phase === "pushing") {
-		return { label: "Uploading...", status: "warning" };
+		return { label: "Uploading...", color: "yellow" };
 	}
 	if (phase === "pulling") {
-		return { label: "Downloading...", status: "warning" };
+		return { label: "Downloading...", color: "yellow" };
 	}
 	if (phase === "in-sync" && wsStatus === "connected") {
-		return { label: "Synced (Live)", status: "success" };
+		return { label: "Synced (Live)", color: "green" };
 	}
 	if (phase === "in-sync") {
-		return { label: "Synced", status: "success" };
+		return { label: "Synced", color: "green" };
 	}
 
-	return { label: syncState.phase, status: "neutral" };
+	return { label: syncState.phase, color: "gray" };
 }
 
 export function SettingsDialog({
@@ -116,12 +132,6 @@ export function SettingsDialog({
 	const wsStatus = isLocalMode ? null : (wsStatusFromCloud ?? null);
 	const syncStatus = getSyncStatusLabel(syncState, wsStatus, isLocalMode);
 
-	const handleOverlayClick = (e: React.MouseEvent) => {
-		if (e.target === e.currentTarget) {
-			onClose();
-		}
-	};
-
 	const handleViewSyncDetails = () => {
 		onClose();
 		onOpenSyncStatus();
@@ -133,201 +143,127 @@ export function SettingsDialog({
 	};
 
 	return (
-		<div className="settings-dialog-overlay" onClick={handleOverlayClick}>
-			<div className="settings-dialog">
-				<div className="settings-dialog-header">
-					<h2>Settings</h2>
-					<button className="settings-dialog-close" onClick={onClose}>
-						<svg
-							width="20"
-							height="20"
-							viewBox="0 0 20 20"
-							fill="none"
-							stroke="currentColor"
-							strokeWidth="2"
+		<Modal
+			opened={true}
+			onClose={onClose}
+			title={
+				<Group gap="xs">
+					<IconSettings size={22} />
+					<span>Settings</span>
+				</Group>
+			}
+			centered
+			size="md"
+		>
+			<Stack gap="xl">
+				{/* Updates Section */}
+				<div>
+					<Group gap="xs" mb="sm">
+						<IconRefresh size={18} />
+						<Title order={5}>App Updates</Title>
+					</Group>
+					<Stack gap="sm">
+						<Group justify="space-between">
+							<Text size="sm" c="dimmed">
+								Last checked
+							</Text>
+							<Text size="sm">{formatTimeAgo(lastCheckTime)}</Text>
+						</Group>
+						<Button
+							onClick={checkForUpdate}
+							disabled={isChecking}
+							variant="light"
+							leftSection={isChecking ? <Loader size="xs" /> : null}
+							fullWidth
 						>
-							<path d="M5 5l10 10M15 5L5 15" />
-						</svg>
-					</button>
+							{isChecking ? "Checking..." : "Check for Update"}
+						</Button>
+					</Stack>
 				</div>
 
-				<div className="settings-dialog-body">
-					{/* Updates Section */}
-					<div className="settings-section">
-						<div className="settings-section-header">
-							<div className="settings-section-icon">
-								<svg
-									width="18"
-									height="18"
-									viewBox="0 0 18 18"
-									fill="none"
-									stroke="currentColor"
-									strokeWidth="1.5"
-								>
-									<path d="M9 1v4M9 13v4M1 9h4M13 9h4" />
-									<circle cx="9" cy="9" r="4" />
-								</svg>
-							</div>
-							<span className="settings-section-title">App Updates</span>
-						</div>
-						<div className="settings-section-content">
-							<div className="settings-info-row">
-								<span className="settings-info-label">Last checked</span>
-								<span className="settings-info-value">
-									{formatTimeAgo(lastCheckTime)}
-								</span>
-							</div>
-							<button
-								className="settings-action-button"
-								onClick={checkForUpdate}
-								disabled={isChecking}
-							>
-								{isChecking ? (
-									<>
-										<span className="settings-button-spinner" />
-										Checking...
-									</>
-								) : (
-									"Check for Update"
-								)}
-							</button>
-						</div>
-					</div>
+				{/* Sync Section */}
+				<div>
+					<Group gap="xs" mb="sm">
+						<IconCloudCheck size={18} />
+						<Title order={5}>Cloud Sync</Title>
+					</Group>
+					<Stack gap="sm">
+						<Group justify="space-between">
+							<Text size="sm" c="dimmed">
+								Status
+							</Text>
+							<Badge color={syncStatus.color} variant="light">
+								{syncStatus.label}
+							</Badge>
+						</Group>
+						<Button onClick={handleViewSyncDetails} variant="default" fullWidth>
+							View Sync Details
+						</Button>
+						<Button onClick={handleViewDebugLogs} variant="default" fullWidth>
+							View Debug Logs
+						</Button>
+					</Stack>
+				</div>
 
-					{/* Sync Section */}
-					<div className="settings-section">
-						<div className="settings-section-header">
-							<div className="settings-section-icon">
-								<svg
-									width="18"
-									height="18"
-									viewBox="0 0 18 18"
-									fill="none"
-									stroke="currentColor"
-									strokeWidth="1.5"
-								>
-									<path d="M1 9a8 8 0 0114.9-4M17 9a8 8 0 01-14.9 4" />
-									<path d="M1 5V9h4M17 13V9h-4" />
-								</svg>
-							</div>
-							<span className="settings-section-title">Cloud Sync</span>
-						</div>
-						<div className="settings-section-content">
-							<div className="settings-info-row">
-								<span className="settings-info-label">Status</span>
-								<span
-									className={`settings-status-badge settings-status-${syncStatus.status}`}
-								>
-									<span className="settings-status-dot" />
-									{syncStatus.label}
-								</span>
-							</div>
-							<button
-								className="settings-action-button settings-action-secondary"
-								onClick={handleViewSyncDetails}
+				{/* Help & Feedback Section */}
+				<div>
+					<Group gap="xs" mb="sm">
+						<IconBug size={18} />
+						<Title order={5}>Help & Feedback</Title>
+					</Group>
+					<Stack gap="sm">
+						{onOpenBugReport && (
+							<Button
+								onClick={() => {
+									onClose();
+									onOpenBugReport();
+								}}
+								variant="light"
+								leftSection={<IconBug size={16} />}
+								fullWidth
 							>
-								View Sync Details
-							</button>
-							<button
-								className="settings-action-button settings-action-secondary"
-								onClick={handleViewDebugLogs}
-							>
-								View Debug Logs
-							</button>
-						</div>
-					</div>
-
-					{/* Help & Feedback Section */}
-					<div className="settings-section">
-						<div className="settings-section-header">
-							<div className="settings-section-icon">
-								<svg
-									width="18"
-									height="18"
-									viewBox="0 0 18 18"
-									fill="none"
-									stroke="currentColor"
-									strokeWidth="1.5"
-								>
-									<path d="M9 1.5a5.5 5.5 0 015.5 5.5v1h2v2h-2v1a5.5 5.5 0 01-11 0v-1h-2V8h2V7A5.5 5.5 0 019 1.5z" />
-									<path d="M7 8h4M7 11h4" />
-								</svg>
-							</div>
-							<span className="settings-section-title">Help & Feedback</span>
-						</div>
-						<div className="settings-section-content">
-							{onOpenBugReport && (
-								<button
-									className="settings-action-button"
-									onClick={() => {
-										onClose();
-										onOpenBugReport();
-									}}
-								>
-									<svg
-										width="16"
-										height="16"
-										viewBox="0 0 16 16"
-										fill="none"
-										stroke="currentColor"
-										strokeWidth="1.5"
-									>
-										<path d="M8 1.5a4 4 0 014 4v1h1.5v1.5H12v1a4 4 0 01-8 0v-1H2.5V6.5H4v-1a4 4 0 014-4z" />
-										<path d="M6.5 6.5h3M6.5 9h3" />
-									</svg>
-									Report a Bug
-								</button>
-							)}
-							{shakeSupported && onShakeEnabledChange && (
-								<div className="settings-toggle-row">
-									<span
-										id="shake-toggle-label"
-										className="settings-toggle-label"
-									>
-										Shake to Report Bug
-									</span>
-									<button
-										type="button"
-										role="switch"
-										aria-checked={shakeEnabled}
-										aria-labelledby="shake-toggle-label"
-										className={`settings-toggle ${shakeEnabled ? "settings-toggle-on" : ""}`}
-										onClick={async () => {
-											try {
-												if (!shakeEnabled && !shakeHasPermission) {
-													// Request permission first
-													const granted = await onRequestShakePermission?.();
-													if (granted) {
-														onShakeEnabledChange(true);
-													}
-												} else {
-													onShakeEnabledChange(!shakeEnabled);
+								Report a Bug
+							</Button>
+						)}
+						{shakeSupported && onShakeEnabledChange && (
+							<Group justify="space-between">
+								<Text size="sm">Shake to Report Bug</Text>
+								<Switch
+									checked={shakeEnabled}
+									onChange={async (event) => {
+										try {
+											const newValue = event.currentTarget.checked;
+											if (newValue && !shakeHasPermission) {
+												// Request permission first
+												const granted = await onRequestShakePermission?.();
+												if (granted) {
+													onShakeEnabledChange(true);
 												}
-											} catch (err) {
-												console.error("Failed to toggle shake setting:", err);
+											} else {
+												onShakeEnabledChange(newValue);
 											}
-										}}
-									>
-										<span className="settings-toggle-thumb" />
-									</button>
-								</div>
-							)}
-							<div className="settings-info-row">
-								<span className="settings-info-label">Keyboard shortcut</span>
-								<span className="settings-info-value">
-									{getModifierKey()}+I
-								</span>
-							</div>
-						</div>
-					</div>
+										} catch (err) {
+											console.error("Failed to toggle shake setting:", err);
+										}
+									}}
+								/>
+							</Group>
+						)}
+						<Group justify="space-between">
+							<Text size="sm" c="dimmed">
+								Keyboard shortcut
+							</Text>
+							<Text size="sm" ff="monospace">
+								{getModifierKey()}+I
+							</Text>
+						</Group>
+					</Stack>
 				</div>
 
-				<div className="settings-dialog-footer">
-					<button className="settings-done-button" onClick={onClose}>
-						Done
-					</button>
-				</div>
-			</div>
-		</div>
+				<Button onClick={onClose} fullWidth>
+					Done
+				</Button>
+			</Stack>
+		</Modal>
 	);
 }

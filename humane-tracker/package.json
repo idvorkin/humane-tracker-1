@@ -15,6 +15,10 @@
     "deploy:surge": "npm run build && surge dist humane-tracker.surge.sh"
   },
   "dependencies": {
+    "@mantine/core": "^7.15.4",
+    "@mantine/hooks": "^7.15.4",
+    "@mantine/form": "^7.15.4",
+    "@tabler/icons-react": "^3.24.0",
     "date-fns": "^4.1.0",
     "dexie": "^4.2.1",
     "dexie-cloud-addon": "^4.2.2",

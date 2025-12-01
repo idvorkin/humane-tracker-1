@@ -1,3 +1,5 @@
+import { MantineProvider } from "@mantine/core";
+import "@mantine/core/styles.css";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { ErrorBoundary } from "react-error-boundary";
@@ -17,7 +19,9 @@ const AppComponent = isTestMode ? TestApp : App;
 root.render(
 	<ErrorBoundary FallbackComponent={CrashFallback}>
 		<React.StrictMode>
-			<AppComponent />
+			<MantineProvider>
+				<AppComponent />
+			</MantineProvider>
 		</React.StrictMode>
 	</ErrorBoundary>,
 );

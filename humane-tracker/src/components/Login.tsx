@@ -1,6 +1,13 @@
+import { Button, Container, Paper, Stack, Text, Title } from "@mantine/core";
+import {
+	IconChartBar,
+	IconCloud,
+	IconDeviceMobile,
+	IconLock,
+	IconTarget,
+} from "@tabler/icons-react";
 import type React from "react";
 import { db } from "../config/db";
-import "./Login.css";
 
 export const Login: React.FC = () => {
 	const handleLogin = async () => {
@@ -14,45 +21,53 @@ export const Login: React.FC = () => {
 	};
 
 	return (
-		<div className="login-container">
-			<div className="login-card">
-				<div className="login-header">
-					<h1>Humane Tracker</h1>
-					<p>Track your wellness habits and build healthy routines</p>
-				</div>
+		<Container size="xs" style={{ marginTop: "10vh" }}>
+			<Paper p="xl" radius="md" withBorder>
+				<Stack gap="lg">
+					<div>
+						<Title order={1} ta="center" mb="xs">
+							Humane Tracker
+						</Title>
+						<Text ta="center" c="dimmed">
+							Track your wellness habits and build healthy routines
+						</Text>
+					</div>
 
-				<div className="login-features">
-					<div className="feature-item">
-						<span className="feature-icon">📊</span>
-						<span>Track 27+ habits across 5 categories</span>
-					</div>
-					<div className="feature-item">
-						<span className="feature-icon">🎯</span>
-						<span>Set weekly targets and monitor progress</span>
-					</div>
-					<div className="feature-item">
-						<span className="feature-icon">☁️</span>
-						<span>Sync across all your devices</span>
-					</div>
-					<div className="feature-item">
-						<span className="feature-icon">🔒</span>
-						<span>Your data is private and secure</span>
-					</div>
-					<div className="feature-item">
-						<span className="feature-icon">📱</span>
-						<span>Works offline with automatic sync</span>
-					</div>
-				</div>
+					<Stack gap="md">
+						<Stack gap="xs">
+							<Text size="sm" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+								<IconChartBar size={18} />
+								Track 27+ habits across 5 categories
+							</Text>
+							<Text size="sm" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+								<IconTarget size={18} />
+								Set weekly targets and monitor progress
+							</Text>
+							<Text size="sm" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+								<IconCloud size={18} />
+								Sync across all your devices
+							</Text>
+							<Text size="sm" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+								<IconLock size={18} />
+								Your data is private and secure
+							</Text>
+							<Text size="sm" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+								<IconDeviceMobile size={18} />
+								Works offline with automatic sync
+							</Text>
+						</Stack>
 
-				<button className="google-signin-btn" onClick={handleLogin}>
-					Sign In
-				</button>
+						<Button onClick={handleLogin} size="lg" fullWidth>
+							Sign In
+						</Button>
 
-				<p className="privacy-note">
-					We only store your email and name to identify your account. Your habit
-					data stays private and syncs across your devices.
-				</p>
-			</div>
-		</div>
+						<Text size="xs" c="dimmed" ta="center">
+							We only store your email and name to identify your account. Your habit
+							data stays private and syncs across your devices.
+						</Text>
+					</Stack>
+				</Stack>
+			</Paper>
+		</Container>
 	);
 };
