@@ -183,7 +183,9 @@ export class HumaneTrackerDB extends Dexie {
 		// Using @id marks a table for sync eligibility; server config controls which tables
 		// actually sync. Since syncLogs was both @id-marked and server-configured to sync,
 		// every sync event created a log entry, which synced, creating more events, ad infinitum.
-		// Fix: Change @id to id (local-only) to prevent this table from ever syncing.
+		// Fix: Change @id to id (local-only) AND add to unsyncedTables in cloud config.
+		// Note: This clears local data, but old syncLogs may still exist on cloud server.
+		// The unsyncedTables config prevents future syncing and ignores cloud data.
 		this.version(5)
 			.stores({
 				habits:
@@ -402,6 +404,7 @@ if (
 		databaseUrl: dexieCloudUrl,
 		requireAuth: true, // Require authentication for cloud sync
 		tryUseServiceWorker: true,
+		unsyncedTables: ["syncLogs"], // Explicitly prevent syncLogs from syncing
 	});
 
 	// Set up comprehensive sync monitoring and logging
