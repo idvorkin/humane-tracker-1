@@ -13,11 +13,13 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  reporter: [['html', { outputFolder: 'playwright-report' }]],
   use: {
     baseURL: BASE_URL,
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
+    // Enhanced artifact capture - use 'on' for development, 'retain-on-failure' for CI
+    trace: process.env.CI ? 'retain-on-failure' : 'on',
+    video: process.env.CI ? 'retain-on-failure' : 'on',
+    screenshot: process.env.CI ? 'only-on-failure' : 'on',
     // Ignore HTTPS certificate errors in container (self-signed cert)
     ignoreHTTPSErrors: isContainer,
   },
@@ -26,6 +28,10 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'mobile',
+      use: { ...devices['iPhone 14 Pro'] },
     },
   ],
 

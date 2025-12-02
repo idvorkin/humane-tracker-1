@@ -1,41 +1,13 @@
 import { test, expect, type Page } from "@playwright/test";
-import * as fs from "node:fs";
-import * as path from "node:path";
 import { clearIndexedDB } from "./helpers/indexeddb-helpers";
 
-// Constants for timeouts and paths
+// Constants for timeouts
 const TIMEOUTS = {
 	SHORT: 200,
 	MEDIUM: 500,
 	LONG: 1000,
 	TABLE_LOAD: 15000,
 } as const;
-
-const SCREENSHOT_DIR = "test-results/screenshots";
-const METADATA_FILE = path.join(SCREENSHOT_DIR, "screenshots.json");
-
-// Device configurations
-const DEVICES = {
-	DESKTOP: { width: 1920, height: 1080, name: "desktop" },
-	MOBILE: { width: 390, height: 844, name: "mobile" }, // iPhone 12 Pro size
-} as const;
-
-// Screenshot metadata tracking
-const screenshotMetadata: Array<{
-	filename: string;
-	device: string;
-	name: string;
-	timestamp: string;
-}> = [];
-
-// Clear metadata file at the start of test run (before all tests)
-let isMetadataCleared = false;
-function clearMetadataFile(): void {
-	if (!isMetadataCleared && fs.existsSync(METADATA_FILE)) {
-		fs.unlinkSync(METADATA_FILE);
-		isMetadataCleared = true;
-	}
-}
 
 // Helper: Load default habits into the database
 async function loadDefaultHabits(page: Page): Promise<void> {
@@ -96,66 +68,6 @@ async function expandAllSections(page: Page): Promise<void> {
 		await expandButton.click();
 		await page.waitForTimeout(TIMEOUTS.MEDIUM);
 	}
-}
-
-// Helper: Take screenshot with device prefix and track metadata
-async function takeScreenshot(
-	page: Page,
-	filename: string,
-	deviceName: string,
-	fullPage = false, // Changed to false to capture viewport only
-): Promise<void> {
-	const fullFilename = `${deviceName}-${filename}`;
-	await page.screenshot({
-		path: `${SCREENSHOT_DIR}/${fullFilename}`,
-		fullPage,
-	});
-
-	// Track metadata for JSON output
-	const name = filename.replace('.png', '').replace(/-/g, ' ');
-	screenshotMetadata.push({
-		filename: fullFilename,
-		device: deviceName,
-		name,
-		timestamp: new Date().toISOString(),
-	});
-}
-
-// Helper: Save screenshot metadata to JSON file (merges with existing data)
-function saveScreenshotMetadata(): void {
-	// Ensure directory exists
-	if (!fs.existsSync(SCREENSHOT_DIR)) {
-		fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
-	}
-
-	// Load existing metadata if file exists
-	let allMetadata: typeof screenshotMetadata = [];
-	if (fs.existsSync(METADATA_FILE)) {
-		try {
-			const existingContent = fs.readFileSync(METADATA_FILE, 'utf-8');
-			const existing = JSON.parse(existingContent);
-			if (Array.isArray(existing)) {
-				allMetadata = existing;
-			}
-		} catch (error) {
-			console.warn('Failed to read existing metadata, starting fresh:', error);
-		}
-	}
-
-	// Merge new screenshots with existing ones (avoid duplicates by filename)
-	const existingFilenames = new Set(allMetadata.map(m => m.filename));
-	for (const meta of screenshotMetadata) {
-		if (!existingFilenames.has(meta.filename)) {
-			allMetadata.push(meta);
-		}
-	}
-
-	// Write merged metadata to JSON file
-	fs.writeFileSync(
-		METADATA_FILE,
-		JSON.stringify(allMetadata, null, 2),
-		'utf-8'
-	);
 }
 
 // Helper: Check habit for a specific date offset (0 = today, 1 = yesterday, etc.)
@@ -258,361 +170,257 @@ async function getTotalCount(page: Page, habitRowIndex: number): Promise<string>
 	return (await totalCell.textContent()) || "";
 }
 
-// Test suite for each device type
-for (const device of Object.values(DEVICES)) {
-	test.describe(`Load Default Habits - ${device.name}`, () => {
-		test.use({
-			viewport: { width: device.width, height: device.height },
-		});
+// Test suite
+test.describe("Load Default Habits", () => {
+	test.beforeEach(async ({ page }) => {
+		// Go to the app in E2E mode (no auth required, uses real IndexedDB)
+		await page.goto("/?e2e=true");
 
-		// Clear metadata file once before first test run
-		test.beforeAll(() => {
-			clearMetadataFile();
-		});
+		// Wait for the app to load
+		await page.waitForLoadState("networkidle");
+		await page.waitForSelector("table", { timeout: TIMEOUTS.TABLE_LOAD });
+	});
 
-		test.beforeEach(async ({ page }) => {
-			// Go to the app in E2E mode (no auth required, uses real IndexedDB)
-			await page.goto("/?e2e=true");
+	test.afterEach(async ({ page }) => {
+		// Clean up IndexedDB after each test
+		await clearIndexedDB(page);
+	});
 
-			// Wait for the app to load
-			await page.waitForLoadState("networkidle");
-			await page.waitForSelector("table", { timeout: TIMEOUTS.TABLE_LOAD });
-		});
+	test("should load default habits and display them correctly", async ({
+		page,
+	}) => {
+		// Load default habits
+		await loadDefaultHabits(page);
 
-		test.afterEach(async ({ page }) => {
-			// Clean up IndexedDB after each test
-			await clearIndexedDB(page);
-		});
+		// Reload to see the loaded habits
+		await page.reload();
+		await page.waitForSelector("table", { timeout: TIMEOUTS.TABLE_LOAD });
+		await page.waitForTimeout(TIMEOUTS.LONG);
 
-		// Save metadata after all tests for this device complete
-		test.afterAll(() => {
-			saveScreenshotMetadata();
-		});
+		// Verify category sections appear
+		const sectionHeaders = page.locator(".section-header");
+		const headerCount = await sectionHeaders.count();
+		expect(headerCount).toBeGreaterThan(0);
 
-		test("should load default habits and display them correctly", async ({
-			page,
-		}) => {
-			// Load default habits
+		// Expand all sections
+		await expandAllSections(page);
+
+		// Verify habit rows are visible
+		const habitRows = page.locator(".section-row");
+		const rowCount = await habitRows.count();
+		expect(rowCount).toBeGreaterThan(0);
+
+		// Verify we have habits loaded (default set has 28 habits)
+		const habitCount = await getHabitCount(page);
+		expect(habitCount).toBeGreaterThan(20);
+	});
+
+	test("should display expected habit categories", async ({ page }) => {
+		// Check if habits already exist, load if needed
+		let habitCount = await getHabitCount(page);
+
+		if (habitCount === 0) {
 			await loadDefaultHabits(page);
-
-			// Reload to see the loaded habits
 			await page.reload();
 			await page.waitForSelector("table", { timeout: TIMEOUTS.TABLE_LOAD });
-			await page.waitForTimeout(TIMEOUTS.LONG);
+			habitCount = await getHabitCount(page);
+		}
 
-			// Verify category sections appear
-			const sectionHeaders = page.locator(".section-header");
-			const headerCount = await sectionHeaders.count();
-			expect(headerCount).toBeGreaterThan(0);
-			console.log(`[${device.name}] Found ${headerCount} category sections`);
+		await page.waitForTimeout(TIMEOUTS.LONG);
 
-			// Expand all sections
-			await expandAllSections(page);
+		// Expand all sections to see categories
+		await expandAllSections(page);
 
-			// Verify habit rows are visible
-			const habitRows = page.locator(".section-row");
-			const rowCount = await habitRows.count();
-			console.log(`[${device.name}] Found ${rowCount} habit rows`);
+		// Expected categories from default habits
+		const expectedCategories = [
+			"Mobility",
+			"Relationships",
+			"Emotional Health",
+			"Smile and Wonder",
+			"Physical Health",
+		];
 
-			// Take screenshot of loaded habits
-			await takeScreenshot(page, "default-habits-loaded.png", device.name);
-
-			// Verify we have habits loaded (default set has 28 habits)
-			const habitCount = await getHabitCount(page);
-			console.log(`[${device.name}] Total habits in database: ${habitCount}`);
-			expect(habitCount).toBeGreaterThan(20);
-		});
-
-		test("should display expected habit categories", async ({ page }) => {
-			// Check if habits already exist, load if needed
-			let habitCount = await getHabitCount(page);
-
-			if (habitCount === 0) {
-				await loadDefaultHabits(page);
-				await page.reload();
-				await page.waitForSelector("table", { timeout: TIMEOUTS.TABLE_LOAD });
-				habitCount = await getHabitCount(page);
-			}
-
-			await page.waitForTimeout(TIMEOUTS.LONG);
-
-			// Expand all sections to see categories
-			await expandAllSections(page);
-
-			// Expected categories from default habits
-			const expectedCategories = [
-				"Mobility",
-				"Relationships",
-				"Emotional Health",
-				"Smile and Wonder",
-				"Physical Health",
-			];
-
-			// Verify each category is visible
-			for (const category of expectedCategories) {
-				const categorySection = page.locator(
-					`.section-header:has-text("${category}")`,
-				);
-				await expect(categorySection).toBeVisible();
-				console.log(`[${device.name}] Category "${category}" is visible`);
-			}
-
-			// Take screenshot of categories
-			await takeScreenshot(page, "habit-categories.png", device.name);
-		});
-
-		test("should correctly track habit checks and update totals", async ({
-			page,
-		}) => {
-			// Ensure habits are loaded
-			let habitCount = await getHabitCount(page);
-			if (habitCount === 0) {
-				await loadDefaultHabits(page);
-				await page.reload();
-				await page.waitForSelector("table", { timeout: TIMEOUTS.TABLE_LOAD });
-			}
-
-			await page.waitForTimeout(TIMEOUTS.LONG);
-			await expandAllSections(page);
-
-			// Set up dialog handler for old date confirmation
-			page.on("dialog", async (dialog) => {
-				console.log(`[${device.name}] Dialog shown: ${dialog.message()}`);
-				await dialog.accept();
-			});
-
-			// Test first habit: check today and 3 days ago
-			const testHabitIndex = 0;
-
-			// Get initial total
-			const initialTotal = await getTotalCount(page, testHabitIndex);
-			console.log(`[${device.name}] Initial total: "${initialTotal}"`);
-
-			// Get initial entry count
-			const initialEntryCount = await getEntryCount(page);
-			console.log(`[${device.name}] Initial entry count: ${initialEntryCount}`);
-
-			// Check habit for today
-			console.log(`[${device.name}] About to click habit for today...`);
-			await checkHabitForDate(page, testHabitIndex, 0);
-			await page.waitForTimeout(TIMEOUTS.LONG); // Give more time for state update
-
-			// Check entry count after click
-			const entryCountAfterClick = await getEntryCount(page);
-			console.log(`[${device.name}] Entry count after click: ${entryCountAfterClick}`);
-
-			// Verify today shows checkmark
-			const todayContent = await getCellContent(page, testHabitIndex, 0);
-			console.log(`[${device.name}] Today's content after check: "${todayContent}"`);
-
-			// If no content, skip this test - may be a timing issue
-			if (!todayContent || todayContent.trim() === "") {
-				console.log(`[${device.name}] WARNING: Click did not register, skipping assertions`);
-				test.skip();
-			}
-
-			expect(todayContent).toMatch(/[✓1]/); // Can be checkmark or "1"
-
-			// Take screenshot after checking today
-			await takeScreenshot(page, "habit-checked-today.png", device.name);
-
-			// Verify entry was created
-			let entryCount = await getEntryCount(page);
-			expect(entryCount).toBe(1);
-			console.log(`[${device.name}] Entry count after today: ${entryCount}`);
-
-			// Get total after checking today
-			const totalAfterToday = await getTotalCount(page, testHabitIndex);
-			console.log(`[${device.name}] Total after today: "${totalAfterToday}"`);
-
-			// Check habit for 3 days ago (will trigger confirmation dialog)
-			await checkHabitForDate(page, testHabitIndex, 3);
-			await page.waitForTimeout(TIMEOUTS.LONG); // Give more time for state update
-
-			// Verify 3 days ago shows checkmark
-			const threeDaysAgoContent = await getCellContent(page, testHabitIndex, 3);
-			expect(threeDaysAgoContent).toMatch(/[✓1]/); // Can be checkmark or "1"
-			console.log(
-				`[${device.name}] 3 days ago content after check: "${threeDaysAgoContent}"`,
+		// Verify each category is visible
+		for (const category of expectedCategories) {
+			const categorySection = page.locator(
+				`.section-header:has-text("${category}")`,
 			);
-
-			// Take screenshot after checking 3 days ago
-			await takeScreenshot(
-				page,
-				"habit-checked-today-and-3days.png",
-				device.name,
-			);
-
-			// Verify second entry was created
-			entryCount = await getEntryCount(page);
-			expect(entryCount).toBe(2);
-			console.log(`[${device.name}] Entry count after 3 days ago: ${entryCount}`);
-
-			// Get final total - should show 2 entries
-			const finalTotal = await getTotalCount(page, testHabitIndex);
-			console.log(`[${device.name}] Final total: "${finalTotal}"`);
-
-			// Total should be "2" (two checkmarks)
-			expect(finalTotal.trim()).toMatch(/2/);
-
-			// Take final screenshot showing totals
-			await takeScreenshot(page, "habit-totals-verified.png", device.name);
-		});
-
-		test("should support zoom functionality", async ({ page }) => {
-			// Ensure habits are loaded
-			let habitCount = await getHabitCount(page);
-			if (habitCount === 0) {
-				await loadDefaultHabits(page);
-				await page.reload();
-				await page.waitForSelector("table", { timeout: TIMEOUTS.TABLE_LOAD });
-			}
-
-			await page.waitForTimeout(TIMEOUTS.LONG);
-			await expandAllSections(page);
-
-			// Take screenshot before zoom
-			await takeScreenshot(page, "before-zoom.png", device.name);
-
-			// Find and click first zoom button
-			const firstZoomButton = page.locator("button.zoom-btn").first();
-			await firstZoomButton.click();
-			await page.waitForTimeout(TIMEOUTS.MEDIUM);
-
-			// Verify we're in zoom mode by checking for "Back" button
-			const backButton = page.locator("button.zoom-back-btn");
-			await expect(backButton).toBeVisible();
-			console.log(`[${device.name}] Zoomed into first category`);
-
-			// Take screenshot of zoomed view
-			await takeScreenshot(page, "zoomed-category.png", device.name);
-
-			// Zoom out by clicking the Back button
-			await backButton.click();
-			await page.waitForTimeout(TIMEOUTS.MEDIUM);
-
-			// Verify we're back to full view
-			const collapseButton = page.getByText("Collapse All");
-			await expect(collapseButton).toBeVisible();
-			console.log(`[${device.name}] Zoomed out to full view`);
-
-			// Take screenshot after zoom out
-			await takeScreenshot(page, "after-zoom-out.png", device.name);
-		});
-
-		test("should handle multiple habit checks in sequence", async ({ page }) => {
-			// Ensure habits are loaded
-			let habitCount = await getHabitCount(page);
-			if (habitCount === 0) {
-				await loadDefaultHabits(page);
-				await page.reload();
-				await page.waitForSelector("table", { timeout: TIMEOUTS.TABLE_LOAD });
-			}
-
-			await page.waitForTimeout(TIMEOUTS.LONG);
-			await expandAllSections(page);
-
-			// Check first 5 habits for today - use same pattern as working test
-			const habitsToCheck = 5;
-			const habitRows = page.locator("tr.section-row");
-			const totalRows = await habitRows.count();
-
-			for (let i = 0; i < Math.min(habitsToCheck, totalRows); i++) {
-				const row = habitRows.nth(i);
-				const todayCell = row.locator("td.cell-today").first();
-
-				// Click and immediately verify on same locator reference
-				await todayCell.click();
-				await page.waitForTimeout(TIMEOUTS.MEDIUM);
-
-				// Check content on the same locator we just clicked
-				const content = await todayCell.textContent();
-				console.log(`[${device.name}] Habit ${i} after click: "${content}"`);
-			}
-
-			// Verify entries were created
-			const entryCount = await getEntryCount(page);
-			expect(entryCount).toBe(habitsToCheck);
-			console.log(`[${device.name}] Created ${entryCount} entries`);
-
-			// Take screenshot showing multiple checked habits
-			await takeScreenshot(page, "multiple-habits-checked.png", device.name);
-		});
-
-		test("should navigate through settings screens", async ({ page }) => {
-			// Ensure habits are loaded
-			let habitCount = await getHabitCount(page);
-			if (habitCount === 0) {
-				await loadDefaultHabits(page);
-				await page.reload();
-				await page.waitForSelector("table", { timeout: TIMEOUTS.TABLE_LOAD });
-			}
-
-			await page.waitForTimeout(TIMEOUTS.LONG);
-
-			// Take screenshot of main screen before opening settings
-			await takeScreenshot(page, "before-settings.png", device.name);
-
-			// Open user menu
-			const userMenuTrigger = page.locator(".user-menu-trigger");
-			await userMenuTrigger.waitFor({ state: "visible" });
-			await userMenuTrigger.click();
-			await page.waitForTimeout(TIMEOUTS.MEDIUM);
-
-			// Take screenshot of user menu dropdown
-			await takeScreenshot(page, "user-menu-open.png", device.name);
-
-			// Click Manage Habits
-			const manageHabitsButton = page.locator('button.user-menu-item:has-text("Manage Habits")');
-			await manageHabitsButton.click();
-			await page.waitForTimeout(TIMEOUTS.MEDIUM);
-
-			// Wait for settings modal to appear
-			const settingsModal = page.locator(".habit-settings-modal");
-			await settingsModal.waitFor({ state: "visible" });
-
-			// Take screenshot of settings modal
-			await takeScreenshot(page, "settings-modal.png", device.name);
-			console.log(`[${device.name}] Settings modal opened`);
-
-			// Wait a bit for settings content to load
-			await page.waitForTimeout(TIMEOUTS.MEDIUM);
-
-			// Take screenshot showing habit list in settings (modal is visible, that's enough)
-			await takeScreenshot(page, "settings-habit-list.png", device.name);
-
-			// Click "Add New Habit" button to show the form
-			const addNewButton = page.locator('button:has-text("+ Add New Habit")');
-			if (await addNewButton.isVisible()) {
-				await addNewButton.click();
-				await page.waitForTimeout(TIMEOUTS.MEDIUM);
-
-				// Take screenshot of add habit form
-				await takeScreenshot(page, "settings-add-habit-form.png", device.name);
-				console.log(`[${device.name}] Add habit form visible`);
-
-				// Cancel/close the add form
-				const cancelButton = page.locator('button:has-text("Cancel"), button:has-text("Close")').first();
-				if (await cancelButton.isVisible()) {
-					await cancelButton.click();
-					await page.waitForTimeout(TIMEOUTS.SHORT);
-				}
-			}
-
-			// Close settings modal
-			const closeButton = settingsModal.locator('button:has-text("Close"), button[aria-label="Close"]').first();
-			if (await closeButton.isVisible()) {
-				await closeButton.click();
-			} else {
-				// Try pressing Escape
-				await page.keyboard.press("Escape");
-			}
-
-			await page.waitForTimeout(TIMEOUTS.MEDIUM);
-
-			// Take screenshot back at main screen
-			await takeScreenshot(page, "after-settings-closed.png", device.name);
-			console.log(`[${device.name}] Settings navigation test complete`);
-		});
+			await expect(categorySection).toBeVisible();
+		}
 	});
-}
+
+	test("should correctly track habit checks and update totals", async ({
+		page,
+	}) => {
+		// Ensure habits are loaded
+		let habitCount = await getHabitCount(page);
+		if (habitCount === 0) {
+			await loadDefaultHabits(page);
+			await page.reload();
+			await page.waitForSelector("table", { timeout: TIMEOUTS.TABLE_LOAD });
+		}
+
+		await page.waitForTimeout(TIMEOUTS.LONG);
+		await expandAllSections(page);
+
+		// Set up dialog handler for old date confirmation
+		page.on("dialog", async (dialog) => {
+			await dialog.accept();
+		});
+
+		// Test first habit: check today and 3 days ago
+		const testHabitIndex = 0;
+
+		// Check habit for today
+		await checkHabitForDate(page, testHabitIndex, 0);
+		await page.waitForTimeout(TIMEOUTS.LONG);
+
+		// Verify today shows checkmark
+		const todayContent = await getCellContent(page, testHabitIndex, 0);
+
+		// If no content, skip this test - may be a timing issue
+		if (!todayContent || todayContent.trim() === "") {
+			test.skip();
+		}
+
+		expect(todayContent).toMatch(/[✓1]/); // Can be checkmark or "1"
+
+		// Verify entry was created
+		let entryCount = await getEntryCount(page);
+		expect(entryCount).toBe(1);
+
+		// Check habit for 3 days ago (will trigger confirmation dialog)
+		await checkHabitForDate(page, testHabitIndex, 3);
+		await page.waitForTimeout(TIMEOUTS.LONG);
+
+		// Verify 3 days ago shows checkmark
+		const threeDaysAgoContent = await getCellContent(page, testHabitIndex, 3);
+		expect(threeDaysAgoContent).toMatch(/[✓1]/);
+
+		// Verify second entry was created
+		entryCount = await getEntryCount(page);
+		expect(entryCount).toBe(2);
+
+		// Get final total - should show 2 entries
+		const finalTotal = await getTotalCount(page, testHabitIndex);
+		expect(finalTotal.trim()).toMatch(/2/);
+	});
+
+	test("should support zoom functionality", async ({ page }) => {
+		// Ensure habits are loaded
+		let habitCount = await getHabitCount(page);
+		if (habitCount === 0) {
+			await loadDefaultHabits(page);
+			await page.reload();
+			await page.waitForSelector("table", { timeout: TIMEOUTS.TABLE_LOAD });
+		}
+
+		await page.waitForTimeout(TIMEOUTS.LONG);
+		await expandAllSections(page);
+
+		// Find and click first zoom button
+		const firstZoomButton = page.locator("button.zoom-btn").first();
+		await firstZoomButton.click();
+		await page.waitForTimeout(TIMEOUTS.MEDIUM);
+
+		// Verify we're in zoom mode by checking for "Back" button
+		const backButton = page.locator("button.zoom-back-btn");
+		await expect(backButton).toBeVisible();
+
+		// Zoom out by clicking the Back button
+		await backButton.click();
+		await page.waitForTimeout(TIMEOUTS.MEDIUM);
+
+		// Verify we're back to full view
+		const collapseButton = page.getByText("Collapse All");
+		await expect(collapseButton).toBeVisible();
+	});
+
+	test("should handle multiple habit checks in sequence", async ({ page }) => {
+		// Ensure habits are loaded
+		let habitCount = await getHabitCount(page);
+		if (habitCount === 0) {
+			await loadDefaultHabits(page);
+			await page.reload();
+			await page.waitForSelector("table", { timeout: TIMEOUTS.TABLE_LOAD });
+		}
+
+		await page.waitForTimeout(TIMEOUTS.LONG);
+		await expandAllSections(page);
+
+		// Check first 5 habits for today
+		const habitsToCheck = 5;
+		const habitRows = page.locator("tr.section-row");
+		const totalRows = await habitRows.count();
+
+		for (let i = 0; i < Math.min(habitsToCheck, totalRows); i++) {
+			const row = habitRows.nth(i);
+			const todayCell = row.locator("td.cell-today").first();
+			await todayCell.click();
+			await page.waitForTimeout(TIMEOUTS.MEDIUM);
+		}
+
+		// Verify entries were created
+		const entryCount = await getEntryCount(page);
+		expect(entryCount).toBe(habitsToCheck);
+	});
+
+	test("should navigate through settings screens", async ({ page }) => {
+		// Ensure habits are loaded
+		let habitCount = await getHabitCount(page);
+		if (habitCount === 0) {
+			await loadDefaultHabits(page);
+			await page.reload();
+			await page.waitForSelector("table", { timeout: TIMEOUTS.TABLE_LOAD });
+		}
+
+		await page.waitForTimeout(TIMEOUTS.LONG);
+
+		// Open user menu
+		const userMenuTrigger = page.locator(".user-menu-trigger");
+		await userMenuTrigger.waitFor({ state: "visible" });
+		await userMenuTrigger.click();
+		await page.waitForTimeout(TIMEOUTS.MEDIUM);
+
+		// Click Manage Habits
+		const manageHabitsButton = page.locator('button.user-menu-item:has-text("Manage Habits")');
+		await manageHabitsButton.click();
+		await page.waitForTimeout(TIMEOUTS.MEDIUM);
+
+		// Wait for settings modal to appear
+		const settingsModal = page.locator(".habit-settings-modal");
+		await settingsModal.waitFor({ state: "visible" });
+
+		// Wait for settings content to load
+		await page.waitForTimeout(TIMEOUTS.MEDIUM);
+
+		// Click "Add New Habit" button to show the form
+		const addNewButton = page.locator('button:has-text("+ Add New Habit")');
+		if (await addNewButton.isVisible()) {
+			await addNewButton.click();
+			await page.waitForTimeout(TIMEOUTS.MEDIUM);
+
+			// Cancel/close the add form
+			const cancelButton = page.locator('button:has-text("Cancel"), button:has-text("Close")').first();
+			if (await cancelButton.isVisible()) {
+				await cancelButton.click();
+				await page.waitForTimeout(TIMEOUTS.SHORT);
+			}
+		}
+
+		// Close settings modal
+		const closeButton = settingsModal.locator('button:has-text("Close"), button[aria-label="Close"]').first();
+		if (await closeButton.isVisible()) {
+			await closeButton.click();
+		} else {
+			// Try pressing Escape
+			await page.keyboard.press("Escape");
+		}
+
+		await page.waitForTimeout(TIMEOUTS.MEDIUM);
+
+		// Verify we're back at main screen
+		const table = page.locator("table");
+		await expect(table).toBeVisible();
+	});
+});
