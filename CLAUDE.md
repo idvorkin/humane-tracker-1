@@ -35,9 +35,9 @@ When running in a container with Tailscale:
 
 - Servers won't be on `localhost` - use the container's Tailscale hostname/IP instead
 - Find your container info: `tailscale status` (look for current machine)
-- Access dev server: `http://<container-hostname>:3000` (e.g., `http://c-5003:3000`)
-- Access E2E report: `http://<container-hostname>:9323` (e.g., `http://c-5003:9323`)
-- Or use Tailscale IP directly: `http://100.82.166.109:9323`
+- Access dev server: `https://<container-hostname>:3000` (e.g., `https://c-5003:3000`)
+- Access E2E report: `https://<container-hostname>:9323` (e.g., `https://c-5003:9323`)
+- Accept self-signed certificate warnings in your browser
 
 This allows viewing the dev server or test reports from any device on your Tailscale network (like your laptop while the container runs on a remote machine).
 
@@ -158,9 +158,11 @@ Playwright provides a comprehensive HTML report with videos, screenshots, and tr
 
 1. **Start report server**: `just e2e-report` (in a separate terminal) - runs on port 9323
    - Leave this running continuously - it updates automatically as tests complete
+   - Uses HTTPS (required for trace viewer's service workers)
+   - Accept the self-signed certificate warning in your browser
    - Access report:
-     - Local: `http://localhost:9323`
-     - Container with Tailscale: `http://<container-hostname>:9323` (e.g., `http://c-5003:9323`)
+     - Local: `https://localhost:9323`
+     - Container with Tailscale: `https://<container-hostname>:9323` (e.g., `https://c-5003:9323`)
 
 2. **Run tests**: `just e2e` (runs both desktop and mobile)
    - Or `just e2e-desktop` for desktop only
