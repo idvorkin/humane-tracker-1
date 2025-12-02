@@ -44,10 +44,16 @@ e2e:
     fi
 
 # View E2E test screenshots in browser
+# Starts HTTP server on port 8080 with screenshot gallery viewer
+# Local access: http://localhost:8080
+# Container (Tailscale): http://<container-hostname>:8080 (run 'tailscale status' to find hostname)
 screenshots:
     #!/usr/bin/env bash
     cd test-results/screenshots 2>/dev/null || { echo "No screenshots directory found. Run 'just e2e' first."; exit 1; }
-    echo "Starting screenshot viewer on http://localhost:8080"
+    HOSTNAME=$(hostname)
+    echo "Starting screenshot viewer..."
+    echo "  Local:     http://localhost:8080"
+    echo "  Container: http://$HOSTNAME:8080"
     echo "Press Ctrl+C to stop the server"
     python3 -m http.server 8080 --bind 0.0.0.0
 

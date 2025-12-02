@@ -18,12 +18,25 @@ Address your human partner as "Igor" at all times.
 **Always use the justfile for commands.** Run from `humane-tracker/` directory:
 
 ```bash
-just dev      # Run development server - opens http://localhost:3000
-just build    # Build for production (tsc + vite build)
-just test     # Run unit tests (Vitest)
-just e2e      # Run E2E tests (Playwright - chromium only)
-just deploy   # Run tests, build, and deploy to Surge
+just dev          # Run development server - opens http://localhost:3000
+just build        # Build for production (tsc + vite build)
+just test         # Run unit tests (Vitest)
+just e2e          # Run E2E tests (Playwright - chromium only)
+just screenshots  # View E2E test screenshots in browser (http://localhost:8080)
+just deploy       # Run tests, build, and deploy to Surge
 ```
+
+### Accessing Services in Containers
+
+When running in a container with Tailscale:
+
+- Servers won't be on `localhost` - use the container's Tailscale hostname/IP instead
+- Find your container info: `tailscale status` (look for current machine)
+- Access dev server: `http://<container-hostname>:3000` (e.g., `http://c-5003:3000`)
+- Access screenshots: `http://<container-hostname>:8080` (e.g., `http://c-5003:8080`)
+- Or use Tailscale IP directly: `http://100.82.166.109:8080`
+
+This allows viewing the dev server or screenshots from any device on your Tailscale network (like your laptop while the container runs on a remote machine).
 
 ## Code Quality
 
@@ -67,6 +80,8 @@ const entries = await entryRepository.getByUserId(userId);
 - `habitRepository` - CRUD for habits (`src/repositories/habitRepository.ts`)
 
 The only place that should import `db` directly is the repositories themselves.
+
+**Exception**: E2E tests may access `db` directly via `page.evaluate()` for test setup and assertions. This is acceptable because tests need to verify the database state.
 
 ### Key Files
 
@@ -116,6 +131,41 @@ Follow the `useHabitTrackerVM` + `HabitTracker` pattern:
 - Tests must comprehensively cover functionality
 - Never delete a failing test - fix the code or discuss
 - Test output must be clean - capture and validate expected errors
+
+### E2E Testing
+
+- **Real IndexedDB**: E2E tests use real browser IndexedDB, not mocks
+- **Smart Waiting**: Use IndexedDB helpers from `tests/helpers/indexeddb-helpers.ts` - they poll for actual state changes instead of arbitrary timeouts
+- **Test Isolation**: Each Playwright worker has its own isolated browser context with separate IndexedDB
+- **E2E Mode**: Tests use `?e2e=true` URL parameter - bypasses auth but uses real IndexedDB
+- **Screenshots**: E2E tests generate screenshots in `test-results/screenshots/` - view with `just screenshots`
+
+Key helper functions:
+
+- `waitForEntryCount(page, count)` - Wait for specific number of entries in DB
+- `getDBEntryCount(page)` - Get current entry count
+- `clearIndexedDB(page)` - Clean up after tests (use in `afterEach`)
+
+**NEVER use arbitrary timeouts** - always wait for actual IndexedDB state changes.
+
+### Viewing E2E Screenshots
+
+E2E tests automatically capture screenshots at key moments. To view them:
+
+1. **Generate screenshots**: Run `just e2e` - creates `test-results/screenshots/`
+2. **Start viewer**: Run `just screenshots` - starts HTTP server on port 8080
+3. **Open browser**:
+   - Local: `http://localhost:8080`
+   - Container with Tailscale: `http://<container-hostname>:8080` (e.g., `http://c-5003:8080`)
+
+The viewer provides:
+
+- Gallery view of all screenshots
+- Filter by desktop/mobile
+- Click to zoom, keyboard navigation (arrows, ESC)
+- Metadata with timestamps
+
+Screenshots are documented in `test-results/screenshots/screenshots.json` with device info and timestamps.
 
 ### Debugging
 
