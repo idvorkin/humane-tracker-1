@@ -1,18 +1,44 @@
 import { test, expect, Page } from '@playwright/test';
+import { clearIndexedDB } from './helpers/indexeddb-helpers';
 
 test.describe('Habit Tracker App', () => {
-  test.beforeEach(async ({ page }) => {
-    // Go to the app in test mode (no auth required)
-    await page.goto('/?test=true');
+  const TEST_USER_ID = 'mock-user';
 
-    // Wait for the app to load
+  test.beforeEach(async ({ page }) => {
+    // Use E2E mode - bypasses auth but uses REAL IndexedDB
+    await page.goto('/?e2e=true');
     await page.waitForLoadState('networkidle');
 
-    // Wait for habit tracker content to be visible (not just loading screen)
-    await page.waitForSelector('table', { timeout: 15000 });
+    // Load default habits programmatically using real IndexedDB
+    await page.evaluate(async (userId) => {
+      const { habitService } = await import('/src/services/habitService.ts');
 
-    // Wait for user menu to be available
+      // Create default habits
+      await habitService.bulkCreateHabits([
+        {
+          userId,
+          name: 'Physical Mobility',
+          category: 'Mobility',
+          targetPerWeek: 5,
+          order: 0,
+        },
+        {
+          userId,
+          name: 'Box Breathing',
+          category: 'Emotional Health',
+          targetPerWeek: 3,
+          order: 1,
+        },
+      ]);
+    }, TEST_USER_ID);
+
+    await page.waitForSelector('table', { timeout: 15000 });
     await page.waitForSelector('.user-menu-trigger', { timeout: 15000 });
+  });
+
+  test.afterEach(async ({ page }) => {
+    // Clean up IndexedDB after each test
+    await clearIndexedDB(page);
   });
 
   test('should load the main page with all sections', async ({ page }) => {
@@ -247,8 +273,26 @@ test.describe('Habit Tracker App', () => {
 });
 
 test.describe('Habit Tracking Functions', () => {
+  const TEST_USER_ID = 'mock-user';
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/?e2e=true');
+    await page.waitForLoadState('networkidle');
+
+    await page.evaluate(async (userId) => {
+      const { habitService } = await import('/src/services/habitService.ts');
+      await habitService.bulkCreateHabits([
+        { userId, name: 'Physical Mobility', category: 'Mobility', targetPerWeek: 5, order: 0 },
+        { userId, name: 'Box Breathing', category: 'Emotional Health', targetPerWeek: 3, order: 1 },
+      ]);
+    }, TEST_USER_ID);
+  });
+
+  test.afterEach(async ({ page }) => {
+    await clearIndexedDB(page);
+  });
+
   test('should track habit completion by clicking cells', async ({ page }) => {
-    await page.goto('/?test=true');
     await page.waitForSelector('table', { timeout: 15000 });
 
     // Wait for table cells to be clickable
@@ -280,7 +324,6 @@ test.describe('Habit Tracking Functions', () => {
   });
 
   test('should validate habit form inputs', async ({ page }) => {
-    await page.goto('/?test=true');
     await page.waitForSelector('table', { timeout: 15000 });
     await page.waitForSelector('.user-menu-trigger', { timeout: 15000 });
 
@@ -311,7 +354,6 @@ test.describe('Habit Tracking Functions', () => {
   });
 
   test('should display status indicators correctly', async ({ page }) => {
-    await page.goto('/?test=true');
     await page.waitForSelector('table', { timeout: 15000 });
 
     // Check for status icons in the legend

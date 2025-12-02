@@ -38,8 +38,9 @@ export function getCategorySummary(habits: HabitWithStatus[]): CategorySummary {
 	const total = habits.length;
 
 	// Count habits that met their weekly target
-	const met = habits.filter((h) => h.currentWeekCount >= h.targetPerWeek)
-		.length;
+	const met = habits.filter(
+		(h) => h.currentWeekCount >= h.targetPerWeek,
+	).length;
 
 	const todayStatus: StatStatus =
 		total === 0
@@ -111,8 +112,9 @@ export function calculateSummaryStats(habits: HabitWithStatus[]): SummaryStats {
 	).length;
 
 	// Count habits that met their weekly target
-	const onTrack = habits.filter((h) => h.currentWeekCount >= h.targetPerWeek)
-		.length;
+	const onTrack = habits.filter(
+		(h) => h.currentWeekCount >= h.targetPerWeek,
+	).length;
 
 	return {
 		dueToday: habits.filter((h) => h.status === "today").length,
@@ -211,7 +213,8 @@ export function useHabitTrackerVM({
 	const collapsedSectionsRef = useRef<Set<string>>(new Set());
 	const [collapsedVersion, setCollapsedVersion] = useState(0); // trigger re-render on collapse changes
 
-	const useMockMode = !userId || userId === "mock-user";
+	// Mock mode is now handled by mock repositories (injected in index.tsx for tests)
+	// No need for special logic here - subscriptions work the same way
 	const weekDates = useMemo(() => getTrailingWeekDates(), []);
 
 	// Derived state
@@ -268,27 +271,7 @@ export function useHabitTrackerVM({
 			}
 		};
 
-		// Mock mode - seed habits then load
-		if (useMockMode) {
-			const seedMockHabits = async () => {
-				const existingHabits = await habitService.getHabits(userId);
-				if (existingHabits.length === 0) {
-					console.log("Mock mode: Seeding default habits to IndexedDB");
-					const habitsToCreate = DEFAULT_HABITS.map((habit) => ({
-						name: habit.name,
-						category: habit.category,
-						targetPerWeek: habit.targetPerWeek,
-						userId,
-					}));
-					await habitService.bulkCreateHabits(habitsToCreate);
-				}
-			};
-
-			seedMockHabits().then(() => loadHabits());
-			return;
-		}
-
-		// Non-mock mode: set up subscriptions - liveQuery handles reactivity
+		// Set up subscriptions - works for both real and mock repositories
 		let isInitialLoad = true;
 
 		const handleSubscriptionError = (error: unknown) => {
@@ -330,7 +313,7 @@ export function useHabitTrackerVM({
 			unsubscribeHabits();
 			unsubscribeEntries();
 		};
-	}, [userId, useMockMode]);
+	}, [userId]);
 
 	// Actions
 	const toggleSection = useCallback(

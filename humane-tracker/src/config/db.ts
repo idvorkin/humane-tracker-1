@@ -276,7 +276,11 @@ export class HumaneTrackerDB extends Dexie {
 									const [year, month, day] = parts.map(Number);
 
 									// Validate parsed numbers
-									if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
+									if (
+										Number.isNaN(year) ||
+										Number.isNaN(month) ||
+										Number.isNaN(day)
+									) {
 										throw new Error(
 											`Invalid date components in "${entry.date}": year=${year}, month=${month}, day=${day}`,
 										);
@@ -395,7 +399,9 @@ export const syncLogService = new SyncLogService(syncLogDB.syncLogs);
 // Configure Dexie Cloud (optional - works offline if not configured)
 const dexieCloudUrl = import.meta.env.VITE_DEXIE_CLOUD_URL;
 const isTestMode =
-	typeof window !== "undefined" && window.location.search.includes("test=true");
+	typeof window !== "undefined" &&
+	(window.location.search.includes("test=true") ||
+		window.location.search.includes("e2e=true"));
 
 // Enable debug mode for better error stack traces (recommended for development)
 if (import.meta.env.DEV) {

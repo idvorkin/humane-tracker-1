@@ -1,141 +1,219 @@
 import { test, expect } from '@playwright/test';
+import { waitForEntryCount, getDBEntryCount, clearIndexedDB } from './helpers/indexeddb-helpers';
 
 test.describe('Habit Tracker Click Functionality', () => {
-  test.beforeEach(async ({ page }) => {
-    // Go to the app in test mode (no auth required)
-    await page.goto('/?test=true');
+  const TEST_USER_ID = 'mock-user';
 
-    // Wait for the app to load
+  test.beforeEach(async ({ page }) => {
+    // Use E2E mode - bypasses auth but uses REAL IndexedDB
+    await page.goto('/?e2e=true');
     await page.waitForLoadState('networkidle');
 
-    // Wait for habit tracker content to be visible (not just loading screen)
+    // Load default habits programmatically using real IndexedDB
+    await page.evaluate(async (userId) => {
+      const { habitService } = await import('/src/services/habitService.ts');
+
+      // Create default habits
+      await habitService.bulkCreateHabits([
+        {
+          userId,
+          name: 'Physical Mobility',
+          category: 'Mobility',
+          targetPerWeek: 5,
+          order: 0,
+        },
+        {
+          userId,
+          name: 'Box Breathing',
+          category: 'Emotional Health',
+          targetPerWeek: 3,
+          order: 1,
+        },
+      ]);
+    }, TEST_USER_ID);
+
     await page.waitForSelector('table', { timeout: 15000 });
   });
 
-  test('clicking on habit cells cycles through values', async ({ page }) => {
-    // Wait for the table to load
-    await page.waitForSelector('table');
+  test.afterEach(async ({ page }) => {
+    // Clean up IndexedDB after each test
+    await clearIndexedDB(page);
+  });
 
-    // Expand all sections first to see habits
+  test('clicking on habit cells cycles through values', async ({ page }) => {
+    // Expand all sections first
     const expandButton = page.locator('button:has-text("Expand All")');
     await expandButton.click();
     await page.waitForTimeout(500);
 
-    // Find a habit row - use the first one with a visible clickable cell
     const firstHabitRow = page.locator('tr.section-row').first();
-
-    // Wait for it to be visible
     await expect(firstHabitRow).toBeVisible();
 
-    // Get the habit name for logging
     const habitName = await firstHabitRow.locator('.habit-name').textContent();
     console.log('Testing with habit:', habitName);
 
-    // Find the cell for today (first cell with cell-today class)
     const todayCell = firstHabitRow.locator('td.cell-today');
-
-    // Get initial content
     const initialContent = await todayCell.textContent();
     console.log('Initial cell content:', initialContent);
 
-    // Click to add first entry (should show ✓ or 1)
+    // Get initial DB state
+    const initialEntryCount = await getDBEntryCount(page);
+
+    // Click 1: Should show ✓ or 1
     await todayCell.click();
-    await page.waitForTimeout(500);
+    await waitForEntryCount(page, initialEntryCount + 1, { timeout: 5000 });
+    await expect(todayCell).toHaveText(/[✓1]/, { timeout: 5000 });
+    const content1 = await todayCell.textContent();
+    console.log('After 1st click:', content1);
 
-    let content = await todayCell.textContent();
-    console.log('After 1st click:', content);
-    expect(content).toMatch(/[✓1]/);
-
-    // Click again (should show 2)
+    // Click 2: Should show 2
     await todayCell.click();
-    await page.waitForTimeout(500);
+    await page.waitForFunction(
+      async (sel: string) => {
+        const cell = document.querySelector(sel);
+        return cell?.textContent?.trim() === '2';
+      },
+      'td.cell-today',
+      { timeout: 5000, polling: 100 }
+    );
+    await expect(todayCell).toHaveText('2', { timeout: 5000 });
+    const content2 = await todayCell.textContent();
+    console.log('After 2nd click:', content2);
 
-    content = await todayCell.textContent();
-    console.log('After 2nd click:', content);
-    expect(content).toBe('2');
-
-    // Click again (should show 3)
+    // Click 3: Should show 3
     await todayCell.click();
-    await page.waitForTimeout(500);
-
-    content = await todayCell.textContent();
-    console.log('After 3rd click:', content);
-    expect(content).toBe('3');
+    await page.waitForFunction(
+      async (sel: string) => {
+        const cell = document.querySelector(sel);
+        return cell?.textContent?.trim() === '3';
+      },
+      'td.cell-today',
+      { timeout: 5000, polling: 100 }
+    );
+    await expect(todayCell).toHaveText('3', { timeout: 5000 });
+    const content3 = await todayCell.textContent();
+    console.log('After 3rd click:', content3);
   });
 
   test('clicking on old dates shows confirmation', async ({ page }) => {
-    // Set up dialog handler
+    // Set up dialog handler BEFORE clicking
     let dialogShown = false;
-    let dialogMessage = '';
-    page.on('dialog', async dialog => {
-      dialogMessage = dialog.message();
-      console.log('Dialog shown:', dialogMessage);
+    page.on('dialog', async (dialog) => {
+      console.log('Dialog shown:', dialog.message());
       dialogShown = true;
-      await dialog.dismiss();
+      await dialog.accept();
     });
-
-    // Wait for the table to load
-    await page.waitForSelector('table');
 
     // Expand all sections first
     const expandButton = page.locator('button:has-text("Expand All")');
     await expandButton.click();
     await page.waitForTimeout(500);
 
-    // Find a habit row
     const firstHabitRow = page.locator('tr.section-row').first();
     await expect(firstHabitRow).toBeVisible();
 
-    // Click on a cell from 3+ days ago (should trigger confirmation)
-    // Get all td cells with cursor pointer style and click one that's not today
-    const oldDateCells = firstHabitRow.locator('td[style*="cursor: pointer"]:not(.cell-today)');
-    const cellCount = await oldDateCells.count();
+    // Click on a cell that's several days old (5th cell = 3 days ago)
+    const cells = firstHabitRow.locator('td.cell');
+    const oldCell = cells.nth(5); // 3 days ago
 
-    if (cellCount > 2) {
-      // Click on the 3rd from last cell (should be ~3 days ago)
-      await oldDateCells.nth(cellCount - 3).click();
+    // Click on the old cell
+    await oldCell.click();
+    await page.waitForTimeout(1000);
 
-      // Check that dialog was shown
-      await page.waitForTimeout(500);
-      expect(dialogShown).toBe(true);
-    }
+    expect(dialogShown).toBe(true);
   });
 
   test('check console for errors when clicking', async ({ page }) => {
-    // Collect console messages
-    const consoleMessages: string[] = [];
-    page.on('console', msg => {
-      consoleMessages.push(`${msg.type()}: ${msg.text()}`);
+    const errors: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        errors.push(msg.text());
+      }
     });
 
-    // Wait for the table to load
-    await page.waitForSelector('table');
-
-    // Expand all sections first
+    // Expand all sections
     const expandButton = page.locator('button:has-text("Expand All")');
     await expandButton.click();
     await page.waitForTimeout(500);
 
-    // Find and click a habit cell
     const firstHabitRow = page.locator('tr.section-row').first();
     await expect(firstHabitRow).toBeVisible();
 
     const todayCell = firstHabitRow.locator('td.cell-today');
+
+    // Get initial DB state
+    const initialEntryCount = await getDBEntryCount(page);
+
+    // Click and wait for update
     await todayCell.click();
+    await waitForEntryCount(page, initialEntryCount + 1, { timeout: 5000 });
 
-    // Wait a bit for any async operations
-    await page.waitForTimeout(1000);
-
-    // Log all console messages
     console.log('Console messages during click:');
-    consoleMessages.forEach(msg => console.log(msg));
+    page.on('console', (msg) => {
+      console.log(msg.type(), msg.text());
+    });
 
-    // Check for errors (excluding known Dexie sync errors)
-    const errors = consoleMessages.filter(msg =>
-      msg.startsWith('error') && !msg.includes('404') && !msg.includes('HttpError')
-    );
+    // Check for errors
     if (errors.length > 0) {
       console.log('Errors found:', errors);
     }
+  });
+
+  test('clicking habit updates day view and week summary statistics', async ({ page }) => {
+    // Expand all sections first
+    const expandButton = page.locator('button:has-text("Expand All")');
+    await expandButton.click();
+    await page.waitForTimeout(500);
+
+    // Get initial state
+    const doneToday = page.locator('.summary-item:has-text("Done Today") .summary-value');
+    const initialDoneText = await doneToday.textContent();
+    const initialDoneCount = parseInt(initialDoneText || '0', 10);
+    console.log('Initial Done Today count:', initialDoneCount);
+
+    // Get initial entry count from IndexedDB
+    const initialEntryCount = await getDBEntryCount(page);
+    console.log('Initial entry count in DB:', initialEntryCount);
+
+    // Find first habit and today's cell
+    const firstHabitRow = page.locator('tr.section-row').first();
+    await expect(firstHabitRow).toBeVisible();
+
+    const habitName = await firstHabitRow.locator('.habit-name').textContent();
+    console.log('Testing with habit:', habitName);
+
+    const todayCell = firstHabitRow.locator('td.cell-today');
+    const initialCellContent = await todayCell.textContent();
+    console.log('Initial cell content:', initialCellContent);
+
+    // Click to mark as complete
+    await todayCell.click();
+    console.log('Clicked on today cell');
+
+    // Wait for IndexedDB to actually have the entry
+    await waitForEntryCount(page, initialEntryCount + 1, {
+      timeout: 5000,
+      polling: 100
+    });
+    console.log('IndexedDB confirmed entry was written');
+
+    // Wait for DOM to reflect the change
+    await expect(todayCell).toHaveText(/[✓1]/, { timeout: 5000 });
+    const updatedCellContent = await todayCell.textContent();
+    console.log('Cell content after click:', updatedCellContent);
+
+    // Verify week summary updated
+    if (initialCellContent === '' || initialCellContent === '0') {
+      const expectedCount = initialDoneCount + 1;
+      await expect(doneToday).toHaveText(expectedCount.toString(), { timeout: 5000 });
+      console.log('Week summary updated. New Done Today count:', expectedCount);
+    } else {
+      console.log('Cell already had content');
+    }
+
+    // Verify final state in IndexedDB
+    const finalEntryCount = await getDBEntryCount(page);
+    expect(finalEntryCount).toBe(initialEntryCount + 1);
+    console.log('Final entry count in DB:', finalEntryCount);
   });
 });
