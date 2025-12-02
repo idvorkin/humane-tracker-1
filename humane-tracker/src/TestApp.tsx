@@ -4,8 +4,8 @@ import { UserMenu } from "./components/UserMenu";
 import "./App.css";
 
 function TestApp() {
-	// Mock repositories are initialized in index.tsx before React renders
-	// Use mock mode - no authentication required
+	// E2E mode - bypasses authentication but uses real IndexedDB
+	// Used for both ?test=true and ?e2e=true modes
 	return (
 		<div className="App">
 			<div className="app-header">

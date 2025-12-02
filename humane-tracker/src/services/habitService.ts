@@ -1,6 +1,6 @@
 import {
-	entryRepository as defaultEntryRepository,
-	habitRepository as defaultHabitRepository,
+	entryRepository,
+	habitRepository,
 	toDateString,
 } from "../repositories";
 import type {
@@ -9,18 +9,6 @@ import type {
 	HabitStatus,
 	HabitWithStatus,
 } from "../types/habit";
-
-// Allow repository injection for testing
-let entryRepository = defaultEntryRepository;
-let habitRepository = defaultHabitRepository;
-
-export function setRepositories(
-	habitRepo: typeof defaultHabitRepository,
-	entryRepo: typeof defaultEntryRepository,
-) {
-	habitRepository = habitRepo;
-	entryRepository = entryRepo;
-}
 
 // ============================================================================
 // Pure functions (easily testable)

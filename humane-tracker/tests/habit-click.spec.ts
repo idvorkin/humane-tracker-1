@@ -68,28 +68,12 @@ test.describe('Habit Tracker Click Functionality', () => {
 
     // Click 2: Should show 2
     await todayCell.click();
-    await page.waitForFunction(
-      async (sel: string) => {
-        const cell = document.querySelector(sel);
-        return cell?.textContent?.trim() === '2';
-      },
-      'td.cell-today',
-      { timeout: 5000, polling: 100 }
-    );
     await expect(todayCell).toHaveText('2', { timeout: 5000 });
     const content2 = await todayCell.textContent();
     console.log('After 2nd click:', content2);
 
     // Click 3: Should show 3
     await todayCell.click();
-    await page.waitForFunction(
-      async (sel: string) => {
-        const cell = document.querySelector(sel);
-        return cell?.textContent?.trim() === '3';
-      },
-      'td.cell-today',
-      { timeout: 5000, polling: 100 }
-    );
     await expect(todayCell).toHaveText('3', { timeout: 5000 });
     const content3 = await todayCell.textContent();
     console.log('After 3rd click:', content3);
