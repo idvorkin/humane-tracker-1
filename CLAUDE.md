@@ -156,11 +156,11 @@ Key helper functions:
 
 Playwright provides a comprehensive HTML report with videos, screenshots, and traces:
 
-1. **Start report server**: `just e2e-report &` - runs in background on port 9323
+1. **Start report server**: `just e2e-report` (in a separate terminal) - runs on port 9323
    - Leave this running continuously - it updates automatically as tests complete
    - Access report:
      - Local: `http://localhost:9323`
-     - Container with Tailscale: `http://<container-hostname>:9323` (e.g., `http://C-5003:9323`)
+     - Container with Tailscale: `http://<container-hostname>:9323` (e.g., `http://c-5003:9323`)
 
 2. **Run tests**: `just e2e` (runs both desktop and mobile)
    - Or `just e2e-desktop` for desktop only

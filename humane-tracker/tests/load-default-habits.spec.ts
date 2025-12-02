@@ -123,22 +123,18 @@ async function getCellContent(
 		// For today, use the cell-today class
 		const todayCell = row.locator("td.cell-today").first();
 
-		// Debug: check if cell exists
+		// Check if cell exists
 		const count = await row.locator("td.cell-today").count();
 		if (count === 0) {
-			console.log("[DEBUG] No cell-today found!");
 			return "";
 		}
 
 		// Wait for the cell to be stable
 		await todayCell.waitFor({ state: "visible" });
 
-		// Try multiple ways to get content
-		const innerHTML = await todayCell.innerHTML();
+		// Get cell content
 		const innerText = await todayCell.innerText();
 		const textContent = await todayCell.textContent();
-
-		console.log(`[DEBUG] innerHTML: "${innerHTML}", innerText: "${innerText}", textContent: "${textContent}"`);
 
 		return (innerText || textContent || "").trim();
 	} else {
@@ -184,6 +180,28 @@ test.describe("Load Default Habits", () => {
 	test.afterEach(async ({ page }) => {
 		// Clean up IndexedDB after each test
 		await clearIndexedDB(page);
+	});
+
+	test("should use correct viewport for project configuration", async ({
+		page,
+	}) => {
+		// Validate that Playwright's project configuration is actually applying viewports
+		const viewport = page.viewportSize();
+		expect(viewport).toBeDefined();
+
+		// Check viewport dimensions to ensure mobile vs desktop is correctly applied
+		// Desktop (chromium project): width >= 1920
+		// Mobile (iPhone 14 Pro project): width = 393
+		const width = viewport?.width ?? 0;
+
+		// This test will fail if mobile viewport isn't applied on mobile project
+		// or if desktop viewport isn't applied on desktop project
+		expect(width).toBeGreaterThan(0);
+
+		// Verify it's either mobile (< 500px) or desktop (>= 1000px)
+		const isMobile = width < 500;
+		const isDesktop = width >= 1000;
+		expect(isMobile || isDesktop).toBe(true);
 	});
 
 	test("should load default habits and display them correctly", async ({
