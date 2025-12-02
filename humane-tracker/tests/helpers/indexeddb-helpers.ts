@@ -29,6 +29,7 @@ export async function waitForEntryInDB(
         console.log('[waitForEntryInDB] Entry count:', entryCount);
         return entryCount > 0;
       },
+      undefined,
       { timeout, polling }
     );
   } catch (error) {
@@ -107,6 +108,7 @@ export async function waitForHabitsLoaded(
         console.log('[waitForHabitsLoaded] Habit count:', habitCount);
         return habitCount > 0;
       },
+      undefined,
       { timeout, polling }
     );
   } catch (error) {
