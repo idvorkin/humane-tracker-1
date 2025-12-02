@@ -35,6 +35,8 @@ function App() {
 		try {
 			if (isCloudConfigured) {
 				await db.cloud.logout();
+				// Reload the page to show the login screen
+				window.location.reload();
 			} else {
 				// In local mode, just clear data and reload
 				localStorage.removeItem("localUserId");
@@ -83,7 +85,12 @@ function App() {
 	}
 
 	// Cloud mode - require authentication
-	if (!currentUser || !currentUser.userId) {
+	// Block unauthorized users (Dexie Cloud may return a user with userId like "unauthorized")
+	if (
+		!currentUser ||
+		!currentUser.userId ||
+		currentUser.userId.toLowerCase() === "unauthorized"
+	) {
 		return <Login />;
 	}
 
