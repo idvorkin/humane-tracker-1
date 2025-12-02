@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { clearIndexedDB } from "./helpers/indexeddb-helpers";
 
 // Constants for timeouts and paths
 const TIMEOUTS = {
@@ -39,29 +40,25 @@ function clearMetadataFile(): void {
 // Helper: Load default habits into the database
 async function loadDefaultHabits(page: Page): Promise<void> {
 	await page.evaluate(async () => {
-		const { db } = await import("/src/config/db.ts");
+		const { habitService } = await import("/src/services/habitService.ts");
 		const { DEFAULT_HABITS } = await import("/src/data/defaultHabits.ts");
 
-		// Clear existing data
-		await db.habits.clear();
-		await db.entries.clear();
+		// Use mock-user for test mode
+		const userId = "mock-user";
 
-		// Get or create local user ID
-		let localUserId = localStorage.getItem("localUserId");
-		if (!localUserId) {
-			localUserId = `local-user-${Date.now()}`;
-			localStorage.setItem("localUserId", localUserId);
+		// Clear existing habits for this user
+		const existingHabits = await habitService.getHabits(userId);
+		for (const habit of existingHabits) {
+			await habitService.deleteHabit(habit.id);
 		}
 
-		// Add all default habits
+		// Add all default habits using habitService (works with both real and mock repos)
 		for (const habit of DEFAULT_HABITS) {
-			await db.habits.add({
+			await habitService.createHabit({
 				name: habit.name,
 				category: habit.category,
 				targetPerWeek: habit.targetPerWeek,
-				userId: localUserId,
-				createdAt: new Date(),
-				isActive: true,
+				userId,
 			});
 		}
 	});
@@ -70,16 +67,25 @@ async function loadDefaultHabits(page: Page): Promise<void> {
 // Helper: Get habit count from database
 async function getHabitCount(page: Page): Promise<number> {
 	return page.evaluate(async () => {
-		const { db } = await import("/src/config/db.ts");
-		return await db.habits.count();
+		const { habitService } = await import("/src/services/habitService.ts");
+		const userId = "mock-user";
+		const habits = await habitService.getHabits(userId);
+		return habits.length;
 	});
 }
 
 // Helper: Get entry count from database
 async function getEntryCount(page: Page): Promise<number> {
 	return page.evaluate(async () => {
-		const { db } = await import("/src/config/db.ts");
-		return await db.entries.count();
+		const { habitService } = await import("/src/services/habitService.ts");
+		const userId = "mock-user";
+		// Get all habits, then count their entries
+		const habits = await habitService.getHabitsWithStatus(userId);
+		let totalEntries = 0;
+		for (const habit of habits) {
+			totalEntries += habit.entries.length;
+		}
+		return totalEntries;
 	});
 }
 
@@ -265,12 +271,17 @@ for (const device of Object.values(DEVICES)) {
 		});
 
 		test.beforeEach(async ({ page }) => {
-			// Go to the app in test mode (no auth required)
-			await page.goto("/?test=true");
+			// Go to the app in E2E mode (no auth required, uses real IndexedDB)
+			await page.goto("/?e2e=true");
 
 			// Wait for the app to load
 			await page.waitForLoadState("networkidle");
 			await page.waitForSelector("table", { timeout: TIMEOUTS.TABLE_LOAD });
+		});
+
+		test.afterEach(async ({ page }) => {
+			// Clean up IndexedDB after each test
+			await clearIndexedDB(page);
 		});
 
 		// Save metadata after all tests for this device complete

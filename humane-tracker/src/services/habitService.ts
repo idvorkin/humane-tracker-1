@@ -1,14 +1,26 @@
+import {
+	entryRepository as defaultEntryRepository,
+	habitRepository as defaultHabitRepository,
+	toDateString,
+} from "../repositories";
 import type {
 	Habit,
 	HabitEntry,
 	HabitStatus,
 	HabitWithStatus,
 } from "../types/habit";
-import {
-	entryRepository,
-	habitRepository,
-	toDateString,
-} from "../repositories";
+
+// Allow repository injection for testing
+let entryRepository = defaultEntryRepository;
+let habitRepository = defaultHabitRepository;
+
+export function setRepositories(
+	habitRepo: typeof defaultHabitRepository,
+	entryRepo: typeof defaultEntryRepository,
+) {
+	habitRepository = habitRepo;
+	entryRepository = entryRepo;
+}
 
 // ============================================================================
 // Pure functions (easily testable)
@@ -168,9 +180,7 @@ export class HabitService {
 			// Count unique days with entries (not total values)
 			// According to PRD: "Weekly goals count DAYS not total sets"
 			const currentWeekCount = new Set(
-				entries
-					.filter((e) => e.value > 0)
-					.map((e) => toDateString(e.date)),
+				entries.filter((e) => e.value > 0).map((e) => toDateString(e.date)),
 			).size;
 
 			habitsWithStatus.push({
@@ -221,3 +231,6 @@ export class HabitService {
 		return habitRepository.bulkCreate(habits);
 	}
 }
+
+// Export a singleton instance for convenience (used in tests)
+export const habitService = new HabitService();

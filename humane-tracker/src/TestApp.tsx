@@ -4,6 +4,7 @@ import { UserMenu } from "./components/UserMenu";
 import "./App.css";
 
 function TestApp() {
+	// Mock repositories are initialized in index.tsx before React renders
 	// Use mock mode - no authentication required
 	return (
 		<div className="App">
