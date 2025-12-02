@@ -21,7 +21,8 @@ Address your human partner as "Igor" at all times.
 just dev          # Run development server - opens http://localhost:3000
 just build        # Build for production (tsc + vite build)
 just test         # Run unit tests (Vitest)
-just e2e          # Run E2E tests (Playwright - chromium only)
+just e2e          # Run E2E tests (Cypress - chromium only)
+just e2e-open     # Run E2E tests in interactive mode (Cypress UI)
 just screenshots  # View E2E test screenshots in browser (http://localhost:8080)
 just deploy       # Run tests, build, and deploy to Surge
 ```
@@ -42,7 +43,7 @@ This allows viewing the dev server or screenshots from any device on your Tailsc
 
 - **Biome** for formatting (tabs, double quotes) and linting - runs via pre-commit hook
 - **Vitest** for unit tests (jsdom environment)
-- **Playwright** for E2E tests (in `tests/` directory)
+- **Cypress** for E2E tests (in `cypress/e2e/` directory)
 
 Pre-commit runs Biome checks and unit tests automatically.
 
@@ -81,7 +82,7 @@ const entries = await entryRepository.getByUserId(userId);
 
 The only place that should import `db` directly is the repositories themselves.
 
-**Exception**: E2E tests may access `db` directly via `page.evaluate()` for test setup and assertions. This is acceptable because tests need to verify the database state.
+**Exception**: E2E tests may access `db` directly via `cy.window().then()` for test setup and assertions. This is acceptable because tests need to verify the database state.
 
 ### Key Files
 
@@ -135,16 +136,19 @@ Follow the `useHabitTrackerVM` + `HabitTracker` pattern:
 ### E2E Testing
 
 - **Real IndexedDB**: E2E tests use real browser IndexedDB, not mocks
-- **Smart Waiting**: Use IndexedDB helpers from `tests/helpers/indexeddb-helpers.ts` - they poll for actual state changes instead of arbitrary timeouts
-- **Test Isolation**: Each Playwright worker has its own isolated browser context with separate IndexedDB
+- **Smart Waiting**: Use Cypress custom commands for IndexedDB - they poll for actual state changes instead of arbitrary timeouts
+- **Test Isolation**: Each Cypress test has its own isolated browser context with separate IndexedDB
 - **E2E Mode**: Tests use `?e2e=true` URL parameter - bypasses auth but uses real IndexedDB
-- **Screenshots**: E2E tests generate screenshots in `test-results/screenshots/` - view with `just screenshots`
+- **Screenshots**: E2E tests can generate screenshots in `test-results/screenshots/` - view with `just screenshots`
 
-Key helper functions:
+Key custom commands:
 
-- `waitForEntryCount(page, count)` - Wait for specific number of entries in DB
-- `getDBEntryCount(page)` - Get current entry count
-- `clearIndexedDB(page)` - Clean up after tests (use in `afterEach`)
+- `cy.visitE2E()` - Navigate to app in E2E mode
+- `cy.loadDefaultHabits(habits)` - Load habits into IndexedDB
+- `cy.waitForEntryCount(count)` - Wait for specific number of entries in DB
+- `cy.getDBEntryCount()` - Get current entry count
+- `cy.clearIndexedDB()` - Clean up after tests (use in `afterEach`)
+- `cy.expandAllSections()` - Expand all habit sections
 
 **NEVER use arbitrary timeouts** - always wait for actual IndexedDB state changes.
 

@@ -34,14 +34,18 @@ build: generate-version
 test: generate-version
     npm run test
 
-# Run E2E tests (Playwright - chromium only)
+# Run E2E tests (Cypress - electron browser)
 e2e:
-    npx playwright test --project=chromium
+    npx cypress run
     @# Copy screenshot viewer if screenshots were generated
     @if [ -f test-results/screenshots/screenshots.json ]; then \
-        cp tests/screenshot-viewer.html test-results/screenshots/index.html; \
+        cp tests/screenshot-viewer.html test-results/screenshots/index.html 2>/dev/null || true; \
         echo "Screenshot viewer copied to test-results/screenshots/index.html"; \
     fi
+
+# Run E2E tests in interactive mode
+e2e-open:
+    npx cypress open
 
 # View E2E test screenshots in browser
 # Starts HTTP server on port 8080 with screenshot gallery viewer
