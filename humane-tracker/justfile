@@ -34,28 +34,34 @@ build: generate-version
 test: generate-version
     npm run test
 
-# Run E2E tests (Playwright - chromium only)
+# Run E2E tests (all projects - desktop chromium + mobile)
 e2e:
-    npx playwright test --project=chromium
-    @# Copy screenshot viewer if screenshots were generated
-    @if [ -f test-results/screenshots/screenshots.json ]; then \
-        cp tests/screenshot-viewer.html test-results/screenshots/index.html; \
-        echo "Screenshot viewer copied to test-results/screenshots/index.html"; \
-    fi
+    npx playwright test
 
-# View E2E test screenshots in browser
-# Starts HTTP server on port 8080 with screenshot gallery viewer
-# Local access: http://localhost:8080
-# Container (Tailscale): http://<container-hostname>:8080 (run 'tailscale status' to find hostname)
-screenshots:
+# Run E2E tests (desktop chromium only)
+e2e-desktop:
+    npx playwright test --project=chromium
+
+# Run E2E tests (mobile only)
+e2e-mobile:
+    npx playwright test --project=mobile
+
+# View E2E test report in browser
+# Serves Playwright HTML report with videos, screenshots, and traces
+# Local access: http://localhost:9323
+# Container (Tailscale): http://<container-hostname>:9323
+e2e-report:
     #!/usr/bin/env bash
-    cd test-results/screenshots 2>/dev/null || { echo "No screenshots directory found. Run 'just e2e' first."; exit 1; }
     HOSTNAME=$(hostname)
-    echo "Starting screenshot viewer..."
-    echo "  Local:     http://localhost:8080"
-    echo "  Container: http://$HOSTNAME:8080"
+    echo "Starting Playwright report viewer..."
+    echo "  Local:     http://localhost:9323"
+    echo "  Container: http://$HOSTNAME:9323"
     echo "Press Ctrl+C to stop the server"
-    python3 -m http.server 8080 --bind 0.0.0.0
+    npx playwright show-report --host 0.0.0.0
+
+# Run E2E tests in interactive UI mode
+e2e-ui:
+    npx playwright test --ui
 
 # Deploy to staging
 deploy-stage: test build

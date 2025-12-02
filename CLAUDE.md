@@ -21,8 +21,11 @@ Address your human partner as "Igor" at all times.
 just dev          # Run development server - opens http://localhost:3000
 just build        # Build for production (tsc + vite build)
 just test         # Run unit tests (Vitest)
-just e2e          # Run E2E tests (Playwright - chromium only)
-just screenshots  # View E2E test screenshots in browser (http://localhost:8080)
+just e2e          # Run E2E tests (all projects - desktop + mobile)
+just e2e-desktop  # Run E2E tests (desktop chromium only)
+just e2e-mobile   # Run E2E tests (mobile only)
+just e2e-report   # View Playwright HTML report (http://localhost:9323)
+just e2e-ui       # Run E2E tests in interactive UI mode
 just deploy       # Run tests, build, and deploy to Surge
 ```
 
@@ -33,10 +36,10 @@ When running in a container with Tailscale:
 - Servers won't be on `localhost` - use the container's Tailscale hostname/IP instead
 - Find your container info: `tailscale status` (look for current machine)
 - Access dev server: `http://<container-hostname>:3000` (e.g., `http://c-5003:3000`)
-- Access screenshots: `http://<container-hostname>:8080` (e.g., `http://c-5003:8080`)
-- Or use Tailscale IP directly: `http://100.82.166.109:8080`
+- Access E2E report: `http://<container-hostname>:9323` (e.g., `http://c-5003:9323`)
+- Or use Tailscale IP directly: `http://100.82.166.109:9323`
 
-This allows viewing the dev server or screenshots from any device on your Tailscale network (like your laptop while the container runs on a remote machine).
+This allows viewing the dev server or test reports from any device on your Tailscale network (like your laptop while the container runs on a remote machine).
 
 ## Code Quality
 
@@ -138,7 +141,8 @@ Follow the `useHabitTrackerVM` + `HabitTracker` pattern:
 - **Smart Waiting**: Use IndexedDB helpers from `tests/helpers/indexeddb-helpers.ts` - they poll for actual state changes instead of arbitrary timeouts
 - **Test Isolation**: Each Playwright worker has its own isolated browser context with separate IndexedDB
 - **E2E Mode**: Tests use `?e2e=true` URL parameter - bypasses auth but uses real IndexedDB
-- **Screenshots**: E2E tests generate screenshots in `test-results/screenshots/` - view with `just screenshots`
+- **Artifact Capture**: Playwright automatically captures videos, screenshots, and traces during test execution
+- **Multi-Device**: Tests run on both desktop (chromium) and mobile (iPhone 14 Pro) projects
 
 Key helper functions:
 
@@ -148,24 +152,33 @@ Key helper functions:
 
 **NEVER use arbitrary timeouts** - always wait for actual IndexedDB state changes.
 
-### Viewing E2E Screenshots
+### Viewing E2E Test Results
 
-E2E tests automatically capture screenshots at key moments. To view them:
+Playwright provides a comprehensive HTML report with videos, screenshots, and traces:
 
-1. **Generate screenshots**: Run `just e2e` - creates `test-results/screenshots/`
-2. **Start viewer**: Run `just screenshots` - starts HTTP server on port 8080
-3. **Open browser**:
-   - Local: `http://localhost:8080`
-   - Container with Tailscale: `http://<container-hostname>:8080` (e.g., `http://c-5003:8080`)
+1. **Start report server**: `just e2e-report &` - runs in background on port 9323
+   - Leave this running continuously - it updates automatically as tests complete
+   - Access report:
+     - Local: `http://localhost:9323`
+     - Container with Tailscale: `http://<container-hostname>:9323` (e.g., `http://C-5003:9323`)
 
-The viewer provides:
+2. **Run tests**: `just e2e` (runs both desktop and mobile)
+   - Or `just e2e-desktop` for desktop only
+   - Or `just e2e-mobile` for mobile only
 
-- Gallery view of all screenshots
-- Filter by desktop/mobile
-- Click to zoom, keyboard navigation (arrows, ESC)
-- Metadata with timestamps
+3. **View results**: Refresh browser to see latest test results
 
-Screenshots are documented in `test-results/screenshots/screenshots.json` with device info and timestamps.
+The report includes:
+
+- Test results with pass/fail status
+- Screenshots captured automatically on failure (or always in development)
+- Video recordings of test execution
+- Trace files for step-by-step debugging (click "View trace" on any test)
+- Filter by project (desktop/mobile), status, or test name
+
+**Best practice**: Start the report server once and leave it running throughout your development session.
+
+**Interactive debugging**: Use `just e2e-ui` to run tests in Playwright's UI mode for step-through debugging.
 
 ### Debugging
 
@@ -175,5 +188,7 @@ Screenshots are documented in `test-results/screenshots/screenshots.json` with d
 4. Find working examples to compare against
 5. Form a single hypothesis and test minimally
 
-- only run tests on chromium
-- If in a container, NEVER direct commit to main, always create A PR
+**Important notes:**
+
+- E2E tests run on both chromium (desktop) and mobile (iPhone 14 Pro) - use `just e2e-desktop` or `just e2e-mobile` to run specific projects
+- If in a container, NEVER direct commit to main, always create a PR
