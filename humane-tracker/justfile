@@ -54,16 +54,31 @@ e2e-mobile:
 e2e-report:
     #!/usr/bin/env bash
     HOSTNAME=$(hostname)
-    echo "Starting Playwright report viewer..."
-    echo "  Local:     http://localhost:9323"
-    echo "  Container: http://$HOSTNAME:9323"
+    echo "╔════════════════════════════════════════════════════════════════════╗"
+    echo "║         Playwright E2E Test Report Server                         ║"
+    echo "╚════════════════════════════════════════════════════════════════════╝"
     echo ""
-    echo "To view traces:"
-    echo "  1. Download trace .zip file from report"
-    echo "  2. Upload to https://trace.playwright.dev/"
-    echo "  Or: SSH tunnel with 'ssh -L 9323:localhost:9323 developer@$HOSTNAME'"
+    echo "📊 Report Access:"
+    echo "   Local:     http://localhost:9323"
+    echo "   Container: http://$HOSTNAME:9323"
     echo ""
+    echo "🎬 Viewing Trace Files (requires HTTPS or localhost):"
+    echo ""
+    echo "   Option 1 (Recommended): Online Trace Viewer"
+    echo "   ─────────────────────────────────────────────"
+    echo "   1. Click test in report → Download .zip trace file"
+    echo "   2. Go to: https://trace.playwright.dev/"
+    echo "   3. Drag & drop .zip file (all local, no data sent)"
+    echo ""
+    echo "   Option 2: SSH Tunnel (for direct access)"
+    echo "   ─────────────────────────────────────────────"
+    echo "   ssh -L 9323:localhost:9323 developer@$HOSTNAME"
+    echo "   Then open: http://localhost:9323"
+    echo "   Click 'View trace' on any test - works! ✅"
+    echo ""
+    echo "──────────────────────────────────────────────────────────────────────"
     echo "Press Ctrl+C to stop the server"
+    echo ""
     npx playwright show-report --host 0.0.0.0
 
 # Run E2E tests in interactive UI mode
