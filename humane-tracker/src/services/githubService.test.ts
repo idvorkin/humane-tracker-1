@@ -49,9 +49,13 @@ describe("githubService", () => {
 			expect(info).toContain("**User Agent:**");
 			expect(info).toContain("**Language:**");
 			expect(info).toContain("**Screen:**");
-			expect(info).toContain("**Viewport:**");
-			expect(info).toContain("**Network:**");
-			expect(info).toContain("**Touch:**");
+			expect(info).toContain("**Device Memory:**");
+			expect(info).toContain("**CPU Cores:**");
+			expect(info).toContain("**Online Status:**");
+			expect(info).toContain("**Connection Type:**");
+			expect(info).toContain("**Display Mode:**");
+			expect(info).toContain("**Touch Device:**");
+			expect(info).toContain("**Mobile:**");
 		});
 	});
 
