@@ -36,8 +36,8 @@ When running in a container with Tailscale:
 - Servers won't be on `localhost` - use the container's Tailscale hostname/IP instead
 - Find your container info: `tailscale status` (look for current machine)
 - Access dev server: `https://<container-hostname>:3000` (e.g., `https://c-5003:3000`)
-- Access E2E report: `https://<container-hostname>:9323` (e.g., `https://c-5003:9323`)
-- Accept self-signed certificate warnings in your browser
+- Access E2E report: `http://<container-hostname>:9323` (e.g., `http://c-5003:9323`)
+- Dev server uses HTTPS (self-signed cert) - accept certificate warnings
 
 This allows viewing the dev server or test reports from any device on your Tailscale network (like your laptop while the container runs on a remote machine).
 
@@ -158,11 +158,9 @@ Playwright provides a comprehensive HTML report with videos, screenshots, and tr
 
 1. **Start report server**: `just e2e-report` (in a separate terminal) - runs on port 9323
    - Leave this running continuously - it updates automatically as tests complete
-   - Uses HTTPS (required for trace viewer's service workers)
-   - Accept the self-signed certificate warning in your browser
    - Access report:
-     - Local: `https://localhost:9323`
-     - Container with Tailscale: `https://<container-hostname>:9323` (e.g., `https://c-5003:9323`)
+     - Local: `http://localhost:9323`
+     - Container with Tailscale: `http://<container-hostname>:9323` (e.g., `http://c-5003:9323`)
 
 2. **Run tests**: `just e2e` (runs both desktop and mobile)
    - Or `just e2e-desktop` for desktop only
@@ -175,8 +173,23 @@ The report includes:
 - Test results with pass/fail status
 - Screenshots captured automatically on failure (or always in development)
 - Video recordings of test execution
-- Trace files for step-by-step debugging (click "View trace" on any test)
+- Trace files for step-by-step debugging
 - Filter by project (desktop/mobile), status, or test name
+
+**Viewing Trace Files:**
+
+Trace viewer requires HTTPS or localhost (service worker requirement). Two options:
+
+1. **Recommended**: Use Playwright's online trace viewer
+   - Download the `.zip` trace file from the report
+   - Go to https://trace.playwright.dev/
+   - Drag and drop the `.zip` file (loads entirely in browser, no data sent)
+
+2. **SSH Tunnel** (if you need direct access):
+   ```bash
+   ssh -L 9323:localhost:9323 developer@<container-hostname>
+   ```
+   Then access `http://localhost:9323` in your browser
 
 **Best practice**: Start the report server once and leave it running throughout your development session.
 

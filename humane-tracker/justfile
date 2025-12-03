@@ -47,19 +47,24 @@ e2e-mobile:
     npx playwright test --project=mobile
 
 # View E2E test report in browser
-# Serves Playwright HTML report over HTTPS with videos, screenshots, and traces
-# HTTPS is required for trace viewer (service workers need secure context)
-# Local access: https://localhost:9323
-# Container (Tailscale): https://<container-hostname>:9323
+# Serves Playwright HTML report with videos, screenshots, and traces
+# Local access: http://localhost:9323
+# Container (Tailscale): http://<container-hostname>:9323
+# Note: Trace viewer requires HTTPS - use SSH tunnel or https://trace.playwright.dev/
 e2e-report:
     #!/usr/bin/env bash
     HOSTNAME=$(hostname)
-    echo "Starting Playwright report viewer with HTTPS..."
-    echo "  Local:     https://localhost:9323"
-    echo "  Container: https://$HOSTNAME:9323"
-    echo "  ✅ HTTPS enabled - trace viewer will work"
+    echo "Starting Playwright report viewer..."
+    echo "  Local:     http://localhost:9323"
+    echo "  Container: http://$HOSTNAME:9323"
+    echo ""
+    echo "To view traces:"
+    echo "  1. Download trace .zip file from report"
+    echo "  2. Upload to https://trace.playwright.dev/"
+    echo "  Or: SSH tunnel with 'ssh -L 9323:localhost:9323 developer@$HOSTNAME'"
+    echo ""
     echo "Press Ctrl+C to stop the server"
-    node serve-report-https.js
+    npx playwright show-report --host 0.0.0.0
 
 # Run E2E tests in interactive UI mode
 e2e-ui:

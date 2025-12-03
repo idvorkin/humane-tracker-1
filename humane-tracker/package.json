@@ -35,7 +35,6 @@
     "@vitejs/plugin-react": "^4.5.2",
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^26.1.0",
-    "serve-handler": "^6.1.6",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vite-plugin-pwa": "^1.2.0",
