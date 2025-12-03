@@ -9,6 +9,7 @@ import {
 	GIT_COMMIT_URL,
 	GIT_SHA,
 } from "../generated_version";
+import { getDeviceInfo as getDeviceInfoFromService } from "./deviceInfoService";
 
 // Default repository URL - can be overridden via environment variable
 const DEFAULT_REPO_URL = "https://github.com/idvorkin/humane-tracker-1";
@@ -92,23 +93,7 @@ export function getGitHubLinks(repoUrl: string = getRepoUrl()): GitHubLinks {
  * Get browser and device information for bug reports
  */
 export function getDeviceInfo(): string {
-	const ua = navigator.userAgent;
-	const platform = navigator.platform || "Unknown platform";
-	const language = navigator.language || "Unknown language";
-	const screenSize = `${window.screen.width}x${window.screen.height}`;
-	const viewportSize = `${window.innerWidth}x${window.innerHeight}`;
-	const online = navigator.onLine ? "Online" : "Offline";
-	const touchEnabled = "ontouchstart" in window ? "Yes" : "No";
-
-	return [
-		`**Platform:** ${platform}`,
-		`**User Agent:** ${ua}`,
-		`**Language:** ${language}`,
-		`**Screen:** ${screenSize}`,
-		`**Viewport:** ${viewportSize}`,
-		`**Network:** ${online}`,
-		`**Touch:** ${touchEnabled}`,
-	].join("\n");
+	return getDeviceInfoFromService();
 }
 
 /**
