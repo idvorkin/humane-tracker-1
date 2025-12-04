@@ -363,8 +363,8 @@
 }
 
 .import-confirm-date {
-	color: var(--color-warm-gray) !important;
-	font-size: 0.85rem !important;
+	color: var(--color-warm-gray);
+	font-size: 0.85rem;
 }
 
 .import-confirm-options {

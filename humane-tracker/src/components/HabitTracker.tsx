@@ -142,7 +142,11 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 							return (
 								<th
 									key={date.toISOString()}
-									className={getDateColumnClass("col-day", isTodayDate, isSelected)}
+									className={getDateColumnClass(
+										"col-day",
+										isTodayDate,
+										isSelected,
+									)}
 									onClick={() =>
 										handleDateHeaderClick(date, isTodayDate, isSelected)
 									}
@@ -255,11 +259,16 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 														const cellDisplay = vm.getCellDisplay(habit, date);
 														const isTodayDate = isToday(date);
 														const isSelected = Boolean(
-															vm.selectedDate && isSameDay(date, vm.selectedDate),
+															vm.selectedDate &&
+																isSameDay(date, vm.selectedDate),
 														);
 														const cellClass = [
 															cellDisplay.className,
-															getDateColumnClass("cell", isTodayDate, isSelected),
+															getDateColumnClass(
+																"cell",
+																isTodayDate,
+																isSelected,
+															),
 														]
 															.filter(Boolean)
 															.join(" ");

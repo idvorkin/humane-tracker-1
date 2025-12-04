@@ -86,11 +86,11 @@ describe("useVersionCheck", () => {
 
 		expect(result.current.isChecking).toBe(false);
 
-		let checkingDuringCall = false;
+		let _checkingDuringCall = false;
 		const checkPromise = act(async () => {
 			const promise = result.current.checkForUpdate();
 			// The isChecking should be true during the call
-			checkingDuringCall = result.current.isChecking;
+			_checkingDuringCall = result.current.isChecking;
 			await promise;
 		});
 
