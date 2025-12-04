@@ -45,13 +45,31 @@ describe("getCategorySummary", () => {
 		const habits = [
 			createMockHabit({
 				status: "done",
-				entries: [{ id: "e1", habitId: "h1", userId: "u1", date: today, value: 1, createdAt: new Date() }],
+				entries: [
+					{
+						id: "e1",
+						habitId: "h1",
+						userId: "u1",
+						date: today,
+						value: 1,
+						createdAt: new Date(),
+					},
+				],
 				currentWeekCount: 3,
 				targetPerWeek: 3,
 			}),
 			createMockHabit({
 				status: "done",
-				entries: [{ id: "e2", habitId: "h2", userId: "u1", date: today, value: 1, createdAt: new Date() }],
+				entries: [
+					{
+						id: "e2",
+						habitId: "h2",
+						userId: "u1",
+						date: today,
+						value: 1,
+						createdAt: new Date(),
+					},
+				],
 				currentWeekCount: 3,
 				targetPerWeek: 3,
 			}),
@@ -69,7 +87,16 @@ describe("getCategorySummary", () => {
 		const habits = [
 			createMockHabit({
 				status: "done",
-				entries: [{ id: "e1", habitId: "h1", userId: "u1", date: today, value: 1, createdAt: new Date() }],
+				entries: [
+					{
+						id: "e1",
+						habitId: "h1",
+						userId: "u1",
+						date: today,
+						value: 1,
+						createdAt: new Date(),
+					},
+				],
 				currentWeekCount: 3,
 				targetPerWeek: 3,
 			}),
@@ -167,13 +194,31 @@ describe("getCategorySummary", () => {
 		const habits = [
 			createMockHabit({
 				status: "done",
-				entries: [{ id: "e1", habitId: "h1", userId: "u1", date: today, value: 1, createdAt: new Date() }],
+				entries: [
+					{
+						id: "e1",
+						habitId: "h1",
+						userId: "u1",
+						date: today,
+						value: 1,
+						createdAt: new Date(),
+					},
+				],
 				currentWeekCount: 3,
 				targetPerWeek: 3,
 			}), // met target AND done today
 			createMockHabit({
 				status: "done",
-				entries: [{ id: "e2", habitId: "h2", userId: "u1", date: today, value: 1, createdAt: new Date() }],
+				entries: [
+					{
+						id: "e2",
+						habitId: "h2",
+						userId: "u1",
+						date: today,
+						value: 1,
+						createdAt: new Date(),
+					},
+				],
 				currentWeekCount: 3,
 				targetPerWeek: 3,
 			}), // met target AND done today
@@ -223,7 +268,16 @@ describe("getCategorySummary", () => {
 				id: "3",
 				name: "1H Swings 28KG",
 				status: "done",
-				entries: [{ id: "e3", habitId: "3", userId: "u1", date: today, value: 1, createdAt: new Date() }],
+				entries: [
+					{
+						id: "e3",
+						habitId: "3",
+						userId: "u1",
+						date: today,
+						value: 1,
+						createdAt: new Date(),
+					},
+				],
 				currentWeekCount: 2,
 				targetPerWeek: 2,
 			}),
@@ -239,7 +293,16 @@ describe("getCategorySummary", () => {
 				id: "5",
 				name: "Pistols",
 				status: "done",
-				entries: [{ id: "e5", habitId: "5", userId: "u1", date: today, value: 1, createdAt: new Date() }],
+				entries: [
+					{
+						id: "e5",
+						habitId: "5",
+						userId: "u1",
+						date: today,
+						value: 1,
+						createdAt: new Date(),
+					},
+				],
 				currentWeekCount: 2,
 				targetPerWeek: 2,
 			}),
@@ -512,7 +575,16 @@ describe("calculateSummaryStats", () => {
 			}),
 			createMockHabit({
 				status: "done",
-				entries: [{ id: "e1", habitId: "h1", userId: "u1", date: today, value: 1, createdAt: new Date() }],
+				entries: [
+					{
+						id: "e1",
+						habitId: "h1",
+						userId: "u1",
+						date: today,
+						value: 1,
+						createdAt: new Date(),
+					},
+				],
 				currentWeekCount: 3,
 				targetPerWeek: 3,
 			}),

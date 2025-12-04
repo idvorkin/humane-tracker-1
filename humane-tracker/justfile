@@ -9,22 +9,7 @@ dev: generate-version
 
 # Generate version info from git
 generate-version:
-    #!/usr/bin/env bash
-    SHA=$(git rev-parse HEAD)
-    BRANCH=$(git rev-parse --abbrev-ref HEAD)
-    REPO_URL=$(git remote get-url origin | sed 's/\.git$//' | sed 's|git@github.com:|https://github.com/|' | sed 's|https://[^@]*@|https://|')
-    COMMIT_URL="$REPO_URL/commit/$SHA"
-    CURRENT_URL="$REPO_URL/tree/$BRANCH"
-    BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-    cat > src/generated_version.ts <<EOF
-    // This file is auto-generated at build time by \`just generate-version\`
-    // DO NOT EDIT manually - changes will be overwritten
-    export const GIT_SHA = "$SHA";
-    export const GIT_COMMIT_URL = "$COMMIT_URL";
-    export const GIT_CURRENT_URL = "$CURRENT_URL";
-    export const GIT_BRANCH = "$BRANCH";
-    export const BUILD_TIMESTAMP = "$BUILD_TIME";
-    EOF
+    ./scripts/generate-version.sh
 
 # Build the project (generates version info first)
 build: generate-version

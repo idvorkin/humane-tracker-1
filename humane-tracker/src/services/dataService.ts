@@ -1,5 +1,5 @@
+import { entryRepository, habitRepository } from "../repositories";
 import type { Habit, HabitEntry } from "../types/habit";
-import { habitRepository, entryRepository } from "../repositories";
 
 export interface ExportData {
 	version: 1;
