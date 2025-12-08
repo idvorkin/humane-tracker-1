@@ -1,7 +1,7 @@
 import { useObservable } from "dexie-react-hooks";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { HabitTracker } from "./components/HabitTracker";
-import { Login } from "./components/Login";
+import { LoginButton } from "./components/LoginButton";
 import { UserMenu } from "./components/UserMenu";
 import { VersionNotification } from "./components/VersionNotification";
 import { db } from "./config/db";
@@ -82,9 +82,17 @@ function App() {
 		);
 	}
 
-	// Cloud mode - require authentication
+	// Cloud mode - not logged in, show app with login button
 	if (!currentUser || !currentUser.userId) {
-		return <Login />;
+		return (
+			<div className="App">
+				<HabitTracker
+					userId="anonymous"
+					userMenu={() => <LoginButton />}
+				/>
+				<VersionNotification />
+			</div>
+		);
 	}
 
 	const displayName = currentUser.name || currentUser.email || "User";
