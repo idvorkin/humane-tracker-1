@@ -401,7 +401,8 @@ const dexieCloudUrl = import.meta.env.VITE_DEXIE_CLOUD_URL;
 const isTestMode =
 	typeof window !== "undefined" &&
 	(window.location.search.includes("test=true") ||
-		window.location.search.includes("e2e=true"));
+		window.location.search.includes("e2e=true") ||
+		window.location.search.includes("e2e-login=true"));
 
 // Enable debug mode for better error stack traces (recommended for development)
 if (import.meta.env.DEV) {
