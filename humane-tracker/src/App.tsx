@@ -84,7 +84,11 @@ function App() {
 	}
 
 	// Cloud mode - not logged in, show app with login button
-	if (!currentUser || !currentUser.userId) {
+	// Dexie Cloud sets userId to "unauthorized" when user cancels login
+	const isLoggedIn =
+		currentUser?.userId && currentUser.userId !== "unauthorized";
+
+	if (!isLoggedIn) {
 		return (
 			<div className="App">
 				<AnonymousWarning />
@@ -97,15 +101,17 @@ function App() {
 		);
 	}
 
-	const displayName = currentUser.name || currentUser.email || "User";
-	const avatarLetter = currentUser.name
-		? currentUser.name[0].toUpperCase()
+	// At this point we know currentUser.userId exists and isn't "unauthorized"
+	const userId = currentUser!.userId!;
+	const displayName = currentUser!.name || currentUser!.email || "User";
+	const avatarLetter = currentUser!.name
+		? currentUser!.name[0].toUpperCase()
 		: "?";
 
 	return (
 		<div className="App">
 			<HabitTracker
-				userId={currentUser.userId}
+				userId={userId}
 				userMenu={(menuProps) => (
 					<UserMenu
 						userName={displayName}
