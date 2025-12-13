@@ -1,0 +1,133 @@
+.stale-auth-notification {
+	position: fixed;
+	bottom: 20px;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 1000;
+	max-width: 90%;
+	width: 450px;
+}
+
+.stale-auth-content {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 16px;
+	background: #fef3cd;
+	border: 1px solid #ffc107;
+	border-radius: 8px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stale-auth-icon {
+	font-size: 24px;
+	flex-shrink: 0;
+}
+
+.stale-auth-message {
+	flex: 1;
+}
+
+.stale-auth-message strong {
+	display: block;
+	color: #856404;
+	margin-bottom: 4px;
+}
+
+.stale-auth-message p {
+	margin: 0;
+	color: #856404;
+	font-size: 14px;
+}
+
+.stale-auth-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+.stale-auth-btn-primary {
+	padding: 8px 16px;
+	background: #856404;
+	color: white;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 14px;
+	font-weight: 500;
+	white-space: nowrap;
+}
+
+.stale-auth-btn-primary:hover:not(:disabled) {
+	background: #6c5200;
+}
+
+.stale-auth-btn-primary:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.stale-auth-btn-secondary {
+	padding: 8px 16px;
+	background: transparent;
+	color: #856404;
+	border: 1px solid #856404;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 14px;
+	white-space: nowrap;
+}
+
+.stale-auth-btn-secondary:hover {
+	background: rgba(133, 100, 4, 0.1);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+	.stale-auth-content {
+		background: #332701;
+		border-color: #665200;
+	}
+
+	.stale-auth-message strong,
+	.stale-auth-message p {
+		color: #ffc107;
+	}
+
+	.stale-auth-btn-primary {
+		background: #ffc107;
+		color: #332701;
+	}
+
+	.stale-auth-btn-primary:hover:not(:disabled) {
+		background: #e0a800;
+	}
+
+	.stale-auth-btn-secondary {
+		color: #ffc107;
+		border-color: #ffc107;
+	}
+
+	.stale-auth-btn-secondary:hover {
+		background: rgba(255, 193, 7, 0.1);
+	}
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+	.stale-auth-notification {
+		bottom: 10px;
+		width: calc(100% - 20px);
+	}
+
+	.stale-auth-content {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.stale-auth-actions {
+		flex-direction: row;
+		justify-content: flex-end;
+	}
+}

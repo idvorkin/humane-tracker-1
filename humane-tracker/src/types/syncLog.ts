@@ -2,7 +2,8 @@ export type SyncLogEventType =
 	| "syncState"
 	| "webSocket"
 	| "persistedState"
-	| "syncComplete";
+	| "syncComplete"
+	| "staleAuth";
 
 export type SyncLogLevel = "info" | "success" | "warning" | "error";
 

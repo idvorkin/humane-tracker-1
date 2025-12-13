@@ -176,6 +176,8 @@ function getEventTypeLabel(eventType: SyncLog["eventType"]): string {
 			return "Save";
 		case "syncComplete":
 			return "Done";
+		case "staleAuth":
+			return "Auth";
 		default:
 			return eventType;
 	}

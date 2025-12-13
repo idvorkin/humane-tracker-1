@@ -4,6 +4,7 @@ import { AnonymousWarning } from "./components/AnonymousWarning";
 import { HabitTracker } from "./components/HabitTracker";
 import { LoginButton } from "./components/LoginButton";
 import { SignInDialog } from "./components/SignInDialog";
+import { StaleAuthNotification } from "./components/StaleAuthNotification";
 import { UserMenu } from "./components/UserMenu";
 import { VersionNotification } from "./components/VersionNotification";
 import { db } from "./config/db";
@@ -178,6 +179,7 @@ function App() {
 				)}
 			/>
 			<VersionNotification />
+			<StaleAuthNotification />
 		</div>
 	);
 }
