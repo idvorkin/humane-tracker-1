@@ -55,6 +55,8 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 	const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
 		new Set(),
 	);
+	// Category filter
+	const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
 	// Import/Export state
 	const [isExporting, setIsExporting] = useState(false);
@@ -449,24 +451,27 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 						</datalist>
 					</div>
 
-					<div className="habit-type-field">
-						<select
-							value={
-								(getHabitValue(habit, "trackingType") as string) || "hybrid"
-							}
-							onChange={(e) =>
-								handleFieldChange(habit.id, "trackingType", e.target.value)
-							}
-							className="type-select"
-							title="Tracking Type"
-						>
-							{TRACKING_TYPES.map((type) => (
-								<option key={type.value} value={type.value}>
-									{type.icon} {type.label}
-								</option>
-							))}
-						</select>
-					</div>
+					{/* Tags don't need tracking type - they aggregate from children */}
+					{!isTag && (
+						<div className="habit-type-field">
+							<select
+								value={
+									(getHabitValue(habit, "trackingType") as string) || "hybrid"
+								}
+								onChange={(e) =>
+									handleFieldChange(habit.id, "trackingType", e.target.value)
+								}
+								className="type-select"
+								title="Tracking Type"
+							>
+								{TRACKING_TYPES.map((type) => (
+									<option key={type.value} value={type.value}>
+										{type.icon} {type.label}
+									</option>
+								))}
+							</select>
+						</div>
+					)}
 
 					<div className="habit-target-field">
 						<input
@@ -662,23 +667,26 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 										))}
 									</datalist>
 
-									<select
-										value={newHabit.trackingType}
-										onChange={(e) =>
-											setNewHabit({
-												...newHabit,
-												trackingType: e.target.value as any,
-											})
-										}
-										className="type-select"
-										title="Tracking Type"
-									>
-										{TRACKING_TYPES.map((type) => (
-											<option key={type.value} value={type.value}>
-												{type.icon} {type.label}
-											</option>
-										))}
-									</select>
+									{/* Tags don't need tracking type */}
+									{newHabit.habitType !== "tag" && (
+										<select
+											value={newHabit.trackingType}
+											onChange={(e) =>
+												setNewHabit({
+													...newHabit,
+													trackingType: e.target.value as any,
+												})
+											}
+											className="type-select"
+											title="Tracking Type"
+										>
+											{TRACKING_TYPES.map((type) => (
+												<option key={type.value} value={type.value}>
+													{type.icon} {type.label}
+												</option>
+											))}
+										</select>
+									)}
 
 									<div className="target-field">
 										<input
@@ -767,42 +775,65 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 						)}
 					</div>
 
+					{/* Category filter */}
+					<div className="category-filter">
+						<label htmlFor="category-filter">Filter by category:</label>
+						<select
+							id="category-filter"
+							value={categoryFilter}
+							onChange={(e) => setCategoryFilter(e.target.value)}
+							className="category-filter-select"
+						>
+							<option value="all">All Categories</option>
+							{existingCategories.map((cat) => (
+								<option key={cat} value={cat}>
+									{cat}
+								</option>
+							))}
+						</select>
+					</div>
+
 					{/* Habits grouped by category */}
 					<div className="habits-list">
-						{existingCategories.map((category) => {
-							const categoryInfo = buildCategoryInfo(category);
-							const categoryHabits = habitsByCategory[category] || [];
-							const isCollapsed = collapsedCategories.has(category);
+						{existingCategories
+							.filter(
+								(category) =>
+									categoryFilter === "all" || category === categoryFilter,
+							)
+							.map((category) => {
+								const categoryInfo = buildCategoryInfo(category);
+								const categoryHabits = habitsByCategory[category] || [];
+								const isCollapsed = collapsedCategories.has(category);
 
-							return (
-								<div key={category} className="category-group">
-									<button
-										className="category-header"
-										onClick={() => toggleCategory(category)}
-									>
-										<span
-											className={`category-arrow ${isCollapsed ? "collapsed" : ""}`}
+								return (
+									<div key={category} className="category-group">
+										<button
+											className="category-header"
+											onClick={() => toggleCategory(category)}
 										>
-											▼
-										</span>
-										<span
-											className="category-dot"
-											style={{ background: categoryInfo.color }}
-										/>
-										<span className="category-name">{category}</span>
-										<span className="category-count">
-											({categoryHabits.length})
-										</span>
-									</button>
+											<span
+												className={`category-arrow ${isCollapsed ? "collapsed" : ""}`}
+											>
+												▼
+											</span>
+											<span
+												className="category-dot"
+												style={{ background: categoryInfo.color }}
+											/>
+											<span className="category-name">{category}</span>
+											<span className="category-count">
+												({categoryHabits.length})
+											</span>
+										</button>
 
-									{!isCollapsed && (
-										<div className="category-habits">
-											{categoryHabits.map(renderHabitRow)}
-										</div>
-									)}
-								</div>
-							);
-						})}
+										{!isCollapsed && (
+											<div className="category-habits">
+												{categoryHabits.map(renderHabitRow)}
+											</div>
+										)}
+									</div>
+								);
+							})}
 					</div>
 
 					{habits.length === 0 && (
