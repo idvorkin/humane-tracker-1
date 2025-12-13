@@ -74,10 +74,13 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 	// Derive existing categories from habits
 	const existingCategories = extractCategories(habits);
 
-	// Group habits by category
+	// Group habits by category (exclude children - they show under their parent tag)
 	const habitsByCategory = existingCategories.reduce(
 		(acc, category) => {
-			acc[category] = habits.filter((h) => h.category === category);
+			acc[category] = habits.filter(
+				(h) =>
+					h.category === category && (!h.parentIds || h.parentIds.length === 0),
+			);
 			return acc;
 		},
 		{} as Record<string, Habit[]>,
