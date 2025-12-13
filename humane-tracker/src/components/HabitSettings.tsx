@@ -1,5 +1,6 @@
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
+import { useHabitService } from "../hooks/useHabitService";
 import {
 	type ExportData,
 	exportAllData,
@@ -7,13 +8,13 @@ import {
 	importAllData,
 	validateExportData,
 } from "../services/dataService";
-import { HabitService } from "../services/habitService";
 import type { Habit } from "../types/habit";
 import {
 	buildCategoryInfo,
 	extractCategories,
 	migrateCategoryValue,
 } from "../utils/categoryUtils";
+import { validateHabitForm } from "../utils/habitValidation";
 import "./HabitSettings.css";
 
 interface HabitSettingsProps {
@@ -59,7 +60,7 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const hasInitializedCollapse = useRef(false);
 
-	const habitService = new HabitService();
+	const habitService = useHabitService();
 
 	// Derive existing categories from habits
 	const existingCategories = extractCategories(habits);
@@ -137,13 +138,12 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 	};
 
 	const handleAddNewHabit = async () => {
-		if (!newHabit.name.trim()) {
-			alert("Please enter a habit name");
-			return;
-		}
-
-		if (!newHabit.category.trim()) {
-			alert("Please enter a category");
+		const validation = validateHabitForm({
+			name: newHabit.name,
+			category: newHabit.category,
+		});
+		if (!validation.isValid) {
+			alert(validation.errors.name || validation.errors.category);
 			return;
 		}
 

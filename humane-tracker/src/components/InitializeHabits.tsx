@@ -1,11 +1,9 @@
 import type React from "react";
 import { useState } from "react";
 import { DEFAULT_HABITS } from "../data/defaultHabits";
-import { HabitService } from "../services/habitService";
+import { useHabitService } from "../hooks/useHabitService";
 import { buildCategoryInfo, extractCategories } from "../utils/categoryUtils";
 import "./InitializeHabits.css";
-
-const habitService = new HabitService();
 
 interface InitializeHabitsProps {
 	userId: string;
@@ -16,6 +14,7 @@ export const InitializeHabits: React.FC<InitializeHabitsProps> = ({
 	userId,
 	onComplete,
 }) => {
+	const habitService = useHabitService();
 	const [loading, setLoading] = useState(false);
 	const [progress, setProgress] = useState(0);
 

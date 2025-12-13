@@ -10,6 +10,7 @@ import type {
 	SummaryStats,
 } from "../types/habit";
 import { buildCategoryInfo, extractCategories } from "../utils/categoryUtils";
+import { getTrailingWeekDateRange } from "../utils/dateUtils";
 
 const habitService = new HabitService();
 
@@ -289,11 +290,7 @@ export function useHabitTrackerVM({
 			handleSubscriptionError,
 		);
 
-		const endDate = new Date();
-		endDate.setHours(23, 59, 59, 999);
-		const startDate = new Date();
-		startDate.setDate(startDate.getDate() - 6);
-		startDate.setHours(0, 0, 0, 0);
+		const { startDate, endDate } = getTrailingWeekDateRange();
 
 		const unsubscribeEntries = habitService.subscribeToWeekEntries(
 			userId,
