@@ -426,9 +426,11 @@ if (
 	!isTestMode
 ) {
 	// Configure cloud sync with the provided URL
+	// requireAuth: false enables local-first behavior - users can work offline
+	// or without authentication, and data syncs when they sign in
 	db.cloud.configure({
 		databaseUrl: dexieCloudUrl,
-		requireAuth: true, // Require authentication for cloud sync
+		requireAuth: false, // Allow local writes without authentication
 		tryUseServiceWorker: true,
 	});
 

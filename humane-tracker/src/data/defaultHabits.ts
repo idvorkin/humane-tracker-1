@@ -28,6 +28,7 @@ export const DEFAULT_HABITS: DefaultHabit[] = [
 		],
 		allowCustomVariant: true,
 	},
+	{ name: "Shoulder Ys", category: "Mobility", targetPerWeek: 2 },
 	{ name: "Side Planks", category: "Mobility", targetPerWeek: 2 },
 	{ name: "Heavy Clubs 3x10", category: "Mobility", targetPerWeek: 2 },
 	{ name: "Half Lotus", category: "Mobility", targetPerWeek: 2 },
