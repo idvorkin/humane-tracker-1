@@ -12,6 +12,11 @@ import type {
 } from "../types/habit";
 import { buildCategoryInfo, extractCategories } from "../utils/categoryUtils";
 import { getTrailingWeekDateRange } from "../utils/dateUtils";
+import {
+	buildHabitTree,
+	type FlatTreeNode,
+	flattenTree,
+} from "../utils/habitTreeUtils";
 
 // ============================================================================
 // Pure helper functions (easily testable)
@@ -183,6 +188,10 @@ export interface HabitTrackerVM {
 	allExpanded: boolean;
 	selectedDate: Date | null;
 
+	// Tag tree support
+	habitTree: FlatTreeNode[];
+	expandedTags: Set<string>;
+
 	// Computed helpers (exposed for convenience)
 	getCategorySummary: typeof getCategorySummary;
 	getStatusIcon: typeof getStatusIcon;
@@ -196,6 +205,7 @@ export interface HabitTrackerVM {
 		variant: HabitVariant | null,
 	) => Promise<void>;
 	toggleSection: (category: string) => void;
+	toggleTagExpanded: (tagId: string) => void;
 	expandAll: () => void;
 	collapseAll: () => void;
 	zoomIn: (category: string) => void;
@@ -218,6 +228,10 @@ export function useHabitTrackerVM({
 	const collapsedSectionsRef = useRef<Set<string>>(new Set());
 	const [collapsedVersion, setCollapsedVersion] = useState(0); // trigger re-render on collapse changes
 
+	// Tag expansion state
+	const expandedTagsRef = useRef<Set<string>>(new Set());
+	const [expandedTagsVersion, setExpandedTagsVersion] = useState(0);
+
 	// Mock mode is now handled by mock repositories (injected in index.tsx for tests)
 	// No need for special logic here - subscriptions work the same way
 	const weekDates = useMemo(() => getTrailingWeekDates(), []);
@@ -227,6 +241,12 @@ export function useHabitTrackerVM({
 		() => groupHabitsByCategory(habits, collapsedSectionsRef.current),
 		[habits, collapsedVersion], // eslint-disable-line react-hooks/exhaustive-deps
 	);
+
+	// Build habit tree for nested tag display
+	const habitTree = useMemo(() => {
+		const tree = buildHabitTree(habits, expandedTagsRef.current);
+		return flattenTree(tree);
+	}, [habits, expandedTagsVersion]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const summaryStats = useMemo(() => {
 		// When zoomed, show stats only for that category
@@ -367,6 +387,15 @@ export function useHabitTrackerVM({
 		setSelectedDate(date);
 	}, []);
 
+	const toggleTagExpanded = useCallback((tagId: string) => {
+		if (expandedTagsRef.current.has(tagId)) {
+			expandedTagsRef.current.delete(tagId);
+		} else {
+			expandedTagsRef.current.add(tagId);
+		}
+		setExpandedTagsVersion((v) => v + 1);
+	}, []);
+
 	const addEntryWithVariant = useCallback(
 		async (habitId: string, date: Date, variant: HabitVariant | null) => {
 			const habit = habits.find((h) => h.id === habitId);
@@ -455,6 +484,10 @@ export function useHabitTrackerVM({
 		allExpanded,
 		selectedDate,
 
+		// Tag tree support
+		habitTree,
+		expandedTags: expandedTagsRef.current,
+
 		// Computed helpers
 		getCategorySummary,
 		getStatusIcon,
@@ -464,6 +497,7 @@ export function useHabitTrackerVM({
 		toggleEntry,
 		addEntryWithVariant,
 		toggleSection,
+		toggleTagExpanded,
 		expandAll,
 		collapseAll,
 		zoomIn,

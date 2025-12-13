@@ -313,10 +313,42 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 									</tr>
 									{!section.isCollapsed &&
 										section.habits.map((habit) => {
+											// Find tree node for this habit to get depth info
+											const treeNode = vm.habitTree.find(
+												(n) => n.habit.id === habit.id,
+											);
+											const depth = treeNode?.depth ?? 0;
+											const isTag = treeNode?.isTag ?? false;
+											const isExpanded = treeNode?.isExpanded ?? false;
+											const hasChildren = treeNode?.hasChildren ?? false;
+
 											return (
 												<tr key={habit.id} className="section-row">
 													<td className="col-habit">
-														<div className="habit-name">
+														<div
+															className="habit-name"
+															style={{ paddingLeft: `${depth * 16}px` }}
+														>
+															{isTag && hasChildren && (
+																<span
+																	className={`tag-arrow ${isExpanded ? "" : "collapsed"}`}
+																	onClick={(e) => {
+																		e.stopPropagation();
+																		vm.toggleTagExpanded(habit.id);
+																	}}
+																	style={{ cursor: "pointer", marginRight: 4 }}
+																>
+																	▼
+																</span>
+															)}
+															{isTag && (
+																<span
+																	className="tag-indicator"
+																	title="Tag (aggregates children)"
+																>
+																	🏷️
+																</span>
+															)}
 															{habit.name}
 															<span className="habit-target">
 																({habit.targetPerWeek}/w)
@@ -343,6 +375,7 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 																isSelected,
 															),
 															habit.variants?.length ? "has-variants" : "",
+															isTag ? "tag-cell" : "",
 														]
 															.filter(Boolean)
 															.join(" ");

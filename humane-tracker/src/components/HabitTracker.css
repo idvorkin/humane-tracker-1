@@ -325,6 +325,34 @@ th {
 	transform: rotate(-90deg);
 }
 
+/* Tag styles for nested habit tree */
+.tag-arrow {
+	font-size: 0.6rem;
+	transition: transform var(--transition-fast);
+	display: inline-block;
+	color: var(--color-warm-gray);
+	opacity: 0.7;
+}
+
+.tag-arrow.collapsed {
+	transform: rotate(-90deg);
+}
+
+.tag-arrow:hover {
+	color: var(--color-cream);
+	opacity: 1;
+}
+
+.tag-indicator {
+	font-size: 0.75rem;
+	margin-right: 4px;
+	opacity: 0.8;
+}
+
+.tag-cell {
+	background: rgba(255, 255, 255, 0.02);
+}
+
 .section-indicator {
 	width: 4px;
 	height: 16px;
