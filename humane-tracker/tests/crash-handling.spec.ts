@@ -1,5 +1,20 @@
 import { expect, test } from "@playwright/test";
 
+// Helper function to trigger crash via Settings > Developer Tools
+async function triggerCrashFromSettings(page: import("@playwright/test").Page) {
+	// Open user menu
+	await page.click(".user-menu-trigger");
+	await page.waitForSelector(".user-menu-dropdown");
+
+	// Click Settings
+	await page.click('button:has-text("Settings")');
+	await page.waitForSelector(".settings-dialog", { timeout: 5000 });
+
+	// Click the "Trigger Crash" button in Developer Tools section
+	// The button has class settings-action-danger and contains "Trigger Crash"
+	await page.click('button.settings-action-danger:has-text("Trigger Crash")');
+}
+
 test.describe("Crash Handling", () => {
 	test("should show crash fallback screen when error occurs", async ({
 		page,
@@ -10,14 +25,8 @@ test.describe("Crash Handling", () => {
 		// Wait for the app to load
 		await page.waitForSelector(".user-menu-trigger", { timeout: 10000 });
 
-		// Open user menu
-		await page.click(".user-menu-trigger");
-
-		// Wait for menu to be visible
-		await page.waitForSelector(".user-menu-dropdown");
-
-		// Click the "Trigger Crash (Dev)" button
-		await page.click('button:has-text("Trigger Crash (Dev)")');
+		// Trigger crash via Settings > Developer Tools
+		await triggerCrashFromSettings(page);
 
 		// Wait for crash fallback to appear
 		await page.waitForSelector(".crash-fallback", { timeout: 5000 });
@@ -64,10 +73,8 @@ test.describe("Crash Handling", () => {
 		// Wait for the app to load
 		await page.waitForSelector(".user-menu-trigger", { timeout: 10000 });
 
-		// Open user menu and trigger crash
-		await page.click(".user-menu-trigger");
-		await page.waitForSelector(".user-menu-dropdown");
-		await page.click('button:has-text("Trigger Crash (Dev)")');
+		// Trigger crash via Settings > Developer Tools
+		await triggerCrashFromSettings(page);
 
 		// Wait for crash fallback
 		await page.waitForSelector(".crash-fallback");
@@ -93,10 +100,8 @@ test.describe("Crash Handling", () => {
 		// Wait for the app to load
 		await page.waitForSelector(".user-menu-trigger", { timeout: 10000 });
 
-		// Open user menu and trigger crash
-		await page.click(".user-menu-trigger");
-		await page.waitForSelector(".user-menu-dropdown");
-		await page.click('button:has-text("Trigger Crash (Dev)")');
+		// Trigger crash via Settings > Developer Tools
+		await triggerCrashFromSettings(page);
 
 		// Wait for crash fallback
 		await page.waitForSelector(".crash-fallback");

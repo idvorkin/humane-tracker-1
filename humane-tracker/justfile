@@ -53,8 +53,12 @@ build: generate-version
 test: generate-version
     npm run test
 
-# Run E2E tests (all projects - desktop chromium + mobile)
+# Run E2E tests (mobile only - fast default)
 e2e:
+    npx playwright test --project=mobile
+
+# Run E2E tests (all projects - desktop chromium + mobile)
+e2e-all:
     npx playwright test
 
 # Run fast E2E tests (quick smoke tests) - good for CI
@@ -65,7 +69,7 @@ e2e-fast:
 e2e-desktop:
     npx playwright test --project=chromium
 
-# Run E2E tests (mobile only)
+# Run E2E tests (mobile only) - alias for e2e
 e2e-mobile:
     npx playwright test --project=mobile
 

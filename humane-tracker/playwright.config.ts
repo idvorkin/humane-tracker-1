@@ -137,10 +137,10 @@ export default defineConfig({
   reporter: [['html', { outputFolder: 'playwright-report' }]],
   use: {
     baseURL: BASE_URL,
-    // Enhanced artifact capture - use 'on' for development, 'retain-on-failure' for CI
-    trace: process.env.CI ? 'retain-on-failure' : 'on',
-    video: process.env.CI ? 'retain-on-failure' : 'on',
-    screenshot: process.env.CI ? 'only-on-failure' : 'on',
+    // Only capture artifacts on failure to improve performance
+    trace: 'retain-on-failure',
+    video: 'retain-on-failure',
+    screenshot: 'only-on-failure',
     // Ignore HTTPS certificate errors in container (self-signed cert)
     ignoreHTTPSErrors: isContainer,
   },
@@ -152,7 +152,11 @@ export default defineConfig({
     },
     {
       name: 'mobile',
-      use: { ...devices['iPhone 14 Pro'] },
+      use: {
+        ...devices['iPhone 14 Pro'],
+        // Use chromium with mobile viewport instead of webkit (more reliable)
+        browserName: 'chromium',
+      },
     },
   ],
 

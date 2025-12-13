@@ -19,9 +19,16 @@ test.describe("Login Flow - Cancel Dialog", () => {
 		await expect(warning).toBeVisible({ timeout: 5000 });
 		await expect(warning).toContainText("not being saved");
 
-		// Should see login button (not UserMenu)
-		const loginButton = page.locator("button.login-button");
-		await expect(loginButton).toBeVisible();
-		await expect(loginButton).toHaveText("Sign In");
+		// Should see user menu (guest menu with Sign In option)
+		const userMenuTrigger = page.locator(".user-menu-trigger");
+		await expect(userMenuTrigger).toBeVisible();
+
+		// Open user menu and verify Sign In option exists
+		await userMenuTrigger.click();
+		await page.waitForSelector(".user-menu-dropdown");
+
+		// Check for Sign In button in the user menu dropdown
+		const signInButton = page.locator('.user-menu-dropdown button:has-text("Sign In")');
+		await expect(signInButton).toBeVisible();
 	});
 });
