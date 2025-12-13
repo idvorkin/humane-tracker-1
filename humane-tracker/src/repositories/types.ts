@@ -4,6 +4,12 @@
  * During migration, both formats may exist and are normalized on read.
  */
 
+export interface HabitVariantRecord {
+	id: string;
+	name: string;
+	usageCount?: number;
+}
+
 export interface HabitRecord {
 	id: string;
 	name: string;
@@ -13,6 +19,8 @@ export interface HabitRecord {
 	userId: string;
 	createdAt: string; // ISO string
 	updatedAt: string; // ISO string
+	variants?: HabitVariantRecord[];
+	allowCustomVariant?: boolean;
 }
 
 export interface EntryRecord {
@@ -23,6 +31,8 @@ export interface EntryRecord {
 	value: number;
 	notes?: string;
 	createdAt: string; // ISO string
+	variantId?: string;
+	variantName?: string;
 }
 
 /**

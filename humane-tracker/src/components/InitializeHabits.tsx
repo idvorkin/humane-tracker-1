@@ -49,6 +49,8 @@ export const InitializeHabits: React.FC<InitializeHabitsProps> = ({
 					category: habit.category,
 					targetPerWeek: habit.targetPerWeek,
 					userId,
+					variants: habit.variants,
+					allowCustomVariant: habit.allowCustomVariant,
 				});
 				setProgress(Math.round(((i + 1) / total) * 100));
 			}

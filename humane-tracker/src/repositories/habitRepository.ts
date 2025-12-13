@@ -66,6 +66,8 @@ function toHabit(record: HabitRecord): Habit {
 		userId: record.userId,
 		createdAt: normalizeDate(record.createdAt as string | Date),
 		updatedAt: normalizeDate(record.updatedAt as string | Date),
+		variants: record.variants,
+		allowCustomVariant: record.allowCustomVariant,
 	};
 }
 
@@ -85,6 +87,8 @@ function toRecord(
 			userId: habit.userId,
 			createdAt: now,
 			updatedAt: now,
+			variants: habit.variants,
+			allowCustomVariant: habit.allowCustomVariant,
 		};
 	} catch (error) {
 		throw new Error(
@@ -193,7 +197,7 @@ export const habitRepository = {
 		updates: Partial<Pick<Habit, "name" | "category" | "targetPerWeek">>,
 	): Promise<void> {
 		try {
-			const validatedUpdates: Record<string, unknown> = {
+			const validatedUpdates: Partial<HabitRecord> = {
 				updatedAt: toTimestamp(new Date()),
 			};
 
@@ -274,6 +278,8 @@ export const habitRepository = {
 				userId: habit.userId,
 				createdAt: toTimestamp(habit.createdAt),
 				updatedAt: toTimestamp(habit.updatedAt),
+				variants: habit.variants,
+				allowCustomVariant: habit.allowCustomVariant,
 			}));
 			await db.habits.bulkPut(records);
 		} catch (error) {

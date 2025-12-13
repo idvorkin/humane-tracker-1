@@ -1,7 +1,14 @@
+export interface DefaultHabitVariant {
+	id: string;
+	name: string;
+}
+
 export interface DefaultHabit {
 	name: string;
 	category: string;
 	targetPerWeek: number;
+	variants?: DefaultHabitVariant[];
+	allowCustomVariant?: boolean;
 }
 
 export const DEFAULT_HABITS: DefaultHabit[] = [
@@ -9,9 +16,19 @@ export const DEFAULT_HABITS: DefaultHabit[] = [
 	{ name: "Physical Mobility", category: "Mobility", targetPerWeek: 5 },
 	{ name: "Back Twists", category: "Mobility", targetPerWeek: 3 },
 	{ name: "Shin Boxes", category: "Mobility", targetPerWeek: 3 },
-	{ name: "Shoulder Ys", category: "Mobility", targetPerWeek: 2 },
+	{
+		name: "Shoulder Accessory",
+		category: "Mobility",
+		targetPerWeek: 3,
+		variants: [
+			{ id: "shoulder-y", name: "Shoulder Y" },
+			{ id: "wall-slide", name: "Wall Slide" },
+			{ id: "shoulder-w", name: "Shoulder W" },
+			{ id: "swimmers", name: "Swimmers" },
+		],
+		allowCustomVariant: true,
+	},
 	{ name: "Side Planks", category: "Mobility", targetPerWeek: 2 },
-	{ name: "Wall slides", category: "Mobility", targetPerWeek: 2 },
 	{ name: "Heavy Clubs 3x10", category: "Mobility", targetPerWeek: 2 },
 	{ name: "Half Lotus", category: "Mobility", targetPerWeek: 2 },
 	{ name: "Biking", category: "Mobility", targetPerWeek: 2 },
