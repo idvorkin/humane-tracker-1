@@ -488,6 +488,24 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 					</div>
 
 					<button
+						className={`visibility-btn ${getHabitValue(habit, "hidden") ? "hidden" : ""}`}
+						onClick={() =>
+							handleFieldChange(
+								habit.id,
+								"hidden",
+								!getHabitValue(habit, "hidden"),
+							)
+						}
+						title={
+							getHabitValue(habit, "hidden")
+								? "Show in tracker"
+								: "Hide from tracker"
+						}
+					>
+						{getHabitValue(habit, "hidden") ? "👁️‍🗨️" : "👁️"}
+					</button>
+
+					<button
 						className={`delete-btn ${deletingHabits.has(habit.id) ? "active" : ""}`}
 						onClick={() => handleDeleteToggle(habit.id)}
 						title={

@@ -269,8 +269,11 @@ export function useHabitTrackerVM({
 				if (!skipLoading) setIsLoading(true);
 				const habitsWithStatus = await habitService.getHabitsWithStatus(userId);
 
+				// Filter out hidden habits
+				const visibleHabits = habitsWithStatus.filter((h) => !h.hidden);
+
 				// Deduplicate habits by name (keeping the one with most entries)
-				const uniqueHabits = habitsWithStatus.reduce((acc, habit) => {
+				const uniqueHabits = visibleHabits.reduce((acc, habit) => {
 					const existing = acc.find((h) => h.name === habit.name);
 					if (!existing) {
 						acc.push(habit);
