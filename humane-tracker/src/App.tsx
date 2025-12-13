@@ -95,7 +95,16 @@ function App() {
 				<AnonymousWarning onSignIn={handleSignIn} />
 				<HabitTracker
 					userId="anonymous"
-					userMenu={() => <LoginButton />}
+					userMenu={(menuProps) => (
+						<UserMenu
+							userName="Guest"
+							avatarLetter="G"
+							onSignIn={handleSignIn}
+							onManageHabits={menuProps.onManageHabits}
+							onLoadDefaults={menuProps.onLoadDefaults}
+							showLoadDefaults={menuProps.showLoadDefaults}
+						/>
+					)}
 				/>
 				<VersionNotification />
 			</div>

@@ -157,6 +157,22 @@
 	color: var(--color-danger);
 }
 
+/* Submenu grouping */
+.user-menu-group {
+	display: flex;
+	flex-direction: column;
+}
+
+.user-menu-subitem {
+	padding-left: calc(var(--space-md) + 20px);
+	font-size: 0.85rem;
+	color: var(--color-warm-gray);
+}
+
+.user-menu-subitem:hover {
+	color: var(--color-cream);
+}
+
 .user-menu-danger {
 	color: var(--color-danger);
 }

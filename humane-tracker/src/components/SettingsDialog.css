@@ -34,6 +34,9 @@
 		0 1px 0 rgba(255, 255, 255, 0.08) inset;
 	width: 90%;
 	max-width: 380px;
+	max-height: 85vh;
+	display: flex;
+	flex-direction: column;
 	overflow: hidden;
 	animation: settingsDialogSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -90,6 +93,8 @@
 /* Body */
 .settings-dialog-body {
 	padding: 8px 16px 16px;
+	overflow-y: auto;
+	flex: 1;
 }
 
 /* Sections */
@@ -138,6 +143,51 @@
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
+}
+
+/* About Section Styles */
+.about-section-title {
+	text-align: center;
+	margin-bottom: 8px;
+}
+
+.about-section-name {
+	margin: 0 0 4px 0;
+	font-family: var(--font-display);
+	font-size: 1.15rem;
+	font-weight: 600;
+	color: var(--color-cream);
+	letter-spacing: -0.01em;
+}
+
+.about-section-tagline {
+	margin: 0;
+	font-size: 0.8rem;
+	color: var(--color-warm-gray);
+}
+
+.about-section-link {
+	color: var(--color-amber);
+	text-decoration: none;
+	transition: color 0.15s ease;
+}
+
+.about-section-link:hover {
+	color: var(--color-terracotta);
+}
+
+.about-section-github {
+	text-decoration: none;
+}
+
+/* Warning icon style for Developer Tools */
+.settings-section-icon-warning {
+	background: linear-gradient(
+		135deg,
+		rgba(220, 38, 38, 0.15) 0%,
+		rgba(185, 28, 28, 0.15) 100%
+	);
+	color: #f87171;
 }
 
 /* Info Rows */
@@ -438,6 +488,235 @@
 
 .settings-toggle-on .settings-toggle-thumb {
 	transform: translateX(20px);
+}
+
+/* ==========================================================================
+   Sync Section - Expandable sync status and logs
+   ========================================================================== */
+
+/* Status row with Sync Now button */
+.sync-status-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 12px;
+}
+
+.sync-status-left {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.sync-now-button {
+	padding: 6px 12px;
+	background: rgba(255, 255, 255, 0.08);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 6px;
+	color: var(--color-cream);
+	font-size: 0.75rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.sync-now-button:hover {
+	background: rgba(255, 255, 255, 0.12);
+	border-color: var(--color-amber);
+}
+
+/* Expando headers */
+.sync-expando-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 10px 4px;
+	background: transparent;
+	border: none;
+	border-radius: 6px;
+	color: var(--color-warm-gray);
+	font-size: 0.85rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.sync-expando-header:hover {
+	background: rgba(255, 255, 255, 0.04);
+	color: var(--color-cream);
+}
+
+.sync-expando-header.expanded {
+	color: var(--color-cream);
+}
+
+.sync-expando-chevron {
+	transition: transform 0.2s ease;
+}
+
+.sync-expando-chevron.open {
+	transform: rotate(90deg);
+}
+
+/* Expando content */
+.sync-expando-content {
+	padding: 8px 4px 8px 24px;
+	animation: expandoFade 0.15s ease-out;
+}
+
+@keyframes expandoFade {
+	from {
+		opacity: 0;
+		transform: translateY(-4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* Detail rows */
+.sync-detail-row {
+	display: flex;
+	justify-content: space-between;
+	padding: 4px 0;
+	font-size: 0.8rem;
+}
+
+.sync-detail-row span:first-child {
+	color: var(--color-warm-gray);
+}
+
+.sync-detail-row span:last-child {
+	color: var(--color-cream);
+}
+
+/* Log actions */
+.sync-log-actions {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.sync-log-actions button {
+	flex: 1;
+	padding: 6px 8px;
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 6px;
+	color: var(--color-cream);
+	font-size: 0.7rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.sync-log-actions button:hover:not(:disabled) {
+	background: rgba(255, 255, 255, 0.1);
+	border-color: rgba(217, 119, 6, 0.3);
+}
+
+.sync-log-actions button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Log list */
+.sync-log-list {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	max-height: 200px;
+	overflow-y: auto;
+}
+
+.sync-log-empty {
+	padding: 16px;
+	text-align: center;
+	color: var(--color-warm-gray);
+	font-size: 0.8rem;
+}
+
+.sync-log-entry {
+	background: rgba(0, 0, 0, 0.2);
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.sync-log-entry-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px;
+	cursor: pointer;
+	transition: background 0.15s ease;
+}
+
+.sync-log-entry-header:hover {
+	background: rgba(255, 255, 255, 0.04);
+}
+
+.sync-log-badge {
+	padding: 2px 6px;
+	border-radius: 4px;
+	font-size: 0.65rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	flex-shrink: 0;
+}
+
+.sync-log-badge-success {
+	background: rgba(16, 185, 129, 0.2);
+	color: #34d399;
+}
+
+.sync-log-badge-error {
+	background: rgba(220, 38, 38, 0.2);
+	color: #f87171;
+}
+
+.sync-log-badge-warning {
+	background: rgba(217, 119, 6, 0.2);
+	color: var(--color-amber);
+}
+
+.sync-log-badge-info {
+	background: rgba(255, 255, 255, 0.1);
+	color: var(--color-warm-gray);
+}
+
+.sync-log-message {
+	flex: 1;
+	font-size: 0.75rem;
+	color: var(--color-cream);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.sync-log-time {
+	font-size: 0.7rem;
+	color: var(--color-warm-gray);
+	flex-shrink: 0;
+}
+
+.sync-log-details {
+	margin: 0;
+	padding: 8px;
+	background: rgba(0, 0, 0, 0.3);
+	border-top: 1px solid rgba(255, 255, 255, 0.05);
+	font-size: 0.65rem;
+	color: var(--color-warm-gray);
+	overflow-x: auto;
+	white-space: pre;
+}
+
+.sync-log-more {
+	padding: 8px;
+	text-align: center;
+	font-size: 0.75rem;
+	color: var(--color-warm-gray);
 }
 
 /* Mobile adjustments */

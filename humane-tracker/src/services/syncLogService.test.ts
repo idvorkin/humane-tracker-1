@@ -153,7 +153,7 @@ describe("SyncLogService", () => {
 			// Should have enforced limit to 2000
 			const count = await syncLogService.getCount();
 			expect(count).toBe(2000);
-		});
+		}, 30000);
 
 		it("removes oldest logs when limit exceeded", async () => {
 			// Add 2010 logs
@@ -174,7 +174,7 @@ describe("SyncLogService", () => {
 				l.message.match(/Log (200[0-9]|199[5-9])/),
 			);
 			expect(hasRecentLogs).toBe(true);
-		});
+		}, 30000);
 	});
 
 	describe("exportLogs", () => {

@@ -1,11 +1,15 @@
 import { useState } from "react";
+import { WarningIcon } from "./icons/MenuIcons";
 
 function CrashingComponent(): null {
-	// This will crash during render
 	throw new Error("Test crash - triggered manually from dev menu");
 }
 
-export function CrashTestButton() {
+interface CrashTestButtonProps {
+	className?: string;
+}
+
+export function CrashTestButton({ className }: CrashTestButtonProps) {
 	const [shouldCrash, setShouldCrash] = useState(false);
 
 	if (shouldCrash) {
@@ -14,21 +18,10 @@ export function CrashTestButton() {
 
 	return (
 		<button
-			className="user-menu-item user-menu-crash-test"
+			className={className || "user-menu-item user-menu-crash-test"}
 			onClick={() => setShouldCrash(true)}
-			style={{ color: "#ef4444" }}
 		>
-			<svg
-				width="16"
-				height="16"
-				viewBox="0 0 16 16"
-				fill="none"
-				stroke="currentColor"
-				strokeWidth="2"
-			>
-				<path d="M8 2L2 14h12L8 2z" />
-				<path d="M8 6v4M8 11h.01" />
-			</svg>
+			<WarningIcon size={16} />
 			Trigger Crash (Dev)
 		</button>
 	);

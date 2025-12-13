@@ -1,18 +1,24 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useBugReporter } from "../hooks/useBugReporter";
-import { AboutDialog } from "./AboutDialog";
 import { BugReportDialog } from "./BugReportDialog";
-import { CrashTestButton } from "./CrashTestButton";
-import { DebugLogsDialog } from "./DebugLogsDialog";
+import {
+	ChevronIcon,
+	DownloadIcon,
+	ManageHabitsIcon,
+	SettingsIcon,
+	SignInIcon,
+	SignOutIcon,
+} from "./icons/MenuIcons";
+import { MenuItem } from "./MenuItem";
 import { SettingsDialog } from "./SettingsDialog";
-import { SyncStatusDialog } from "./SyncStatusDialog";
 import "./UserMenu.css";
 
 interface UserMenuProps {
 	userName: string;
 	avatarLetter: string;
 	isLocalMode?: boolean;
-	onSignOut: () => void;
+	onSignOut?: () => void;
+	onSignIn?: () => void;
 	onManageHabits?: () => void;
 	onLoadDefaults?: () => void;
 	showLoadDefaults?: boolean;
@@ -23,19 +29,19 @@ export function UserMenu({
 	avatarLetter,
 	isLocalMode = false,
 	onSignOut,
+	onSignIn,
 	onManageHabits,
 	onLoadDefaults,
 	showLoadDefaults = false,
 }: UserMenuProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const [showSettingsDialog, setShowSettingsDialog] = useState(false);
-	const [showSyncDialog, setShowSyncDialog] = useState(false);
-	const [showDebugLogsDialog, setShowDebugLogsDialog] = useState(false);
-	const [showAboutDialog, setShowAboutDialog] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
 
-	// Bug reporter state
+	// Bug reporter state (needed for keyboard shortcut Cmd+I and BugReportDialog)
 	const bugReporter = useBugReporter();
+
+	const closeMenu = () => setIsOpen(false);
 
 	// Close menu when clicking outside
 	useEffect(() => {
@@ -80,21 +86,7 @@ export function UserMenu({
 				aria-haspopup="true"
 			>
 				<div className="user-avatar">{avatarLetter}</div>
-				<svg
-					className={`user-menu-chevron ${isOpen ? "open" : ""}`}
-					width="12"
-					height="12"
-					viewBox="0 0 12 12"
-					fill="none"
-				>
-					<path
-						d="M3 4.5L6 7.5L9 4.5"
-						stroke="currentColor"
-						strokeWidth="1.5"
-						strokeLinecap="round"
-						strokeLinejoin="round"
-					/>
-				</svg>
+				<ChevronIcon className={`user-menu-chevron ${isOpen ? "open" : ""}`} />
 			</button>
 
 			{isOpen && (
@@ -107,138 +99,62 @@ export function UserMenu({
 					<div className="user-menu-divider" />
 
 					{onManageHabits && (
-						<button
-							className="user-menu-item"
-							onClick={() => {
-								setIsOpen(false);
-								onManageHabits();
-							}}
-						>
-							<svg
-								width="16"
-								height="16"
-								viewBox="0 0 16 16"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="1.5"
-							>
-								<circle cx="8" cy="8" r="3" />
-								<path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41" />
-							</svg>
-							Manage Habits
-						</button>
-					)}
-
-					{showLoadDefaults && onLoadDefaults && (
-						<button
-							className="user-menu-item"
-							onClick={() => {
-								setIsOpen(false);
-								onLoadDefaults();
-							}}
-						>
-							<svg
-								width="16"
-								height="16"
-								viewBox="0 0 16 16"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="1.5"
-							>
-								<path d="M8 1v10M4 7l4 4 4-4M2 14h12" />
-							</svg>
-							Load Default Habits
-						</button>
+						<div className="user-menu-group">
+							<MenuItem
+								icon={<ManageHabitsIcon />}
+								label="Manage Habits"
+								onClick={() => {
+									closeMenu();
+									onManageHabits();
+								}}
+							/>
+							{showLoadDefaults && onLoadDefaults && (
+								<MenuItem
+									icon={<DownloadIcon />}
+									label="Load Default Habits"
+									onClick={() => {
+										closeMenu();
+										onLoadDefaults();
+									}}
+									className="user-menu-subitem"
+								/>
+							)}
+						</div>
 					)}
 
 					<div className="user-menu-divider" />
 
-					<button
-						className="user-menu-item"
+					<MenuItem
+						icon={<SettingsIcon />}
+						label="Settings"
 						onClick={() => {
-							setShowAboutDialog(true);
-							setIsOpen(false);
-						}}
-					>
-						<svg
-							width="16"
-							height="16"
-							viewBox="0 0 16 16"
-							fill="none"
-							stroke="currentColor"
-							strokeWidth="1.5"
-						>
-							<circle cx="8" cy="8" r="6" />
-							<path d="M8 11V8M8 5h.01" />
-						</svg>
-						About
-					</button>
-
-					<button
-						className="user-menu-item"
-						onClick={() => {
-							setIsOpen(false);
-							bugReporter.open();
-						}}
-					>
-						<svg
-							width="16"
-							height="16"
-							viewBox="0 0 16 16"
-							fill="none"
-							stroke="currentColor"
-							strokeWidth="1.5"
-						>
-							<path d="M8 1.5a4 4 0 014 4v1h1.5v1.5H12v1a4 4 0 01-8 0v-1H2.5V6.5H4v-1a4 4 0 014-4z" />
-							<path d="M6.5 6.5h3M6.5 9h3" />
-						</svg>
-						Report Bug
-					</button>
-
-					<button
-						className="user-menu-item"
-						onClick={() => {
+							closeMenu();
 							setShowSettingsDialog(true);
-							setIsOpen(false);
 						}}
-					>
-						<svg
-							width="16"
-							height="16"
-							viewBox="0 0 16 16"
-							fill="none"
-							stroke="currentColor"
-							strokeWidth="1.5"
-						>
-							<circle cx="8" cy="8" r="2.5" />
-							<path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.17 3.17l1.06 1.06M11.77 11.77l1.06 1.06M3.17 12.83l1.06-1.06M11.77 4.23l1.06-1.06" />
-						</svg>
-						Settings
-					</button>
-
-					<CrashTestButton />
+					/>
 
 					<div className="user-menu-divider" />
 
-					<button
-						className="user-menu-item user-menu-signout"
-						onClick={() => {
-							setIsOpen(false);
-							onSignOut();
-						}}
-					>
-						<svg
-							width="16"
-							height="16"
-							viewBox="0 0 16 16"
-							fill="none"
-							stroke="currentColor"
-							strokeWidth="1.5"
-						>
-							<path d="M6 14H3a1 1 0 01-1-1V3a1 1 0 011-1h3M11 11l3-3-3-3M14 8H6" />
-						</svg>
-						{isLocalMode ? "Reset" : "Sign Out"}
-					</button>
+					{onSignIn ? (
+						<MenuItem
+							icon={<SignInIcon />}
+							label="Sign In"
+							onClick={() => {
+								closeMenu();
+								onSignIn();
+							}}
+						/>
+					) : onSignOut ? (
+						<MenuItem
+							icon={<SignOutIcon />}
+							label={isLocalMode ? "Reset" : "Sign Out"}
+							onClick={() => {
+								closeMenu();
+								onSignOut();
+							}}
+							variant="danger"
+						/>
+					) : null}
 				</div>
 			)}
 
@@ -246,8 +162,6 @@ export function UserMenu({
 				<SettingsDialog
 					isLocalMode={isLocalMode}
 					onClose={() => setShowSettingsDialog(false)}
-					onOpenSyncStatus={() => setShowSyncDialog(true)}
-					onOpenDebugLogs={() => setShowDebugLogsDialog(true)}
 					onOpenBugReport={bugReporter.open}
 					shakeEnabled={bugReporter.shakeEnabled}
 					onShakeEnabledChange={bugReporter.setShakeEnabled}
@@ -255,19 +169,6 @@ export function UserMenu({
 					shakeHasPermission={bugReporter.shakeHasPermission}
 					onRequestShakePermission={bugReporter.requestShakePermission}
 				/>
-			)}
-
-			<AboutDialog
-				isOpen={showAboutDialog}
-				onClose={() => setShowAboutDialog(false)}
-			/>
-
-			{showSyncDialog && (
-				<SyncStatusDialog onClose={() => setShowSyncDialog(false)} />
-			)}
-
-			{showDebugLogsDialog && (
-				<DebugLogsDialog onClose={() => setShowDebugLogsDialog(false)} />
 			)}
 
 			<BugReportDialog
