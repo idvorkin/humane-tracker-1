@@ -1,11 +1,12 @@
 import { format, isSameDay, isToday } from "date-fns";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { useHabitTrackerVM } from "../hooks/useHabitTrackerVM";
-import type { HabitVariant, HabitWithStatus } from "../types/habit";
+import type { Habit, HabitVariant, HabitWithStatus } from "../types/habit";
 import { buildCategoryInfo } from "../utils/categoryUtils";
 import { CleanupDuplicates } from "./CleanupDuplicates";
 import { HabitSettings } from "./HabitSettings";
 import { InitializeHabits } from "./InitializeHabits";
+import { TagChildPicker } from "./TagChildPicker";
 import { VariantPicker } from "./VariantPicker";
 import "./HabitTracker.css";
 
@@ -34,6 +35,13 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 		position: { x: number; y: number };
 	} | null>(null);
 
+	// Tag child picker state
+	const [tagChildPickerState, setTagChildPickerState] = useState<{
+		tag: HabitWithStatus;
+		date: Date;
+		position: { x: number; y: number };
+	} | null>(null);
+
 	// Long-press detection refs
 	const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const longPressTriggered = useRef(false);
@@ -41,15 +49,21 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 	// All business logic from the ViewModel
 	const vm = useHabitTrackerVM({ userId });
 
-	// Long press handlers for cells with variants
+	// Long press handlers for cells with variants or tags
 	const handleCellPressStart = useCallback(
 		(
 			habit: HabitWithStatus,
 			date: Date,
 			event: React.MouseEvent | React.TouchEvent,
 		) => {
-			// Only enable long-press for habits with variants
-			if (!habit.variants || habit.variants.length === 0) return;
+			const hasVariants = habit.variants && habit.variants.length > 0;
+			const isTag =
+				habit.habitType === "tag" &&
+				habit.childIds &&
+				habit.childIds.length > 0;
+
+			// Only enable long-press for habits with variants or tags with children
+			if (!hasVariants && !isTag) return;
 
 			longPressTriggered.current = false;
 			const clientX =
@@ -59,11 +73,19 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 
 			longPressTimer.current = setTimeout(() => {
 				longPressTriggered.current = true;
-				setVariantPickerState({
-					habit,
-					date,
-					position: { x: clientX, y: clientY },
-				});
+				if (isTag) {
+					setTagChildPickerState({
+						tag: habit,
+						date,
+						position: { x: clientX, y: clientY },
+					});
+				} else {
+					setVariantPickerState({
+						habit,
+						date,
+						position: { x: clientX, y: clientY },
+					});
+				}
 			}, 500); // 500ms for long press
 		},
 		[],
@@ -99,6 +121,29 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 			setVariantPickerState(null);
 		},
 		[variantPickerState, vm],
+	);
+
+	// Get child habits for the tag child picker
+	const tagChildHabits = useMemo((): Habit[] => {
+		if (!tagChildPickerState) return [];
+		const childIds = tagChildPickerState.tag.childIds || [];
+		return vm.habits.filter((h) => childIds.includes(h.id));
+	}, [tagChildPickerState, vm.habits]);
+
+	// Handler for tag child selection
+	const handleTagChildSelect = useCallback(
+		async (childId: string | null) => {
+			if (!tagChildPickerState) return;
+			if (childId === null) {
+				// Generic entry on the tag itself
+				vm.toggleEntry(tagChildPickerState.tag.id, tagChildPickerState.date);
+			} else {
+				// Entry on the selected child habit
+				vm.toggleEntry(childId, tagChildPickerState.date);
+			}
+			setTagChildPickerState(null);
+		},
+		[tagChildPickerState, vm],
 	);
 
 	// Loading screen
@@ -511,6 +556,17 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 					position={variantPickerState.position}
 					onSelect={handleVariantSelect}
 					onClose={() => setVariantPickerState(null)}
+				/>
+			)}
+
+			{tagChildPickerState && (
+				<TagChildPicker
+					tag={tagChildPickerState.tag}
+					childHabits={tagChildHabits}
+					date={tagChildPickerState.date}
+					position={tagChildPickerState.position}
+					onSelectChild={handleTagChildSelect}
+					onClose={() => setTagChildPickerState(null)}
 				/>
 			)}
 		</div>
