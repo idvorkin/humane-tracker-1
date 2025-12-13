@@ -298,25 +298,20 @@ You could hit "Shoulder Accessory" (3/wk) without hitting "Shoulder Y" (2/wk) if
 
 ### 2. How to handle a raw habit in multiple tags?
 
-If "Shoulder Y" is in both "Shoulder Accessory" and "Upper Body Work":
+**DECIDED: Show in all parent tags.**
 
-**Option A: Appears in both places in the tree**
+If "Shoulder Y" is in both "Shoulder Accessory" and "Upper Body Work", it appears in both places:
 
-- User sees it twice (under each parent)
-- Could be confusing, but accurate
+```
+▼ Shoulder Accessory
+    Shoulder Y        ← here
+    Wall Slide
+▼ Upper Body Work
+    Shoulder Y        ← and here
+    Pull Ups
+```
 
-**Option B: Appears once, shows tag badges**
-
-- Shows under first/primary parent
-- Badge indicates other memberships
-- Less cluttered
-
-**Option C: Flat view option**
-
-- User can toggle between tree view and flat list
-- Flat list shows raw habits once with tag indicators
-
-**Recommendation:** Option A for tree view (show in all parents), with an optional flat view toggle.
+This is the honest representation of the DAG. The tree shows reality - the habit is genuinely in both tags, so it appears in both places.
 
 ### 3. What happens to existing categories?
 
