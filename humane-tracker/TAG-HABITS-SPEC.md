@@ -282,19 +282,19 @@ Shoulder Accessory (tag habit, includes above 4)
 
 ### 1. Do raw habits have their own targets?
 
-**Option A: Only tags have targets**
+**DECIDED: Yes, both raw habits and tags can have targets.**
 
-- Raw habits are just logged, no individual goals
-- "Shoulder Y" has no target; "Shoulder Accessory" has 3/wk
-- Simpler model, but can't track specific exercise goals
+Targets are a goal artifact, orthogonal to the fact/organization distinction.
 
-**Option B: Both can have targets**
+- Raw habit "Shoulder Y" → target 2/wk (want this specific exercise twice)
+- Tag "Shoulder Accessory" → target 3/wk (want some shoulder work 3 times)
 
-- "Shoulder Y" target 2/wk, "Shoulder Accessory" target 3/wk
-- More flexible, but potentially confusing
-- Which target matters for status indicators?
+These are tracked independently:
 
-**Recommendation:** Option B - let both have targets. A raw habit's status is based on its own target. A tag's status is based on its aggregate target.
+- Raw habit status based on its own entries vs its target
+- Tag status based on aggregate descendant entries vs its target
+
+You could hit "Shoulder Accessory" (3/wk) without hitting "Shoulder Y" (2/wk) if you did Wall Slide three times instead.
 
 ### 2. How to handle a raw habit in multiple tags?
 
