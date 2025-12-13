@@ -130,6 +130,7 @@ interface HabitEntry {
 **LLM parsing examples:**
 
 ```
+# Exercise habits
 Input:  "28kg x 10, 32kg x 8, 28kg x 10"
 Output: { sets: [{weight: 28, reps: 10}, {weight: 32, reps: 8}, {weight: 28, reps: 10}] }
 
@@ -138,6 +139,16 @@ Output: { sets: [{}, {}, {}] }  // 3 sets, no weight data
 
 Input:  "5 min hold"
 Output: { sets: [{duration: 300}] }
+
+# Non-exercise habits
+Input:  "Ambitious card for Sarah at coffee shop, loved it"
+Output: { trick: "Ambitious card", audience: "Sarah", location: "coffee shop", reaction: "loved it" }
+
+Input:  "Made dinner and cleaned kitchen for Tori"
+Output: { activity: "Made dinner", details: "cleaned kitchen", for: "Tori" }
+
+Input:  "Called mom, talked about garden plans"
+Output: { person: "mom", topic: "garden plans" }
 ```
 
 **Benefits:**
