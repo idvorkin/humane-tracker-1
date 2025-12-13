@@ -45,11 +45,11 @@ Physical Health (tag)
 
 ### Key Properties
 
-1. **Raw habits are leaves** - entries are always logged against raw habits
+1. **Entries on any habit** - entries can be logged on raw habits OR tags directly
 2. **Tags can contain raw habits OR other tags** - arbitrary nesting
 3. **Tags can have multiple parents** - forms a DAG (directed acyclic graph)
 4. **Raw habits can be in multiple tags** - "Shin Boxes" in both "Mobility" and "Hip Work"
-5. **Counts roll up** - a tag's count = sum of unique entry days from all descendants
+5. **Counts roll up** - a tag's count = its own entries + unique entry days from all descendants
 
 ### Two Types
 
@@ -65,7 +65,8 @@ Physical Health (tag)
 
 - Logical groupings that help you think about your habits
 - Examples: "Shoulder Accessory", "Mobility", "Upper Body Work"
-- **No direct entries** - count is computed from descendant raw habits
+- **Can have direct entries** - for "I did shoulder work but don't remember which"
+- Count = tag's own entries + descendant raw habit entries
 - Can contain raw habits and/or other tags
 - Can appear under multiple parent tags
 - Can have their own weekly target (for the aggregate)
@@ -92,16 +93,27 @@ interface Habit {
 }
 ```
 
-### Entry Type (unchanged)
+### Entry Type
 
 ```typescript
 interface HabitEntry {
   id: string;
-  habitId: string; // ALWAYS points to a raw habit (never a tag)
+  habitId: string; // Can point to raw habit OR tag
   userId: string;
   date: Date;
   value: number;
+  notes?: string; // Freeform notes (write loose)
   createdAt: Date;
+
+  // Structured data (structure later - via LLM parsing or manual entry)
+  sets?: SetData[];
+  parsed?: boolean; // Has this entry been LLM-processed?
+}
+
+interface SetData {
+  weight?: number; // in kg
+  reps?: number;
+  duration?: number; // in seconds
 }
 ```
 
@@ -143,19 +155,32 @@ function getDescendantRawHabits(
   return results;
 }
 
-// Get entries for a tag (from all descendant raw habits)
+// Get entries for a tag (tag's own entries + all descendant entries)
 function getTagEntries(
   tag: Habit,
   allHabits: Map<string, Habit>,
+  allEntries: HabitEntry[],
 ): HabitEntry[] {
+  // Tag's own direct entries
+  const tagOwnEntries = allEntries.filter((e) => e.habitId === tag.id);
+
+  // Descendant raw habit entries
   const rawHabits = getDescendantRawHabits(tag, allHabits);
   const rawHabitIds = new Set(rawHabits.map((h) => h.id));
-  return allEntries.filter((e) => rawHabitIds.has(e.habitId));
+  const descendantEntries = allEntries.filter((e) =>
+    rawHabitIds.has(e.habitId),
+  );
+
+  return [...tagOwnEntries, ...descendantEntries];
 }
 
-// Weekly count for a tag = unique days with any descendant entry
-function getTagWeeklyCount(tag: Habit, allHabits: Map<string, Habit>): number {
-  const entries = getTagEntries(tag, allHabits);
+// Weekly count for a tag = unique days with tag's own entries OR any descendant entry
+function getTagWeeklyCount(
+  tag: Habit,
+  allHabits: Map<string, Habit>,
+  allEntries: HabitEntry[],
+): number {
+  const entries = getTagEntries(tag, allHabits, allEntries);
   const uniqueDays = new Set(entries.map((e) => formatDate(e.date)));
   return uniqueDays.size;
 }
@@ -192,30 +217,30 @@ function getTagWeeklyCount(tag: Habit, allHabits: Map<string, Habit>): number {
 
 ### Clicking a Tag Habit Cell
 
-**Question: What should happen?**
+**Decided: Quick tap for generic, long press for specific**
 
-**Option 1: Open picker to select raw habit**
+This mirrors the existing variant picker UX pattern:
 
-- Click on "Shoulder Accessory" cell for Monday
-- Picker opens: "Which one did you do?"
-- Select "Shoulder Y" → entry logged to Shoulder Y
-- Tag's count updates automatically
+**Quick tap** (normal click):
 
-**Option 2: Tag cells are read-only (display only)**
+- Creates entry directly on the tag itself
+- For "I did shoulder work" without specifying which exercise
+- Tag's count increments immediately
+- Simplest, fastest interaction
 
-- Click does nothing (or shows breakdown)
-- Users must click on the specific raw habit row
-- Tags purely for visualization/grouping
+**Long press** (500ms hold):
 
-**Option 3: Allow "generic" tag entries**
+- Opens picker showing child habits: "Which one did you do?"
+- Select "Shoulder Y" → entry logged to Shoulder Y (specific)
+- Select "Just did one" → entry logged to tag (generic)
+- Tag's count updates either way
 
-- Quick click = creates entry on a synthetic "generic" raw habit
-- Long press = opens picker for specific raw habit
-- Maintains flexibility for "I did shoulder work but don't remember which"
+**Why this approach:**
 
-### Recommended: Option 1 (Picker)
-
-Most intuitive - clicking the aggregate row prompts for specifics. Users can still click directly on raw habit rows if they prefer.
+- No extra "Generic X" habits cluttering the list
+- Quick logging when you don't care about specifics
+- Detailed logging available when you want it
+- Same UX pattern as variant picker (familiar)
 
 ## Management UI (HabitSettings)
 
@@ -278,71 +303,48 @@ Shoulder Accessory (tag habit, includes above 4)
 - Entries with `variantId` → convert to raw habit ID
 - Entries without variant → create generic raw habit or leave orphaned
 
-## Open Questions
+## Design Decisions
 
 ### 1. Do raw habits have their own targets?
 
-**Option A: Only tags have targets**
+**DECIDED: Yes (Option B)** - Both raw habits and tags can have targets.
 
-- Raw habits are just logged, no individual goals
-- "Shoulder Y" has no target; "Shoulder Accessory" has 3/wk
-- Simpler model, but can't track specific exercise goals
-
-**Option B: Both can have targets**
-
-- "Shoulder Y" target 2/wk, "Shoulder Accessory" target 3/wk
-- More flexible, but potentially confusing
-- Which target matters for status indicators?
-
-**Recommendation:** Option B - let both have targets. A raw habit's status is based on its own target. A tag's status is based on its aggregate target.
+- "Shoulder Y" can have target 2/wk, "Shoulder Accessory" can have target 3/wk
+- A raw habit's status is based on its own target
+- A tag's status is based on its aggregate target
 
 ### 2. How to handle a raw habit in multiple tags?
 
-If "Shoulder Y" is in both "Shoulder Accessory" and "Upper Body Work":
+**DECIDED: Show in all parents (Option A)**
 
-**Option A: Appears in both places in the tree**
-
-- User sees it twice (under each parent)
-- Could be confusing, but accurate
-
-**Option B: Appears once, shows tag badges**
-
-- Shows under first/primary parent
-- Badge indicates other memberships
-- Less cluttered
-
-**Option C: Flat view option**
-
-- User can toggle between tree view and flat list
-- Flat list shows raw habits once with tag indicators
-
-**Recommendation:** Option A for tree view (show in all parents), with an optional flat view toggle.
+- Raw habit appears under each parent tag in the tree view
+- Example: "Shin Boxes" shows under both "Mobility" and "Hip Work"
+- Optional flat view toggle for future enhancement
 
 ### 3. What happens to existing categories?
 
-Current model has habits in categories (Mobility, Relationships, etc.).
-New model has tags for organization.
-
-**Option A: Categories become top-level tags**
-
-- Migrate "Mobility" category → "Mobility" tag
-- All habits in that category become children
-
-**Option B: Keep categories separate from tags**
+**DECIDED: Keep separate for now (Option B)**
 
 - Categories remain for color-coding/grouping display
-- Tags are purely for aggregation
+- Tags are for aggregation/organization
+- Can revisit merging them later
 
-**Recommendation:** Option A - categories become tags. Cleaner unified model.
+### 4. Can entries be logged directly on tags?
 
-### 4. Cycle detection
+**DECIDED: Yes**
 
-With arbitrary nesting, we could create cycles:
+- Quick tap on tag = entry logged directly on tag (generic completion)
+- Long press on tag = picker to select specific child
+- Allows "I did shoulder work" without specifying which exercise
+- Tag count = tag's own entries + all descendant entries
 
-- Tag A contains Tag B
-- Tag B contains Tag A
+### 5. Cycle detection
 
-**Solution:** Validate on relationship creation. Reject if adding a parent would create a cycle. DAG only, no cycles.
+**DECIDED: Validate and reject cycles**
+
+- Validate on relationship creation
+- Reject if adding a parent would create a cycle
+- DAG only, no cycles allowed
 
 ## Benefits
 
@@ -400,7 +402,7 @@ With arbitrary nesting, we could create cycles:
 
 | Aspect               | Current (Embedded Variants)       | Proposed (Raw + Tags)             |
 | -------------------- | --------------------------------- | --------------------------------- |
-| What holds entries   | Parent habit                      | Raw habits only                   |
+| What holds entries   | Parent habit                      | Raw habits OR tags                |
 | Grouping mechanism   | Embedded array                    | Tag relationships                 |
 | Nesting depth        | 1 level (habit → variants)        | Unlimited                         |
 | Multi-membership     | No                                | Yes (raw in multiple tags)        |
