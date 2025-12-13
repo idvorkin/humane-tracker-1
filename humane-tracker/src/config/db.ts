@@ -408,10 +408,11 @@ export const syncLogService = new SyncLogService(syncLogDB.syncLogs);
 
 // Configure Dexie Cloud (optional - works offline if not configured)
 const dexieCloudUrl = import.meta.env.VITE_DEXIE_CLOUD_URL;
+// Skip Dexie Cloud in unit test mode (test=true) or login UI test mode (e2e-login=true)
+// Regular E2E tests now use the real app with Dexie Cloud (works offline due to ID generation fix)
 const isTestMode =
 	typeof window !== "undefined" &&
 	(window.location.search.includes("test=true") ||
-		window.location.search.includes("e2e=true") ||
 		window.location.search.includes("e2e-login=true"));
 
 // Enable debug mode for better error stack traces (recommended for development)

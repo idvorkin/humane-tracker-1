@@ -15,8 +15,8 @@ async function loadDefaultHabits(page: Page): Promise<void> {
 		const { habitService } = await import("/src/services/habitService.ts");
 		const { DEFAULT_HABITS } = await import("/src/data/defaultHabits.ts");
 
-		// Use mock-user for test mode
-		const userId = "mock-user";
+		// Use anonymous for logged-out user
+		const userId = "anonymous";
 
 		// Clear existing habits for this user
 		const existingHabits = await habitService.getHabits(userId);
@@ -40,7 +40,7 @@ async function loadDefaultHabits(page: Page): Promise<void> {
 async function getHabitCount(page: Page): Promise<number> {
 	return page.evaluate(async () => {
 		const { habitService } = await import("/src/services/habitService.ts");
-		const userId = "mock-user";
+		const userId = "anonymous";
 		const habits = await habitService.getHabits(userId);
 		return habits.length;
 	});
@@ -50,7 +50,7 @@ async function getHabitCount(page: Page): Promise<number> {
 async function getEntryCount(page: Page): Promise<number> {
 	return page.evaluate(async () => {
 		const { habitService } = await import("/src/services/habitService.ts");
-		const userId = "mock-user";
+		const userId = "anonymous";
 		// Get all habits, then count their entries
 		const habits = await habitService.getHabitsWithStatus(userId);
 		let totalEntries = 0;
@@ -170,7 +170,7 @@ async function getTotalCount(page: Page, habitRowIndex: number): Promise<string>
 test.describe("Load Default Habits", () => {
 	test.beforeEach(async ({ page }) => {
 		// Go to the app in E2E mode (no auth required, uses real IndexedDB)
-		await page.goto("/?e2e=true");
+		await page.goto("/");
 
 		// Wait for the app to load
 		await page.waitForLoadState("networkidle");

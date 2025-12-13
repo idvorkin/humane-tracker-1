@@ -2,11 +2,11 @@ import { test, expect } from '@playwright/test';
 import { waitForEntryCount, getDBEntryCount, clearIndexedDB } from './helpers/indexeddb-helpers';
 
 test.describe('Habit Tracker Click Functionality (No Auth)', () => {
-  const TEST_USER_ID = 'mock-user';
+  const TEST_USER_ID = 'anonymous';
 
   test.beforeEach(async ({ page }) => {
-    // Use E2E mode - bypasses auth but uses REAL IndexedDB
-    await page.goto('/?e2e=true');
+    // Real app - anonymous user mode with real IndexedDB
+    await page.goto('/');
     await page.waitForLoadState('networkidle');
 
     // Load default habits programmatically using real IndexedDB
