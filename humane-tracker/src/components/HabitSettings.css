@@ -741,6 +741,126 @@
 	}
 }
 
+/* ==========================================================================
+   Tag Habit Support
+   ========================================================================== */
+
+/* Habit type toggle (Raw vs Tag) */
+.habit-type-toggle {
+	display: flex;
+	gap: 2px;
+	background: var(--color-charcoal);
+	border-radius: var(--radius-md);
+	padding: 2px;
+}
+
+.habit-type-toggle .type-btn {
+	padding: 8px 12px;
+	border: none;
+	background: transparent;
+	color: var(--color-warm-gray);
+	font-size: 0.85rem;
+	cursor: pointer;
+	border-radius: var(--radius-sm);
+	transition: all var(--transition-fast);
+}
+
+.habit-type-toggle .type-btn:hover {
+	color: var(--color-cream);
+}
+
+.habit-type-toggle .type-btn.active {
+	background: var(--color-espresso);
+	color: var(--color-cream);
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Tag badge in habit row */
+.tag-badge {
+	margin-right: 6px;
+	font-size: 0.9rem;
+}
+
+.habit-item.is-tag {
+	background: rgba(255, 255, 255, 0.02);
+}
+
+/* Edit children button */
+.edit-children-btn {
+	margin-left: 8px;
+	padding: 4px 8px;
+	background: transparent;
+	border: 1px solid var(--color-warm-gray);
+	border-radius: var(--radius-sm);
+	color: var(--color-warm-gray);
+	font-size: 0.75rem;
+	cursor: pointer;
+	transition: all var(--transition-fast);
+}
+
+.edit-children-btn:hover {
+	background: var(--color-espresso);
+	color: var(--color-cream);
+}
+
+.edit-children-btn.empty {
+	border-style: dashed;
+	color: var(--color-sage);
+}
+
+/* Tag children selector/editor */
+.tag-children-selector,
+.tag-children-editor {
+	margin-top: var(--space-md);
+	padding: var(--space-md);
+	background: rgba(0, 0, 0, 0.2);
+	border-radius: var(--radius-md);
+	border: 1px solid rgba(156, 148, 137, 0.1);
+}
+
+.tag-children-selector label,
+.tag-children-editor label {
+	display: block;
+	color: var(--color-warm-gray);
+	font-size: 0.85rem;
+	margin-bottom: var(--space-sm);
+}
+
+.children-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-sm);
+	max-height: 200px;
+	overflow-y: auto;
+}
+
+.child-option {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 12px;
+	background: var(--color-charcoal);
+	border-radius: var(--radius-sm);
+	font-size: 0.85rem;
+	color: var(--color-cream);
+	cursor: pointer;
+	transition: all var(--transition-fast);
+}
+
+.child-option:hover {
+	background: var(--color-espresso);
+}
+
+.child-option input[type="checkbox"] {
+	accent-color: var(--color-amber);
+}
+
+.selected-count {
+	margin-top: var(--space-sm);
+	font-size: 0.8rem;
+	color: var(--color-sage);
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
 	.habit-settings-modal {

@@ -8,13 +8,14 @@ import {
 	importAllData,
 	validateExportData,
 } from "../services/dataService";
-import type { Habit } from "../types/habit";
+import type { Habit, HabitType } from "../types/habit";
 import {
 	buildCategoryInfo,
 	extractCategories,
 	migrateCategoryValue,
 } from "../utils/categoryUtils";
 import { validateHabitForm } from "../utils/habitValidation";
+import { wouldCreateCycle } from "../utils/tagUtils";
 import "./HabitSettings.css";
 
 interface HabitSettingsProps {
@@ -44,7 +45,13 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 		category: "Mobility",
 		trackingType: "hybrid" as "binary" | "sets" | "hybrid",
 		targetPerWeek: 3,
+		habitType: "raw" as HabitType,
+		childIds: [] as string[],
 	});
+	// For editing tag children
+	const [editingTagChildren, setEditingTagChildren] = useState<string | null>(
+		null,
+	);
 	const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
 		new Set(),
 	);
@@ -148,13 +155,29 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 		}
 
 		try {
-			await habitService.createHabit({
+			const newHabitId = await habitService.createHabit({
 				name: newHabit.name.trim(),
 				category: newHabit.category.trim(),
 				trackingType: newHabit.trackingType,
 				targetPerWeek: newHabit.targetPerWeek,
 				userId,
+				habitType: newHabit.habitType,
+				childIds: newHabit.habitType === "tag" ? newHabit.childIds : undefined,
 			});
+
+			// Update parentIds on children if this is a tag
+			if (newHabit.habitType === "tag" && newHabit.childIds.length > 0) {
+				for (const childId of newHabit.childIds) {
+					const child = habits.find((h) => h.id === childId);
+					if (child) {
+						const newParentIds = [...(child.parentIds || []), newHabitId];
+						await habitService.updateHabit(childId, {
+							parentIds: newParentIds,
+							updatedAt: new Date(),
+						});
+					}
+				}
+			}
 
 			// Reset form and reload habits
 			setNewHabit({
@@ -162,6 +185,8 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 				category: "Mobility",
 				trackingType: "hybrid",
 				targetPerWeek: 3,
+				habitType: "raw",
+				childIds: [],
 			});
 			setShowAddNew(false);
 			await loadHabits();
@@ -360,13 +385,18 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 
 	// Helper to render a single habit row
 	const renderHabitRow = (habit: Habit) => {
+		const isTag = habit.habitType === "tag";
+		const isEditingChildren = editingTagChildren === habit.id;
+		const childCount = habit.childIds?.length || 0;
+
 		return (
 			<div
 				key={habit.id}
-				className={`habit-item ${deletingHabits.has(habit.id) ? "deleting" : ""}`}
+				className={`habit-item ${deletingHabits.has(habit.id) ? "deleting" : ""} ${isTag ? "is-tag" : ""}`}
 			>
 				<div className="habit-row">
 					<div className="habit-name-field">
+						{isTag && <span className="tag-badge">🏷️</span>}
 						<input
 							type="text"
 							value={getHabitValue(habit, "name") as string}
@@ -376,6 +406,28 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 							className="habit-name-input"
 							placeholder="Habit name"
 						/>
+						{isTag && childCount > 0 && (
+							<button
+								className="edit-children-btn"
+								onClick={() =>
+									setEditingTagChildren(isEditingChildren ? null : habit.id)
+								}
+								title="Edit children"
+							>
+								({childCount}) {isEditingChildren ? "▲" : "▼"}
+							</button>
+						)}
+						{isTag && childCount === 0 && (
+							<button
+								className="edit-children-btn empty"
+								onClick={() =>
+									setEditingTagChildren(isEditingChildren ? null : habit.id)
+								}
+								title="Add children"
+							>
+								+ Add children
+							</button>
+						)}
 					</div>
 
 					<div className="habit-category-field">
@@ -447,6 +499,37 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 						✕
 					</button>
 				</div>
+
+				{/* Children editor for tags */}
+				{isTag && isEditingChildren && (
+					<div className="tag-children-editor">
+						<div className="children-list">
+							{habits
+								.filter((h) => h.id !== habit.id && h.habitType !== "tag")
+								.map((h) => {
+									const currentChildIds =
+										(getHabitValue(habit, "childIds") as string[]) || [];
+									const isChild = currentChildIds.includes(h.id);
+
+									return (
+										<label key={h.id} className="child-option">
+											<input
+												type="checkbox"
+												checked={isChild}
+												onChange={(e) => {
+													const newChildIds = e.target.checked
+														? [...currentChildIds, h.id]
+														: currentChildIds.filter((id) => id !== h.id);
+													handleFieldChange(habit.id, "childIds", newChildIds);
+												}}
+											/>
+											{h.name}
+										</label>
+									);
+								})}
+						</div>
+					</div>
+				)}
 			</div>
 		);
 	};
@@ -508,6 +591,29 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 						) : (
 							<div className="add-new-form">
 								<div className="form-row">
+									<div className="habit-type-toggle">
+										<button
+											className={`type-btn ${newHabit.habitType === "raw" ? "active" : ""}`}
+											onClick={() =>
+												setNewHabit({
+													...newHabit,
+													habitType: "raw",
+													childIds: [],
+												})
+											}
+										>
+											Raw
+										</button>
+										<button
+											className={`type-btn ${newHabit.habitType === "tag" ? "active" : ""}`}
+											onClick={() =>
+												setNewHabit({ ...newHabit, habitType: "tag" })
+											}
+										>
+											🏷️ Tag
+										</button>
+									</div>
+
 									<input
 										type="text"
 										placeholder="Habit name"
@@ -590,12 +696,55 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 												category: "Mobility",
 												trackingType: "hybrid",
 												targetPerWeek: 3,
+												habitType: "raw",
+												childIds: [],
 											});
 										}}
 									>
 										Cancel
 									</button>
 								</div>
+
+								{/* Child selector for tags */}
+								{newHabit.habitType === "tag" && (
+									<div className="tag-children-selector">
+										<span className="section-label">Include habits:</span>
+										<div className="children-list">
+											{habits
+												.filter((h) => h.habitType !== "tag")
+												.map((h) => (
+													<label key={h.id} className="child-option">
+														<input
+															type="checkbox"
+															checked={newHabit.childIds.includes(h.id)}
+															onChange={(e) => {
+																if (e.target.checked) {
+																	setNewHabit({
+																		...newHabit,
+																		childIds: [...newHabit.childIds, h.id],
+																	});
+																} else {
+																	setNewHabit({
+																		...newHabit,
+																		childIds: newHabit.childIds.filter(
+																			(id) => id !== h.id,
+																		),
+																	});
+																}
+															}}
+														/>
+														{h.name}
+													</label>
+												))}
+										</div>
+										{newHabit.childIds.length > 0 && (
+											<div className="selected-count">
+												{newHabit.childIds.length} habit
+												{newHabit.childIds.length !== 1 ? "s" : ""} selected
+											</div>
+										)}
+									</div>
+								)}
 							</div>
 						)}
 					</div>
