@@ -369,20 +369,12 @@ This is the honest representation of the DAG. The tree shows reality - the habit
 
 ### 3. What happens to existing categories?
 
-Current model has habits in categories (Mobility, Relationships, etc.).
-New model has tags for organization.
+**DECIDED: Keep categories separate from tags (for now).**
 
-**Option A: Categories become top-level tags**
-
-- Migrate "Mobility" category → "Mobility" tag
-- All habits in that category become children
-
-**Option B: Keep categories separate from tags**
-
-- Categories remain for color-coding/grouping display
-- Tags are purely for aggregation
-
-**Recommendation:** Option A - categories become tags. Cleaner unified model.
+- Categories remain for color-coding and top-level grouping in the display
+- Tags are purely for aggregation and flexible organization
+- Simpler migration path - no need to convert existing categories
+- Can revisit unification later if it makes sense
 
 ### 4. Cycle detection
 
