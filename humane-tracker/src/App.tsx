@@ -103,7 +103,8 @@ function App() {
 	}
 
 	// At this point we know currentUser.userId exists and isn't "unauthorized"
-	const userId = currentUser.userId;
+	// (TypeScript can't infer this from the early return above)
+	const userId = currentUser.userId as string;
 	const displayName = currentUser.name || currentUser.email || "User";
 	const avatarLetter =
 		(currentUser.name || currentUser.email || "?")[0]?.toUpperCase() ?? "?";
