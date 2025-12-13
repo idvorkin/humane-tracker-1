@@ -3,7 +3,7 @@ import "./LoginButton.css";
 
 export function LoginButton() {
 	return (
-		<button className="login-button" onClick={handleSignIn}>
+		<button className="login-button" onClick={() => handleSignIn()}>
 			Sign In
 		</button>
 	);

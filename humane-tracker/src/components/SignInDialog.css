@@ -1,0 +1,147 @@
+.signin-dialog-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.7);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 2000;
+}
+
+.signin-dialog {
+	background: #1e293b;
+	border-radius: 12px;
+	padding: 24px;
+	max-width: 400px;
+	width: 90%;
+	box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.signin-dialog h2 {
+	margin: 0 0 12px 0;
+	font-size: 20px;
+	color: #f1f5f9;
+}
+
+.signin-dialog p {
+	margin: 0 0 16px 0;
+	color: #94a3b8;
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+.signin-dialog-summary {
+	display: flex;
+	gap: 24px;
+	margin-bottom: 12px;
+}
+
+.signin-dialog-stat {
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+}
+
+.signin-dialog-stat-value {
+	font-size: 28px;
+	font-weight: 700;
+	color: #f1f5f9;
+}
+
+.signin-dialog-stat-label {
+	font-size: 14px;
+	color: #64748b;
+}
+
+.signin-dialog-habits {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-bottom: 20px;
+}
+
+.signin-dialog-habit-tag {
+	background: #334155;
+	color: #cbd5e1;
+	padding: 4px 10px;
+	border-radius: 12px;
+	font-size: 12px;
+}
+
+.signin-dialog-habit-more {
+	color: #64748b;
+	font-size: 12px;
+	padding: 4px 6px;
+}
+
+.signin-dialog-options {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.signin-dialog-btn {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	padding: 16px;
+	border-radius: 8px;
+	border: 2px solid transparent;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	text-align: left;
+}
+
+.signin-dialog-btn-title {
+	font-size: 15px;
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+
+.signin-dialog-btn-desc {
+	font-size: 13px;
+	opacity: 0.8;
+}
+
+.signin-dialog-btn-merge {
+	background: #1e3a5f;
+	border-color: #3b82f6;
+	color: #93c5fd;
+}
+
+.signin-dialog-btn-merge:hover {
+	background: #1e40af;
+	border-color: #60a5fa;
+}
+
+.signin-dialog-btn-abandon {
+	background: #3f1f1f;
+	border-color: #991b1b;
+	color: #fca5a5;
+}
+
+.signin-dialog-btn-abandon:hover {
+	background: #5c1e1e;
+	border-color: #dc2626;
+}
+
+.signin-dialog-cancel {
+	width: 100%;
+	padding: 10px;
+	background: transparent;
+	border: 1px solid #475569;
+	border-radius: 6px;
+	color: #94a3b8;
+	cursor: pointer;
+	font-size: 14px;
+	transition: all 0.15s ease;
+}
+
+.signin-dialog-cancel:hover {
+	background: #334155;
+	color: #e2e8f0;
+}
