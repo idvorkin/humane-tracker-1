@@ -1,8 +1,9 @@
 import type React from "react";
 import { useState } from "react";
-import { HabitService } from "../services/habitService";
+import { useHabitService } from "../hooks/useHabitService";
 import type { Habit } from "../types/habit";
 import { buildCategoryInfo } from "../utils/categoryUtils";
+import { validateHabitForm } from "../utils/habitValidation";
 import "./HabitSettings.css";
 
 interface HabitEditorProps {
@@ -44,17 +45,13 @@ export const HabitEditor: React.FC<HabitEditorProps> = ({
 	const [isSaving, setIsSaving] = useState(false);
 	const [error, setError] = useState("");
 
-	const habitService = new HabitService();
+	const habitService = useHabitService();
 	const categoryInfo = buildCategoryInfo(category);
 
 	const handleSave = async () => {
-		if (!name.trim()) {
-			setError("Habit name is required");
-			return;
-		}
-
-		if (!category.trim()) {
-			setError("Category is required");
+		const validation = validateHabitForm({ name, category });
+		if (!validation.isValid) {
+			setError(validation.errors.name || validation.errors.category || "");
 			return;
 		}
 

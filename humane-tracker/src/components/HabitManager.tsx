@@ -1,10 +1,9 @@
 import type React from "react";
 import { useState } from "react";
-import { HabitService } from "../services/habitService";
+import { useHabitService } from "../hooks/useHabitService";
 import { buildCategoryInfo } from "../utils/categoryUtils";
+import { validateHabitForm } from "../utils/habitValidation";
 import "./HabitManager.css";
-
-const habitService = new HabitService();
 
 interface HabitManagerProps {
 	userId: string;
@@ -17,6 +16,7 @@ export const HabitManager: React.FC<HabitManagerProps> = ({
 	onClose,
 	existingCategories,
 }) => {
+	const habitService = useHabitService();
 	const [habitName, setHabitName] = useState("");
 	const [category, setCategory] = useState("Mobility");
 	const [targetPerWeek, setTargetPerWeek] = useState(3);
@@ -26,8 +26,8 @@ export const HabitManager: React.FC<HabitManagerProps> = ({
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!habitName.trim()) return;
-		if (!category.trim()) return;
+		const validation = validateHabitForm({ name: habitName, category });
+		if (!validation.isValid) return;
 
 		setLoading(true);
 		try {
