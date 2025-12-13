@@ -564,6 +564,132 @@ if (
 	// Set up comprehensive sync monitoring and logging
 	console.log("[Dexie Cloud] Configuring sync with URL:", dexieCloudUrl);
 
+	// ============================================================
+	// STALE AUTH TOKEN DETECTION
+	// ============================================================
+	// Detects when WebSocket is "connected" but sync is stuck in "initial" phase
+	// with pending mutations - indicates stale auth token that needs refresh.
+	// See: https://github.com/dexie/Dexie.js/issues/2225
+	// ============================================================
+
+	let staleAuthCheckTimer: ReturnType<typeof setTimeout> | null = null;
+	let lastSyncPhase: string | null = null;
+	let stuckInInitialSince: number | null = null;
+	let hasAttemptedSyncRecovery = false;
+
+	const STALE_AUTH_DETECTION_DELAY_MS = 30_000; // 30 seconds before first check
+	const STALE_AUTH_RECOVERY_DELAY_MS = 15_000; // 15 more seconds after sync attempt
+
+	async function checkForStaleAuth() {
+		try {
+			// Get current state
+			const syncState = db.cloud.syncState.getValue();
+			const wsStatus = db.cloud.webSocketStatus.getValue();
+			const persistedState = db.cloud.persistedSyncState.getValue();
+			const currentUser = db.cloud.currentUser.getValue();
+
+			// Only check if user is logged in and we've synced before
+			if (!currentUser?.userId || !persistedState?.initiallySynced) {
+				return;
+			}
+
+			// Check if stuck: phase=initial, connected, but not syncing
+			const isStuck =
+				syncState?.phase === "initial" &&
+				(syncState?.status === "connected" || wsStatus === "connected");
+
+			if (!isStuck) {
+				// Reset tracking if we're no longer stuck
+				stuckInInitialSince = null;
+				hasAttemptedSyncRecovery = false;
+				return;
+			}
+
+			// Check for pending mutations
+			const idbDatabase = db.backendDB();
+			if (!idbDatabase) return;
+
+			let pendingMutationCount = 0;
+			const storeNames = Array.from(idbDatabase.objectStoreNames);
+			for (const storeName of storeNames) {
+				if (storeName.endsWith("_mutations")) {
+					try {
+						const count = await db.table(storeName).count();
+						pendingMutationCount += count;
+					} catch {
+						// Table might not be accessible
+					}
+				}
+			}
+
+			// If no pending mutations, not a stale auth issue
+			if (pendingMutationCount === 0) {
+				return;
+			}
+
+			const stuckDuration = stuckInInitialSince
+				? Date.now() - stuckInInitialSince
+				: 0;
+
+			console.warn(
+				`[Dexie Cloud] Potential stale auth detected: phase=${syncState?.phase}, ` +
+					`status=${syncState?.status}, wsStatus=${wsStatus}, ` +
+					`pendingMutations=${pendingMutationCount}, stuckFor=${Math.round(stuckDuration / 1000)}s`,
+			);
+
+			// First attempt: try forcing a sync
+			if (!hasAttemptedSyncRecovery) {
+				hasAttemptedSyncRecovery = true;
+				console.log("[Dexie Cloud] Attempting sync recovery...");
+				syncLogService.addLog(
+					"staleAuth",
+					"warning",
+					`Stale auth detected (${pendingMutationCount} pending mutations). Attempting sync recovery...`,
+					{ pendingMutationCount, stuckDuration },
+				);
+
+				try {
+					await db.cloud.sync({ wait: true, purpose: "push" });
+					console.log("[Dexie Cloud] Sync recovery attempt completed");
+				} catch (syncError) {
+					console.error("[Dexie Cloud] Sync recovery failed:", syncError);
+				}
+
+				// Schedule another check after recovery delay
+				staleAuthCheckTimer = setTimeout(
+					checkForStaleAuth,
+					STALE_AUTH_RECOVERY_DELAY_MS,
+				);
+				return;
+			}
+
+			// Second attempt failed - notify user to re-login
+			console.error(
+				"[Dexie Cloud] Stale auth token confirmed. User needs to re-login.",
+			);
+			syncLogService.addLog(
+				"staleAuth",
+				"error",
+				`Stale auth token confirmed. ${pendingMutationCount} mutations stuck. Please log out and log back in.`,
+				{ pendingMutationCount, stuckDuration },
+			);
+
+			// Dispatch custom event so UI can react
+			window.dispatchEvent(
+				new CustomEvent("dexie-cloud-stale-auth", {
+					detail: {
+						pendingMutationCount,
+						stuckDuration,
+						message:
+							"Your session may have expired. Please log out and log back in to sync your changes.",
+					},
+				}),
+			);
+		} catch (error) {
+			console.error("[Dexie Cloud] Error in stale auth check:", error);
+		}
+	}
+
 	// Monitor sync state changes
 	db.cloud.syncState.subscribe((syncState) => {
 		try {
@@ -582,6 +708,42 @@ if (
 					: undefined,
 			};
 			console.log(`[Dexie Cloud] ${timestamp} Sync state:`, logData);
+
+			// ============================================================
+			// STALE AUTH DETECTION TRIGGER
+			// ============================================================
+			// Start timer when entering stuck state, clear when exiting
+			const isInStuckState =
+				syncState.phase === "initial" && syncState.status === "connected";
+			const wasInStuckState =
+				lastSyncPhase === "initial" && syncState.status === "connected";
+
+			if (isInStuckState && !wasInStuckState) {
+				// Just entered potential stuck state
+				stuckInInitialSince = Date.now();
+				if (staleAuthCheckTimer) {
+					clearTimeout(staleAuthCheckTimer);
+				}
+				staleAuthCheckTimer = setTimeout(
+					checkForStaleAuth,
+					STALE_AUTH_DETECTION_DELAY_MS,
+				);
+				console.log(
+					"[Dexie Cloud] Started stale auth detection timer (30s)",
+				);
+			} else if (!isInStuckState && stuckInInitialSince !== null) {
+				// Exited stuck state - cancel timer and reset
+				if (staleAuthCheckTimer) {
+					clearTimeout(staleAuthCheckTimer);
+					staleAuthCheckTimer = null;
+				}
+				stuckInInitialSince = null;
+				hasAttemptedSyncRecovery = false;
+				console.log("[Dexie Cloud] Cleared stale auth detection timer - sync progressing");
+			}
+
+			lastSyncPhase = syncState.phase;
+			// ============================================================
 
 			// Log specific sync events with more detail
 			if (syncState.phase === "pushing") {
