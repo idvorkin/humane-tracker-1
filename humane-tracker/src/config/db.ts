@@ -387,19 +387,18 @@ export class HumaneTrackerDB extends Dexie {
 			syncLogs: null, // Remove syncLogs table from this database
 		});
 
-		// Version 8: Add habit variants support
-		// Habits can now have optional 'variants' array for granular tracking.
-		// Entries can optionally reference a variantId/variantName.
-		// No schema change needed - fields are optional and stored in existing records.
+		// Version 8: Schema version bump (variants removed in Phase 5)
+		// Note: Variants were originally added here but later removed.
+		// Keeping version for migration compatibility.
 		this.version(8).stores({
 			habits:
 				"@id, userId, name, category, targetPerWeek, createdAt, updatedAt",
 			entries: "@id, habitId, userId, date, value, createdAt",
 		});
 
-		// Version 9: Migrate "Shoulder Ys" to "Shoulder Accessory" variant
-		// "Shoulder Ys" is now a variant of "Shoulder Accessory", not a standalone habit.
-		// This migration moves entries and deletes the old habit.
+		// Version 9: Migrate "Shoulder Ys" to "Shoulder Accessory"
+		// This migration renames the habit and moves entries.
+		// Note: Variants were removed in Phase 5 of Tag Habits implementation.
 		this.version(9)
 			.stores({
 				habits:
@@ -409,7 +408,7 @@ export class HumaneTrackerDB extends Dexie {
 			.upgrade(async (tx) => {
 				try {
 					console.log(
-						"[Migration v9] Migrating Shoulder Ys to Shoulder Accessory variant...",
+						"[Migration v9] Migrating Shoulder Ys to Shoulder Accessory...",
 					);
 
 					// Find all "Shoulder Ys" habits
@@ -451,37 +450,11 @@ export class HumaneTrackerDB extends Dexie {
 								userId,
 								createdAt: now,
 								updatedAt: now,
-								variants: [
-									{ id: "shoulder-y", name: "Shoulder Y" },
-									{ id: "wall-slide", name: "Wall Slide" },
-									{ id: "shoulder-w", name: "Shoulder W" },
-									{ id: "swimmers", name: "Swimmers" },
-								],
-								allowCustomVariant: true,
 							};
 							await tx.table("habits").add(shoulderAccessory);
 							console.log(
 								`[Migration v9] Created Shoulder Accessory for user ${userId}`,
 							);
-						} else {
-							// Ensure it has variants
-							if (
-								!shoulderAccessory.variants ||
-								shoulderAccessory.variants.length === 0
-							) {
-								await tx.table("habits").update(shoulderAccessory.id, {
-									variants: [
-										{ id: "shoulder-y", name: "Shoulder Y" },
-										{ id: "wall-slide", name: "Wall Slide" },
-										{ id: "shoulder-w", name: "Shoulder W" },
-										{ id: "swimmers", name: "Swimmers" },
-									],
-									allowCustomVariant: true,
-								});
-								console.log(
-									`[Migration v9] Added variants to existing Shoulder Accessory for user ${userId}`,
-								);
-							}
 						}
 
 						// Move entries from Shoulder Ys to Shoulder Accessory
@@ -497,11 +470,8 @@ export class HumaneTrackerDB extends Dexie {
 							);
 
 							for (const entry of entries) {
-								// Update entry to point to Shoulder Accessory with variant
 								await tx.table("entries").update(entry.id, {
 									habitId: shoulderAccessory.id,
-									variantId: "shoulder-y",
-									variantName: "Shoulder Y",
 								});
 							}
 						}

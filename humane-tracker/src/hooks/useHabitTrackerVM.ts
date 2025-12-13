@@ -6,7 +6,6 @@ import { habitService } from "../services/habitService";
 import type {
 	CategorySection,
 	HabitStatus,
-	HabitVariant,
 	HabitWithStatus,
 	SummaryStats,
 } from "../types/habit";
@@ -199,11 +198,6 @@ export interface HabitTrackerVM {
 
 	// Actions
 	toggleEntry: (habitId: string, date: Date) => Promise<void>;
-	addEntryWithVariant: (
-		habitId: string,
-		date: Date,
-		variant: HabitVariant | null,
-	) => Promise<void>;
 	toggleSection: (category: string) => void;
 	toggleTagExpanded: (tagId: string) => void;
 	expandAll: () => void;
@@ -399,30 +393,6 @@ export function useHabitTrackerVM({
 		setExpandedTagsVersion((v) => v + 1);
 	}, []);
 
-	const addEntryWithVariant = useCallback(
-		async (habitId: string, date: Date, variant: HabitVariant | null) => {
-			const habit = habits.find((h) => h.id === habitId);
-			if (!habit) {
-				console.error("Habit not found:", habitId);
-				return;
-			}
-
-			try {
-				await habitService.addEntry({
-					habitId,
-					userId,
-					date,
-					value: 1,
-					variantId: variant?.id,
-					variantName: variant?.name,
-				});
-			} catch (error) {
-				console.error("Error adding entry with variant:", error);
-			}
-		},
-		[habits, userId],
-	);
-
 	const toggleEntry = useCallback(
 		async (habitId: string, date: Date) => {
 			// Check if date is older than yesterday and confirm
@@ -498,7 +468,6 @@ export function useHabitTrackerVM({
 
 		// Actions
 		toggleEntry,
-		addEntryWithVariant,
 		toggleSection,
 		toggleTagExpanded,
 		expandAll,

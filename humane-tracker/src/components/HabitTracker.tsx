@@ -1,13 +1,12 @@
 import { format, isSameDay, isToday } from "date-fns";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { useHabitTrackerVM } from "../hooks/useHabitTrackerVM";
-import type { Habit, HabitVariant, HabitWithStatus } from "../types/habit";
+import type { Habit, HabitWithStatus } from "../types/habit";
 import { buildCategoryInfo } from "../utils/categoryUtils";
 import { CleanupDuplicates } from "./CleanupDuplicates";
 import { HabitSettings } from "./HabitSettings";
 import { InitializeHabits } from "./InitializeHabits";
 import { TagChildPicker } from "./TagChildPicker";
-import { VariantPicker } from "./VariantPicker";
 import "./HabitTracker.css";
 
 interface HabitTrackerProps {
@@ -28,13 +27,6 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 	const [showCleanup, setShowCleanup] = useState(false);
 	const [showSettings, setShowSettings] = useState(false);
 
-	// Variant picker state
-	const [variantPickerState, setVariantPickerState] = useState<{
-		habit: HabitWithStatus;
-		date: Date;
-		position: { x: number; y: number };
-	} | null>(null);
-
 	// Tag child picker state
 	const [tagChildPickerState, setTagChildPickerState] = useState<{
 		tag: HabitWithStatus;
@@ -49,21 +41,20 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 	// All business logic from the ViewModel
 	const vm = useHabitTrackerVM({ userId });
 
-	// Long press handlers for cells with variants or tags
+	// Long press handlers for tags with children
 	const handleCellPressStart = useCallback(
 		(
 			habit: HabitWithStatus,
 			date: Date,
 			event: React.MouseEvent | React.TouchEvent,
 		) => {
-			const hasVariants = habit.variants && habit.variants.length > 0;
 			const isTag =
 				habit.habitType === "tag" &&
 				habit.childIds &&
 				habit.childIds.length > 0;
 
-			// Only enable long-press for habits with variants or tags with children
-			if (!hasVariants && !isTag) return;
+			// Only enable long-press for tags with children
+			if (!isTag) return;
 
 			longPressTriggered.current = false;
 			const clientX =
@@ -73,19 +64,11 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 
 			longPressTimer.current = setTimeout(() => {
 				longPressTriggered.current = true;
-				if (isTag) {
-					setTagChildPickerState({
-						tag: habit,
-						date,
-						position: { x: clientX, y: clientY },
-					});
-				} else {
-					setVariantPickerState({
-						habit,
-						date,
-						position: { x: clientX, y: clientY },
-					});
-				}
+				setTagChildPickerState({
+					tag: habit,
+					date,
+					position: { x: clientX, y: clientY },
+				});
 			}, 500); // 500ms for long press
 		},
 		[],
@@ -108,19 +91,6 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 			vm.toggleEntry(habit.id, date);
 		},
 		[vm],
-	);
-
-	const handleVariantSelect = useCallback(
-		async (variant: HabitVariant | null) => {
-			if (!variantPickerState) return;
-			await vm.addEntryWithVariant(
-				variantPickerState.habit.id,
-				variantPickerState.date,
-				variant,
-			);
-			setVariantPickerState(null);
-		},
-		[variantPickerState, vm],
 	);
 
 	// Get child habits for the tag child picker
@@ -430,13 +400,10 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 																isTodayDate,
 																isSelected,
 															),
-															habit.variants?.length ? "has-variants" : "",
 															isTag ? "tag-cell" : "",
 														]
 															.filter(Boolean)
 															.join(" ");
-														const hasVariants =
-															habit.variants && habit.variants.length > 0;
 														return (
 															<td
 																key={date.toISOString()}
@@ -454,25 +421,6 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 																style={{ cursor: "pointer" }}
 															>
 																{cellDisplay.content}
-																{hasVariants && (
-																	<button
-																		className="variant-trigger"
-																		onClick={(e) => {
-																			e.stopPropagation();
-																			setVariantPickerState({
-																				habit,
-																				date,
-																				position: {
-																					x: e.clientX,
-																					y: e.clientY,
-																				},
-																			});
-																		}}
-																		title="Select variant"
-																	>
-																		▾
-																	</button>
-																)}
 															</td>
 														);
 													})}
@@ -557,16 +505,6 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 						setShowSettings(false);
 						window.location.reload();
 					}}
-				/>
-			)}
-
-			{variantPickerState && (
-				<VariantPicker
-					habit={variantPickerState.habit}
-					date={variantPickerState.date}
-					position={variantPickerState.position}
-					onSelect={handleVariantSelect}
-					onClose={() => setVariantPickerState(null)}
 				/>
 			)}
 

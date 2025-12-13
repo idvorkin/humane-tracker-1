@@ -4,12 +4,6 @@
  * During migration, both formats may exist and are normalized on read.
  */
 
-export interface HabitVariantRecord {
-	id: string;
-	name: string;
-	usageCount?: number;
-}
-
 export type HabitType = "raw" | "tag";
 
 export interface HabitRecord {
@@ -21,8 +15,6 @@ export interface HabitRecord {
 	userId: string;
 	createdAt: string; // ISO string
 	updatedAt: string; // ISO string
-	variants?: HabitVariantRecord[];
-	allowCustomVariant?: boolean;
 
 	// Tag system fields
 	habitType?: HabitType; // 'raw' (default) or 'tag'
@@ -48,8 +40,6 @@ export interface EntryRecord {
 	value: number;
 	notes?: string; // Freeform notes (write loose)
 	createdAt: string; // ISO string
-	variantId?: string;
-	variantName?: string;
 
 	// Structured data (structure later - via LLM parsing or manual entry)
 	sets?: SetDataRecord[];

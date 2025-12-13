@@ -66,12 +66,12 @@ function toHabit(record: HabitRecord): Habit {
 		userId: record.userId,
 		createdAt: normalizeDate(record.createdAt as string | Date),
 		updatedAt: normalizeDate(record.updatedAt as string | Date),
-		variants: record.variants,
-		allowCustomVariant: record.allowCustomVariant,
 		// Tag system fields
 		habitType: record.habitType,
 		childIds: record.childIds,
 		parentIds: record.parentIds,
+		// Visibility
+		hidden: record.hidden,
 	};
 }
 
@@ -91,12 +91,12 @@ function toRecord(
 			userId: habit.userId,
 			createdAt: now,
 			updatedAt: now,
-			variants: habit.variants,
-			allowCustomVariant: habit.allowCustomVariant,
 			// Tag system fields
 			habitType: habit.habitType,
 			childIds: habit.childIds,
 			parentIds: habit.parentIds,
+			// Visibility
+			hidden: habit.hidden,
 		};
 	} catch (error) {
 		throw new Error(
@@ -291,12 +291,12 @@ export const habitRepository = {
 				userId: habit.userId,
 				createdAt: toTimestamp(habit.createdAt),
 				updatedAt: toTimestamp(habit.updatedAt),
-				variants: habit.variants,
-				allowCustomVariant: habit.allowCustomVariant,
 				// Tag system fields
 				habitType: habit.habitType,
 				childIds: habit.childIds,
 				parentIds: habit.parentIds,
+				// Visibility
+				hidden: habit.hidden,
 			}));
 			await db.habits.bulkPut(records);
 		} catch (error) {

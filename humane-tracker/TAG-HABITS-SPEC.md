@@ -1,6 +1,8 @@
 # Tag Habits Specification
 
-## Status: Draft / Under Discussion
+## Status: Implementation Complete (Phases 1-4)
+
+**Current Phase**: Phase 5 - Variant Removal (in progress)
 
 ## Problem Statement
 
@@ -90,6 +92,13 @@ interface Habit {
   habitType: "raw" | "tag"; // default: 'raw'
   childIds?: string[]; // if tag: IDs of children (can be raw habits OR other tags)
   parentIds?: string[]; // IDs of parent tags (for reverse lookup)
+
+  // Visibility
+  hidden?: boolean; // If true, habit is hidden from tracker view
+
+  // DEPRECATED - being removed in Phase 5
+  // variants?: HabitVariant[];
+  // allowCustomVariant?: boolean;
 }
 ```
 
@@ -108,6 +117,10 @@ interface HabitEntry {
   // Structured data (structure later - via LLM parsing or manual entry)
   sets?: SetData[];
   parsed?: boolean; // Has this entry been LLM-processed?
+
+  // DEPRECATED - being removed in Phase 5
+  // variantId?: string;
+  // variantName?: string;
 }
 
 interface SetData {
@@ -390,11 +403,28 @@ Shoulder Accessory (tag habit, includes above 4)
 - Move all habits under their category tags
 - Remove `category` field (or keep for color only)
 
-### Phase 5: Variant Migration
+### Phase 5: Variant Removal (CURRENT)
 
-- Convert "Shoulder Accessory" with variants → tag + raw habits
-- Migrate entries with variantId to new raw habit IDs
-- Clean up old variant fields
+**Variants are DEPRECATED and being removed.** Tags replace variants entirely.
+
+Tasks:
+
+1. ~~Update spec: mark variants as deprecated~~ ✓
+2. Migration: convert existing variant habits to tag + raw habits
+3. Migration: convert entries with variantId to raw habit entries
+4. Remove variant fields from Habit type (`variants`, `allowCustomVariant`)
+5. Remove variant fields from Entry type (`variantId`, `variantName`)
+6. Remove VariantPicker component
+7. Remove `addEntryWithVariant` from useHabitTrackerVM
+8. Update/remove variant-related tests
+9. Clean up variant CSS
+
+**Why remove variants?**
+
+- Tags solve the same problem more flexibly
+- Tags allow independent targets per child
+- Tags allow multi-membership (same habit in multiple groupings)
+- No need to maintain two parallel systems
 
 ---
 
