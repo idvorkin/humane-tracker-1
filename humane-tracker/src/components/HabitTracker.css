@@ -669,3 +669,42 @@ th {
 		font-size: 0.7rem;
 	}
 }
+
+/* ==========================================================================
+   Variant Trigger Button
+   ========================================================================== */
+
+.section-row td {
+	position: relative;
+}
+
+.variant-trigger {
+	position: absolute;
+	bottom: 1px;
+	right: 1px;
+	width: 14px;
+	height: 14px;
+	padding: 0;
+	border: none;
+	background: var(--color-espresso);
+	color: var(--color-warm-gray);
+	font-size: 8px;
+	line-height: 1;
+	border-radius: 2px;
+	cursor: pointer;
+	opacity: 0.6;
+	transition: opacity 0.15s ease;
+}
+
+.variant-trigger:hover {
+	opacity: 1;
+	background: var(--color-charcoal);
+	color: var(--color-text);
+}
+
+/* Hide on mobile - use long press instead */
+@media (max-width: 768px) {
+	.variant-trigger {
+		display: none;
+	}
+}
