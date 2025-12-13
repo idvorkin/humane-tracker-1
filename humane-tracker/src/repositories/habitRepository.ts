@@ -68,6 +68,10 @@ function toHabit(record: HabitRecord): Habit {
 		updatedAt: normalizeDate(record.updatedAt as string | Date),
 		variants: record.variants,
 		allowCustomVariant: record.allowCustomVariant,
+		// Tag system fields
+		habitType: record.habitType,
+		childIds: record.childIds,
+		parentIds: record.parentIds,
 	};
 }
 
@@ -89,6 +93,10 @@ function toRecord(
 			updatedAt: now,
 			variants: habit.variants,
 			allowCustomVariant: habit.allowCustomVariant,
+			// Tag system fields
+			habitType: habit.habitType,
+			childIds: habit.childIds,
+			parentIds: habit.parentIds,
 		};
 	} catch (error) {
 		throw new Error(
@@ -285,6 +293,10 @@ export const habitRepository = {
 				updatedAt: toTimestamp(habit.updatedAt),
 				variants: habit.variants,
 				allowCustomVariant: habit.allowCustomVariant,
+				// Tag system fields
+				habitType: habit.habitType,
+				childIds: habit.childIds,
+				parentIds: habit.parentIds,
 			}));
 			await db.habits.bulkPut(records);
 		} catch (error) {

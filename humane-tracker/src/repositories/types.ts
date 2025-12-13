@@ -10,6 +10,8 @@ export interface HabitVariantRecord {
 	usageCount?: number;
 }
 
+export type HabitType = "raw" | "tag";
+
 export interface HabitRecord {
 	id: string;
 	name: string;
@@ -21,6 +23,18 @@ export interface HabitRecord {
 	updatedAt: string; // ISO string
 	variants?: HabitVariantRecord[];
 	allowCustomVariant?: boolean;
+
+	// Tag system fields
+	habitType?: HabitType; // 'raw' (default) or 'tag'
+	childIds?: string[]; // For tags: IDs of children (raw habits or other tags)
+	parentIds?: string[]; // For reverse lookup: which tags contain this habit
+}
+
+// Structured set data for "write loose, structure later"
+export interface SetDataRecord {
+	weight?: number; // in kg
+	reps?: number;
+	duration?: number; // in seconds
 }
 
 export interface EntryRecord {
@@ -29,10 +43,14 @@ export interface EntryRecord {
 	userId: string;
 	date: string; // ISO string (date portion only: YYYY-MM-DD)
 	value: number;
-	notes?: string;
+	notes?: string; // Freeform notes (write loose)
 	createdAt: string; // ISO string
 	variantId?: string;
 	variantName?: string;
+
+	// Structured data (structure later - via LLM parsing or manual entry)
+	sets?: SetDataRecord[];
+	parsed?: boolean; // Has this entry been LLM-processed?
 }
 
 /**
