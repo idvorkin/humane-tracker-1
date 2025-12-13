@@ -2,11 +2,11 @@ import { test, expect, Page } from '@playwright/test';
 import { clearIndexedDB } from './helpers/indexeddb-helpers';
 
 test.describe('Habit Tracker App', () => {
-  const TEST_USER_ID = 'mock-user';
+  const TEST_USER_ID = 'anonymous';
 
   test.beforeEach(async ({ page }) => {
     // Use E2E mode - bypasses auth but uses REAL IndexedDB
-    await page.goto('/?e2e=true');
+    await page.goto('/');
     await page.waitForLoadState('networkidle');
 
     // Load default habits programmatically using real IndexedDB
@@ -273,10 +273,10 @@ test.describe('Habit Tracker App', () => {
 });
 
 test.describe('Habit Tracking Functions', () => {
-  const TEST_USER_ID = 'mock-user';
+  const TEST_USER_ID = 'anonymous';
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/?e2e=true');
+    await page.goto('/');
     await page.waitForLoadState('networkidle');
 
     await page.evaluate(async (userId) => {
