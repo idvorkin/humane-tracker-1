@@ -197,6 +197,11 @@ export class HabitService {
 		return habitRepository.delete(habitId);
 	}
 
+	// Delete multiple habits atomically (all-or-nothing)
+	async bulkDeleteHabits(habitIds: string[]): Promise<void> {
+		return habitRepository.bulkDelete(habitIds);
+	}
+
 	// Update habit with validation
 	async updateHabit(habitId: string, updates: Partial<Habit>): Promise<void> {
 		return habitRepository.update(habitId, updates);
