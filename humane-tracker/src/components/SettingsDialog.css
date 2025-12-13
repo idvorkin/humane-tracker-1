@@ -758,8 +758,8 @@
 	padding-bottom: 0;
 }
 
-.sync-diagnostics-warning {
-	color: #f87171 !important;
+.sync-diagnostics-results .sync-diagnostics-warning {
+	color: #f87171;
 	font-weight: 600;
 }
 
@@ -804,6 +804,13 @@
 	color: var(--color-warm-gray);
 	text-align: center;
 	margin-top: 6px;
+}
+
+.sync-diagnostics-url {
+	font-size: 0.7rem;
+	word-break: break-all;
+	max-width: 150px;
+	text-align: right;
 }
 
 /* Mobile adjustments */
