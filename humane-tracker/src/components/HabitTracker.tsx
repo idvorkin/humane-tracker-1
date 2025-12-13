@@ -346,6 +346,8 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 														]
 															.filter(Boolean)
 															.join(" ");
+														const hasVariants =
+															habit.variants && habit.variants.length > 0;
 														return (
 															<td
 																key={date.toISOString()}
@@ -363,6 +365,25 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 																style={{ cursor: "pointer" }}
 															>
 																{cellDisplay.content}
+																{hasVariants && (
+																	<button
+																		className="variant-trigger"
+																		onClick={(e) => {
+																			e.stopPropagation();
+																			setVariantPickerState({
+																				habit,
+																				date,
+																				position: {
+																					x: e.clientX,
+																					y: e.clientY,
+																				},
+																			});
+																		}}
+																		title="Select variant"
+																	>
+																		▾
+																	</button>
+																)}
 															</td>
 														);
 													})}
