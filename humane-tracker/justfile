@@ -1,7 +1,26 @@
-# Justfile
+# Justfile for humane-tracker
 
 default:
     @just --list
+
+# One-time setup after clone (run this first!)
+setup:
+    #!/usr/bin/env bash
+    echo "🔧 Setting up development environment..."
+
+    # Configure git hooks (from repo root)
+    cd .. && git config core.hooksPath .githooks
+    echo "✓ Git hooks configured (.githooks)"
+
+    # Install npm dependencies
+    npm install
+    echo "✓ npm dependencies installed"
+
+    echo ""
+    echo "✅ Setup complete! Run 'just dev' to start developing."
+    echo ""
+    echo "📝 Note: For Playwright, use a global install (shared across repos):"
+    echo "   npm install -g playwright && playwright install --with-deps"
 
 # Run the development server (generates version first)
 dev: generate-version
@@ -38,6 +57,10 @@ test: generate-version
 e2e:
     npx playwright test
 
+# Run fast E2E tests (quick smoke tests) - good for CI
+e2e-fast:
+    npx playwright test habit-tracking.spec.ts load-default-habits.spec.ts
+
 # Run E2E tests (desktop chromium only)
 e2e-desktop:
     npx playwright test --project=chromium
@@ -46,11 +69,20 @@ e2e-desktop:
 e2e-mobile:
     npx playwright test --project=mobile
 
+# Run E2E tests in interactive UI mode
+e2e-ui:
+    npx playwright test --ui
+
+# Run E2E tests in headed mode (see browser)
+e2e-headed:
+    npx playwright test --headed
+
+# Run E2E tests in debug mode (step-through)
+e2e-debug:
+    npx playwright test --debug
+
 # View E2E test report in browser
 # Serves Playwright HTML report with videos, screenshots, and traces
-# Local access: http://localhost:9323
-# Container (Tailscale): http://<container-hostname>:9323
-# Note: Trace viewer requires HTTPS - use SSH tunnel or https://trace.playwright.dev/
 e2e-report:
     #!/usr/bin/env bash
     HOSTNAME=$(hostname)
@@ -80,11 +112,11 @@ e2e-report:
     echo "──────────────────────────────────────────────────────────────────────"
     echo "Press Ctrl+C to stop the server"
     echo ""
-    npx playwright show-report --host 0.0.0.0
+    npx playwright show-report --host 0.0.0.0 --port 9323
 
-# Run E2E tests in interactive UI mode
-e2e-ui:
-    npx playwright test --ui
+# Install Playwright browsers
+install-browsers:
+    npx playwright install
 
 # Deploy to staging
 deploy-stage: test build

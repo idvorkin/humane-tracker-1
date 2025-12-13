@@ -1,59 +1,71 @@
 /// <reference types="vitest" />
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import { execSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import basicSsl from "@vitejs/plugin-basic-ssl";
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
-import { execSync } from "child_process";
-import { existsSync } from "fs";
 
 // Detect if running in a container
 function isContainer(): boolean {
 	return existsSync("/.dockerenv") || process.env.container !== undefined;
 }
 
-// Detect Tailscale IP if available
-function getTailscaleIP(): string | null {
-	try {
-		const ip = execSync("tailscale ip -4 2>/dev/null", { encoding: "utf-8" }).trim();
-		return ip || null;
-	} catch {
-		return null;
-	}
-}
-
 // Get Tailscale hostnames (short like "c-5002" and full like "c-5002.squeaker-teeth.ts.net")
-function getTailscaleHostnames(): { short: string; full: string } | null {
+function getTailscaleHostnames(): string[] {
 	try {
-		const json = execSync("tailscale status --json 2>/dev/null", { encoding: "utf-8" });
-		const status = JSON.parse(json);
-		const fullName = status.Self?.DNSName?.replace(/\.$/, "");
-		if (!fullName) return null;
+		const output = execSync("tailscale status --json", {
+			encoding: "utf-8",
+			stdio: ["pipe", "pipe", "pipe"],
+		});
+		const status = JSON.parse(output);
+		const dnsName = status.Self?.DNSName;
+		if (!dnsName) return [];
+
+		// DNSName is like "c-5002.squeaker-teeth.ts.net."
+		const fullName = dnsName.replace(/\.$/, ""); // Remove trailing dot
 		const shortName = fullName.split(".")[0];
-		return { short: shortName, full: fullName };
+		return [shortName, fullName];
 	} catch {
-		return null;
+		return [];
 	}
 }
 
-// In containers with Tailscale, bind to all interfaces (required for Tailscale routing)
+// Configure dev server host based on environment
 const inContainer = isContainer();
-const tailscaleIP = getTailscaleIP();
 const tailscaleHosts = getTailscaleHostnames();
-const devHost = inContainer && tailscaleIP ? "0.0.0.0" : "localhost";
+const devHost = inContainer && tailscaleHosts.length > 0 ? "0.0.0.0" : "localhost";
+const devPort = Number(process.env.PORT) || 3000;
 
-// Enable SSL when in container with Tailscale (some browser APIs require secure context)
-const useSsl = inContainer && tailscaleIP !== null;
+// Enable HTTPS for Tailscale (some browser APIs require secure context)
+const useSsl = inContainer && tailscaleHosts.length > 0;
 
-if (inContainer && tailscaleIP) {
-	console.log(`🐳 Container with Tailscale - binding to 0.0.0.0`);
-	const protocol = useSsl ? "https" : "http";
-	console.log(`   Access via: ${protocol}://${tailscaleHosts?.short || tailscaleIP}:3000/`);
+// Plugin to print Tailscale URL after server starts (with correct port)
+function tailscaleUrlPlugin() {
+	return {
+		name: "tailscale-url",
+		configureServer(server: { httpServer: unknown }) {
+			if (!useSsl || tailscaleHosts.length === 0) return;
+
+			const httpServer = server.httpServer as {
+				once: (event: string, cb: () => void) => void;
+				address: () => { port: number } | string | null;
+			} | null;
+
+			httpServer?.once("listening", () => {
+				const address = httpServer?.address();
+				const actualPort = typeof address === "object" && address ? address.port : devPort;
+				console.log(`\n🔗 Tailscale detected in container`);
+				console.log(`   Access via: https://${tailscaleHosts[1]}:${actualPort}\n`);
+			});
+		},
+	};
 }
 
 export default defineConfig({
 	plugins: [
 		react(),
-		...(useSsl ? [basicSsl()] : []),
+		...(useSsl ? [basicSsl(), tailscaleUrlPlugin()] : []),
 		VitePWA({
 			registerType: "autoUpdate",
 			includeAssets: ["favicon.ico"],
@@ -90,11 +102,11 @@ export default defineConfig({
 		}),
 	],
 	server: {
-		port: 3000,
+		port: devPort,
 		open: true,
 		host: devHost,
 		// Allow Tailscale hostnames (both short "c-5002" and full "c-5002.squeaker-teeth.ts.net")
-		allowedHosts: tailscaleHosts ? [tailscaleHosts.short, tailscaleHosts.full] : undefined,
+		allowedHosts: tailscaleHosts.length > 0 ? tailscaleHosts : undefined,
 	},
 	build: {
 		outDir: "dist",

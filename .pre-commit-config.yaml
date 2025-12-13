@@ -1,22 +1,29 @@
 repos:
+  # Biome for JavaScript, TypeScript, JSON, CSS, JSX, etc.
   - repo: https://github.com/biomejs/pre-commit
     rev: "v2.3.7"
     hooks:
       - id: biome-check
         additional_dependencies: ["@biomejs/biome@2.3.7"]
 
+  # Prettier as fallback for file types Biome doesn't support
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: "v4.0.0-alpha.8"
     hooks:
       - id: prettier
-        name: Prettier (Markdown)
-        files: \.(md)$
+        name: Prettier (fallback)
+        exclude: \.(js|ts|jsx|tsx|json|css)$
+        types_or: [markdown, yaml, html]
+        additional_dependencies:
+          - prettier@3.1.0
 
+  # TypeScript type checking
   - repo: local
     hooks:
-      - id: test
-        name: Unit Tests
-        entry: bash -c 'cd humane-tracker && npm test'
+      - id: typescript-type-check
+        name: TypeScript Type Check
+        entry: bash -c 'cd humane-tracker && npx tsc --noEmit'
         language: system
         pass_filenames: false
         files: \.(ts|tsx)$
+        require_serial: true
