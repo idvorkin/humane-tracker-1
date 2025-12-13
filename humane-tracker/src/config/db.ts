@@ -396,6 +396,132 @@ export class HumaneTrackerDB extends Dexie {
 				"@id, userId, name, category, targetPerWeek, createdAt, updatedAt",
 			entries: "@id, habitId, userId, date, value, createdAt",
 		});
+
+		// Version 9: Migrate "Shoulder Ys" to "Shoulder Accessory" variant
+		// "Shoulder Ys" is now a variant of "Shoulder Accessory", not a standalone habit.
+		// This migration moves entries and deletes the old habit.
+		this.version(9)
+			.stores({
+				habits:
+					"@id, userId, name, category, targetPerWeek, createdAt, updatedAt",
+				entries: "@id, habitId, userId, date, value, createdAt",
+			})
+			.upgrade(async (tx) => {
+				try {
+					console.log(
+						"[Migration v9] Migrating Shoulder Ys to Shoulder Accessory variant...",
+					);
+
+					// Find all "Shoulder Ys" habits
+					const shoulderYsHabits = await tx
+						.table("habits")
+						.where("name")
+						.equals("Shoulder Ys")
+						.toArray();
+
+					if (shoulderYsHabits.length === 0) {
+						console.log("[Migration v9] No Shoulder Ys habits found, skipping");
+						return;
+					}
+
+					console.log(
+						`[Migration v9] Found ${shoulderYsHabits.length} Shoulder Ys habit(s) to migrate`,
+					);
+
+					for (const oldHabit of shoulderYsHabits) {
+						const userId = oldHabit.userId;
+
+						// Find existing "Shoulder Accessory" for this user
+						let shoulderAccessory = await tx
+							.table("habits")
+							.where("name")
+							.equals("Shoulder Accessory")
+							.and((h: { userId: string }) => h.userId === userId)
+							.first();
+
+						// If no Shoulder Accessory exists, create one
+						if (!shoulderAccessory) {
+							const now = toTimestamp(new Date());
+							const newId = `hbt${crypto.randomUUID().replace(/-/g, "")}`;
+							shoulderAccessory = {
+								id: newId,
+								name: "Shoulder Accessory",
+								category: oldHabit.category || "Mobility",
+								targetPerWeek: oldHabit.targetPerWeek || 3,
+								userId,
+								createdAt: now,
+								updatedAt: now,
+								variants: [
+									{ id: "shoulder-y", name: "Shoulder Y" },
+									{ id: "wall-slide", name: "Wall Slide" },
+									{ id: "shoulder-w", name: "Shoulder W" },
+									{ id: "swimmers", name: "Swimmers" },
+								],
+								allowCustomVariant: true,
+							};
+							await tx.table("habits").add(shoulderAccessory);
+							console.log(
+								`[Migration v9] Created Shoulder Accessory for user ${userId}`,
+							);
+						} else {
+							// Ensure it has variants
+							if (
+								!shoulderAccessory.variants ||
+								shoulderAccessory.variants.length === 0
+							) {
+								await tx.table("habits").update(shoulderAccessory.id, {
+									variants: [
+										{ id: "shoulder-y", name: "Shoulder Y" },
+										{ id: "wall-slide", name: "Wall Slide" },
+										{ id: "shoulder-w", name: "Shoulder W" },
+										{ id: "swimmers", name: "Swimmers" },
+									],
+									allowCustomVariant: true,
+								});
+								console.log(
+									`[Migration v9] Added variants to existing Shoulder Accessory for user ${userId}`,
+								);
+							}
+						}
+
+						// Move entries from Shoulder Ys to Shoulder Accessory
+						const entries = await tx
+							.table("entries")
+							.where("habitId")
+							.equals(oldHabit.id)
+							.toArray();
+
+						if (entries.length > 0) {
+							console.log(
+								`[Migration v9] Moving ${entries.length} entries from Shoulder Ys to Shoulder Accessory`,
+							);
+
+							for (const entry of entries) {
+								// Update entry to point to Shoulder Accessory with variant
+								await tx.table("entries").update(entry.id, {
+									habitId: shoulderAccessory.id,
+									variantId: "shoulder-y",
+									variantName: "Shoulder Y",
+								});
+							}
+						}
+
+						// Delete the old Shoulder Ys habit
+						await tx.table("habits").delete(oldHabit.id);
+						console.log(
+							`[Migration v9] Deleted old Shoulder Ys habit for user ${userId}`,
+						);
+					}
+
+					console.log("[Migration v9] Migration complete!");
+				} catch (error) {
+					console.error("[Migration v9] CRITICAL: Migration failed:", error);
+					if (error instanceof Error && error.stack) {
+						console.error("[Migration v9] Stack trace:", error.stack);
+					}
+					throw error;
+				}
+			});
 	}
 }
 
