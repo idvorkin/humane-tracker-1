@@ -1,12 +1,17 @@
 import { useObservable } from "dexie-react-hooks";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AnonymousWarning } from "./components/AnonymousWarning";
 import { HabitTracker } from "./components/HabitTracker";
 import { LoginButton } from "./components/LoginButton";
+import { SignInDialog } from "./components/SignInDialog";
 import { UserMenu } from "./components/UserMenu";
 import { VersionNotification } from "./components/VersionNotification";
 import { db } from "./config/db";
-import { handleSignIn } from "./utils/authUtils";
+import {
+	handleSignIn,
+	type LocalDataSummary,
+	type SignInChoice,
+} from "./utils/authUtils";
 import "./App.css";
 
 const DEXIE_CLOUD_URL = import.meta.env.VITE_DEXIE_CLOUD_URL;
@@ -16,6 +21,38 @@ const isCloudConfigured =
 function App() {
 	const currentUser = useObservable(() => db.cloud.currentUser, [db]);
 	const [loading, setLoading] = useState(true);
+
+	// Sign-in dialog state
+	const [signInDialogData, setSignInDialogData] = useState<{
+		summary: LocalDataSummary;
+		resolve: (choice: SignInChoice) => void;
+	} | null>(null);
+
+	// Callback to show sign-in dialog and wait for user choice
+	const promptForSignInChoice = useCallback(
+		(summary: LocalDataSummary): Promise<SignInChoice> => {
+			return new Promise((resolve) => {
+				setSignInDialogData({ summary, resolve });
+			});
+		},
+		[],
+	);
+
+	// Handle sign-in with prompt for local data
+	const handleSignInWithPrompt = useCallback(() => {
+		handleSignIn(promptForSignInChoice);
+	}, [promptForSignInChoice]);
+
+	// Handle user's choice in sign-in dialog
+	const handleSignInChoice = useCallback(
+		(choice: SignInChoice) => {
+			if (signInDialogData) {
+				signInDialogData.resolve(choice);
+				setSignInDialogData(null);
+			}
+		},
+		[signInDialogData],
+	);
 
 	useEffect(() => {
 		// Check if we have a user (including loading state)
@@ -92,14 +129,14 @@ function App() {
 	if (isLoggedOut) {
 		return (
 			<div className="App">
-				<AnonymousWarning onSignIn={handleSignIn} />
+				<AnonymousWarning onSignIn={handleSignInWithPrompt} />
 				<HabitTracker
 					userId="anonymous"
 					userMenu={(menuProps) => (
 						<UserMenu
 							userName="Guest"
 							avatarLetter="G"
-							onSignIn={handleSignIn}
+							onSignIn={handleSignInWithPrompt}
 							onManageHabits={menuProps.onManageHabits}
 							onLoadDefaults={menuProps.onLoadDefaults}
 							showLoadDefaults={menuProps.showLoadDefaults}
@@ -107,6 +144,12 @@ function App() {
 					)}
 				/>
 				<VersionNotification />
+				{signInDialogData && (
+					<SignInDialog
+						summary={signInDialogData.summary}
+						onChoice={handleSignInChoice}
+					/>
+				)}
 			</div>
 		);
 	}
