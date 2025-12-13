@@ -1,9 +1,21 @@
 import type { SyncState } from "dexie-cloud-addon";
 import { useLiveQuery, useObservable } from "dexie-react-hooks";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { db, syncLogService } from "../config/db";
 import type { SyncLog } from "../types/syncLog";
 import { ChevronIcon, SyncIcon } from "./icons/MenuIcons";
+
+interface DiagnosticResult {
+	timestamp: Date;
+	stalledJobs: number;
+	internalTables: Array<{ name: string; count: number }>;
+	persistedState: {
+		initiallySynced: boolean;
+		serverRevision: string | null;
+		lastSyncTime: string | null;
+	};
+	recommendations: string[];
+}
 
 type SyncStatePhase =
 	| "initial"
@@ -153,8 +165,14 @@ interface SyncSectionProps {
 export function SyncSection({ isLocalMode }: SyncSectionProps) {
 	const [detailsExpanded, setDetailsExpanded] = useState(false);
 	const [logsExpanded, setLogsExpanded] = useState(false);
+	const [diagnosticsExpanded, setDiagnosticsExpanded] = useState(false);
 	const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 	const [copySuccess, setCopySuccess] = useState(false);
+	const [diagnosticResult, setDiagnosticResult] =
+		useState<DiagnosticResult | null>(null);
+	const [isRunningDiagnostics, setIsRunningDiagnostics] = useState(false);
+	const [isForcingSyncPull, setIsForcingSyncPull] = useState(false);
+	const [isResettingSync, setIsResettingSync] = useState(false);
 
 	// Sync state observables
 	const syncStateFromCloud = useObservable(() => db.cloud.syncState, []) as
@@ -224,6 +242,179 @@ export function SyncSection({ isLocalMode }: SyncSectionProps) {
 			} catch (err) {
 				console.error("Failed to clear logs:", err);
 			}
+		}
+	};
+
+	const runDiagnostics = useCallback(async () => {
+		setIsRunningDiagnostics(true);
+		try {
+			const recommendations: string[] = [];
+			const internalTables: Array<{ name: string; count: number }> = [];
+
+			// Get all table names including internal Dexie Cloud tables
+			const allTables = db.tables.map((t) => t.name);
+			const internalTableNames = allTables.filter((name) =>
+				name.startsWith("$"),
+			);
+
+			// Count entries in each internal table
+			let stalledJobs = 0;
+			for (const tableName of internalTableNames) {
+				try {
+					const table = db.table(tableName);
+					const count = await table.count();
+					internalTables.push({ name: tableName, count });
+
+					// Check for stalled jobs
+					if (tableName === "$jobs" && count > 0) {
+						const jobs = await table.toArray();
+						const now = Date.now();
+						for (const job of jobs) {
+							// Jobs older than 60 seconds are considered stalled
+							const jobAge = job.startedAt
+								? now - new Date(job.startedAt).getTime()
+								: 0;
+							if (jobAge > 60000) {
+								stalledJobs++;
+							}
+						}
+					}
+				} catch (err) {
+					console.warn(`Could not read table ${tableName}:`, err);
+					internalTables.push({ name: tableName, count: -1 });
+				}
+			}
+
+			// Get persisted state info
+			const persistedStateData = persistedState;
+			const persistedStateInfo = {
+				initiallySynced: persistedStateData?.initiallySynced ?? false,
+				serverRevision: persistedStateData?.serverRevision
+					? String(persistedStateData.serverRevision)
+					: null,
+				lastSyncTime: persistedStateData?.timestamp
+					? new Date(persistedStateData.timestamp).toISOString()
+					: null,
+			};
+
+			// Generate recommendations based on findings
+			if (stalledJobs > 0) {
+				recommendations.push(
+					`Found ${stalledJobs} stalled job(s). Try "Force Pull Sync" or wait 60s for auto-recovery.`,
+				);
+			}
+
+			if (phase === "initial" && syncState?.status === "connecting") {
+				recommendations.push(
+					"Stuck in 'initial/connecting' state. This may be a stalled job blocking sync.",
+				);
+				recommendations.push(
+					"Try: 1) Wait 60 seconds, 2) Force Pull Sync, or 3) Reset Sync State",
+				);
+			}
+
+			if (wsStatus === "disconnected" || wsStatus === "error") {
+				recommendations.push(
+					"WebSocket disconnected. Check network connectivity or Dexie Cloud service status.",
+				);
+			}
+
+			if (!persistedStateInfo.initiallySynced) {
+				recommendations.push(
+					"Initial sync not completed. Data may not be fully synced from cloud.",
+				);
+			}
+
+			const lastSyncTime = persistedStateInfo.lastSyncTime
+				? new Date(persistedStateInfo.lastSyncTime)
+				: null;
+			if (lastSyncTime) {
+				const hoursSinceSync =
+					(Date.now() - lastSyncTime.getTime()) / (1000 * 60 * 60);
+				if (hoursSinceSync > 1) {
+					recommendations.push(
+						`Last sync was ${hoursSinceSync.toFixed(1)} hours ago. Consider forcing a sync.`,
+					);
+				}
+			}
+
+			if (recommendations.length === 0) {
+				recommendations.push("No issues detected. Sync appears healthy.");
+			}
+
+			setDiagnosticResult({
+				timestamp: new Date(),
+				stalledJobs,
+				internalTables,
+				persistedState: persistedStateInfo,
+				recommendations,
+			});
+		} catch (err) {
+			console.error("Diagnostics failed:", err);
+			setDiagnosticResult({
+				timestamp: new Date(),
+				stalledJobs: -1,
+				internalTables: [],
+				persistedState: {
+					initiallySynced: false,
+					serverRevision: null,
+					lastSyncTime: null,
+				},
+				recommendations: [
+					`Diagnostics failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+				],
+			});
+		} finally {
+			setIsRunningDiagnostics(false);
+		}
+	}, [persistedState, phase, syncState?.status, wsStatus]);
+
+	const handleForcePullSync = async () => {
+		setIsForcingSyncPull(true);
+		try {
+			console.log("[Diagnostics] Forcing pull sync...");
+			await db.cloud.sync({ wait: true, purpose: "pull" });
+			console.log("[Diagnostics] Pull sync completed");
+			// Re-run diagnostics to show updated state
+			await runDiagnostics();
+		} catch (err) {
+			console.error("[Diagnostics] Force pull sync failed:", err);
+			alert(
+				`Force pull sync failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+			);
+		} finally {
+			setIsForcingSyncPull(false);
+		}
+	};
+
+	const handleResetSyncState = async () => {
+		const confirmed = confirm(
+			"WARNING: This will delete the local database and re-sync from cloud.\n\n" +
+				"Any unsynced local changes will be LOST.\n\n" +
+				"Are you sure you want to continue?",
+		);
+
+		if (!confirmed) return;
+
+		setIsResettingSync(true);
+		try {
+			console.log("[Diagnostics] Resetting sync state...");
+
+			// Delete the database
+			await db.delete();
+			console.log("[Diagnostics] Database deleted");
+
+			// Reload the page to reinitialize
+			alert(
+				"Database reset complete. The page will now reload to re-sync from cloud.",
+			);
+			window.location.reload();
+		} catch (err) {
+			console.error("[Diagnostics] Reset sync state failed:", err);
+			alert(
+				`Reset failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+			);
+			setIsResettingSync(false);
 		}
 	};
 
@@ -350,6 +541,136 @@ export function SyncSection({ isLocalMode }: SyncSectionProps) {
 							</div>
 						)}
 					</div>
+				)}
+
+				{/* Diagnostics expando */}
+				{!isLocalMode && (
+					<>
+						<button
+							className={`sync-expando-header ${diagnosticsExpanded ? "expanded" : ""}`}
+							onClick={() => setDiagnosticsExpanded(!diagnosticsExpanded)}
+						>
+							<ChevronIcon
+								className={`sync-expando-chevron ${diagnosticsExpanded ? "open" : ""}`}
+							/>
+							<span>Diagnostics</span>
+						</button>
+						{diagnosticsExpanded && (
+							<div className="sync-expando-content">
+								{/* Diagnostic actions */}
+								<div className="sync-log-actions">
+									<button
+										onClick={runDiagnostics}
+										disabled={isRunningDiagnostics}
+									>
+										{isRunningDiagnostics ? "Running..." : "Run Diagnostics"}
+									</button>
+									<button
+										onClick={handleForcePullSync}
+										disabled={isForcingSyncPull}
+									>
+										{isForcingSyncPull ? "Syncing..." : "Force Pull"}
+									</button>
+								</div>
+
+								{/* Diagnostic results */}
+								{diagnosticResult && (
+									<div className="sync-diagnostics-results">
+										<div className="sync-diagnostics-section">
+											<div className="sync-diagnostics-title">
+												Recommendations
+											</div>
+											{diagnosticResult.recommendations.map((rec, i) => (
+												<div key={i} className="sync-diagnostics-rec">
+													{rec}
+												</div>
+											))}
+										</div>
+
+										<div className="sync-diagnostics-section">
+											<div className="sync-diagnostics-title">Sync State</div>
+											<div className="sync-detail-row">
+												<span>Initially synced</span>
+												<span>
+													{diagnosticResult.persistedState.initiallySynced
+														? "Yes"
+														: "No"}
+												</span>
+											</div>
+											<div className="sync-detail-row">
+												<span>Server revision</span>
+												<span>
+													{diagnosticResult.persistedState.serverRevision ??
+														"None"}
+												</span>
+											</div>
+											<div className="sync-detail-row">
+												<span>Last sync</span>
+												<span>
+													{diagnosticResult.persistedState.lastSyncTime
+														? formatTimeAgo(
+																new Date(
+																	diagnosticResult.persistedState.lastSyncTime,
+																),
+															)
+														: "Never"}
+												</span>
+											</div>
+											<div className="sync-detail-row">
+												<span>Stalled jobs</span>
+												<span
+													className={
+														diagnosticResult.stalledJobs > 0
+															? "sync-diagnostics-warning"
+															: ""
+													}
+												>
+													{diagnosticResult.stalledJobs}
+												</span>
+											</div>
+										</div>
+
+										{diagnosticResult.internalTables.length > 0 && (
+											<div className="sync-diagnostics-section">
+												<div className="sync-diagnostics-title">
+													Internal Tables
+												</div>
+												{diagnosticResult.internalTables.map((table) => (
+													<div key={table.name} className="sync-detail-row">
+														<span>{table.name}</span>
+														<span>
+															{table.count >= 0 ? table.count : "Error"}
+														</span>
+													</div>
+												))}
+											</div>
+										)}
+
+										<div className="sync-diagnostics-timestamp">
+											Ran at {diagnosticResult.timestamp.toLocaleTimeString()}
+										</div>
+									</div>
+								)}
+
+								{/* Nuclear option */}
+								<div className="sync-diagnostics-danger">
+									<button
+										className="sync-diagnostics-reset-btn"
+										onClick={handleResetSyncState}
+										disabled={isResettingSync}
+									>
+										{isResettingSync
+											? "Resetting..."
+											: "Reset Sync State (Nuclear)"}
+									</button>
+									<div className="sync-diagnostics-danger-hint">
+										Deletes local database and re-syncs from cloud. Use as last
+										resort.
+									</div>
+								</div>
+							</div>
+						)}
+					</>
 				)}
 			</div>
 		</div>
