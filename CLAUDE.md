@@ -18,15 +18,20 @@ Address your human partner as "Igor" at all times.
 **Always use the justfile for commands.** Run from `humane-tracker/` directory:
 
 ```bash
+just setup        # One-time setup after clone (git hooks, npm install)
 just dev          # Run development server - opens http://localhost:3000
 just build        # Build for production (tsc + vite build)
 just test         # Run unit tests (Vitest)
 just e2e          # Run E2E tests (all projects - desktop + mobile)
+just e2e-fast     # Run fast E2E tests (smoke tests)
 just e2e-desktop  # Run E2E tests (desktop chromium only)
 just e2e-mobile   # Run E2E tests (mobile only)
+just e2e-headed   # Run E2E tests with visible browser
+just e2e-debug    # Run E2E tests in debug mode (step-through)
 just e2e-report   # View Playwright HTML report (http://localhost:9323)
 just e2e-ui       # Run E2E tests in interactive UI mode
-just deploy       # Run tests, build, and deploy to Surge
+just deploy-stage # Deploy to staging (humane-tracker-stage.surge.sh)
+just deploy-prod  # Deploy to production (humane-tracker.surge.sh)
 ```
 
 ### Accessing Services in Containers
@@ -44,10 +49,74 @@ This allows viewing the dev server or test reports from any device on your Tails
 ## Code Quality
 
 - **Biome** for formatting (tabs, double quotes) and linting - runs via pre-commit hook
+- **TypeScript** type checking - runs via pre-commit hook
 - **Vitest** for unit tests (jsdom environment)
 - **Playwright** for E2E tests (in `tests/` directory)
 
-Pre-commit runs Biome checks and unit tests automatically.
+Pre-commit runs Biome checks, TypeScript type checking, and unit tests automatically.
+
+## Multi-Agent Setup
+
+This repo supports multiple AI agents working in parallel via full clones.
+
+### Git Remotes
+
+- `origin` = **idvorkin-ai-tools** fork (agents push here, can merge to main directly)
+- `upstream` = **idvorkin** (human-only repo, requires PR approval to merge)
+
+### Workflow
+
+1. **Agents work on feature branches** - Create branches like `feature/my-change`
+2. **Push to origin** - `git push -u origin feature/my-change`
+3. **Create PRs to origin/main** - Agents can merge these directly
+4. **PRs to upstream require human approval** - Use `gh pr create --repo idvorkin/humane-tracker-1`
+
+### Git Hooks
+
+Located in `.githooks/` (activated via `just setup` or `git config core.hooksPath .githooks`):
+
+- **pre-commit** - Syncs beads, runs biome/prettier/TypeScript checks, runs unit tests
+- **pre-push** - Blocks direct pushes to main (forces PR workflow)
+- **post-merge** - Auto-syncs beads after pulls
+
+### Rules
+
+- **✅ ORIGIN MERGES**: Agents can merge directly to origin/main (agent working repo)
+- **⚠️ UPSTREAM MERGES**: Only humans merge to upstream/main. Agents must create PRs.
+- **🚫 NO --no-verify**: Never use `--no-verify` to bypass hooks
+
+## Beads Integration
+
+We use **beads** (`bd`) for issue tracking. Issues are synced via git on the `beads-metadata` branch.
+
+### Quick Reference
+
+```bash
+bd list                    # List all issues
+bd ready                   # Show issues ready to work on (no blockers)
+bd create "Fix bug"        # Create a new issue
+bd show HT-1               # Show issue details
+bd update HT-1 --status in_progress  # Claim an issue
+bd close HT-1              # Complete an issue
+bd sync                    # Sync issues with git
+```
+
+### Workflow
+
+1. **Start session**: Check `bd ready` for unblocked work
+2. **Claim work**: `bd update HT-N --status in_progress`
+3. **Discover related work**: Create new issues with `discovered-from` dependency
+4. **Complete work**: `bd close HT-N --reason "Fixed in PR #X"`
+
+### Discovered-from Dependencies
+
+When you discover related work while implementing an issue, create a new issue linked to the original:
+
+```bash
+bd create "Related fix" --dep HT-1:discovered-from
+```
+
+This maintains an audit trail of how issues were discovered.
 
 ## Architecture
 
