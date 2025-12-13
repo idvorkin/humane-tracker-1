@@ -14,6 +14,29 @@ interface DiagnosticResult {
 		serverRevision: string | null;
 		lastSyncTime: string | null;
 	};
+	currentSyncState: {
+		phase: string;
+		status: string;
+		error: string | null;
+		license: string | null;
+	};
+	authState: {
+		isLoggedIn: boolean;
+		userId: string | null;
+		email: string | null;
+		license: string | null;
+	};
+	environment: {
+		online: boolean;
+		serviceWorker: string;
+		storageQuota: string | null;
+		dexieCloudUrl: string | null;
+		userAgent: string;
+	};
+	pendingMutations: {
+		total: number;
+		tables: Record<string, number>;
+	};
 	recommendations: string[];
 }
 
@@ -173,6 +196,7 @@ export function SyncSection({ isLocalMode }: SyncSectionProps) {
 	const [isRunningDiagnostics, setIsRunningDiagnostics] = useState(false);
 	const [isForcingSyncPull, setIsForcingSyncPull] = useState(false);
 	const [isResettingSync, setIsResettingSync] = useState(false);
+	const [diagnosticsCopied, setDiagnosticsCopied] = useState(false);
 
 	// Sync state observables
 	const syncStateFromCloud = useObservable(() => db.cloud.syncState, []) as
@@ -185,6 +209,9 @@ export function SyncSection({ isLocalMode }: SyncSectionProps) {
 		() => db.cloud.persistedSyncState,
 		[],
 	) as PersistedSyncState | null;
+	const currentUser = useObservable(() => db.cloud.currentUser, []) as
+		| { userId?: string; email?: string; license?: { type?: string } }
+		| undefined;
 
 	// Logs
 	const logs = useLiveQuery(() => syncLogService.getLogs(), []) ?? [];
@@ -247,15 +274,27 @@ export function SyncSection({ isLocalMode }: SyncSectionProps) {
 
 	const runDiagnostics = useCallback(async () => {
 		setIsRunningDiagnostics(true);
+		console.log("[Diagnostics] Starting diagnostics...");
 		try {
 			const recommendations: string[] = [];
 			const internalTables: Array<{ name: string; count: number }> = [];
 
-			// Get all table names including internal Dexie Cloud tables
-			const allTables = db.tables.map((t) => t.name);
-			const internalTableNames = allTables.filter((name) =>
+			// Get all table names from Dexie (user tables)
+			const dexieTables = db.tables.map((t) => t.name);
+			console.log("[Diagnostics] Dexie tables:", dexieTables);
+
+			// Also get object stores directly from IndexedDB to find internal tables
+			const idbDatabase = db.backendDB();
+			const allStoreNames = idbDatabase
+				? Array.from(idbDatabase.objectStoreNames)
+				: [];
+			console.log("[Diagnostics] All IndexedDB stores:", allStoreNames);
+
+			// Find internal Dexie Cloud tables (start with $)
+			const internalTableNames = allStoreNames.filter((name) =>
 				name.startsWith("$"),
 			);
+			console.log("[Diagnostics] Internal tables:", internalTableNames);
 
 			// Count entries in each internal table
 			let stalledJobs = 0;
@@ -264,10 +303,12 @@ export function SyncSection({ isLocalMode }: SyncSectionProps) {
 					const table = db.table(tableName);
 					const count = await table.count();
 					internalTables.push({ name: tableName, count });
+					console.log(`[Diagnostics] ${tableName}: ${count} entries`);
 
 					// Check for stalled jobs
 					if (tableName === "$jobs" && count > 0) {
 						const jobs = await table.toArray();
+						console.log("[Diagnostics] Jobs:", jobs);
 						const now = Date.now();
 						for (const job of jobs) {
 							// Jobs older than 60 seconds are considered stalled
@@ -280,8 +321,21 @@ export function SyncSection({ isLocalMode }: SyncSectionProps) {
 						}
 					}
 				} catch (err) {
-					console.warn(`Could not read table ${tableName}:`, err);
+					console.warn(`[Diagnostics] Could not read table ${tableName}:`, err);
 					internalTables.push({ name: tableName, count: -1 });
+				}
+			}
+
+			// Add user tables for reference
+			for (const tableName of dexieTables) {
+				if (!tableName.startsWith("$")) {
+					try {
+						const table = db.table(tableName);
+						const count = await table.count();
+						internalTables.push({ name: tableName, count });
+					} catch {
+						internalTables.push({ name: tableName, count: -1 });
+					}
 				}
 			}
 
@@ -338,15 +392,104 @@ export function SyncSection({ isLocalMode }: SyncSectionProps) {
 				}
 			}
 
+			// Check auth state
+			const authState = {
+				isLoggedIn: !!currentUser?.userId,
+				userId: currentUser?.userId ?? null,
+				email: currentUser?.email ?? null,
+				license: currentUser?.license?.type ?? null,
+			};
+
+			if (!authState.isLoggedIn) {
+				recommendations.push(
+					"Not logged in. Authentication may have expired. Try logging out and back in.",
+				);
+			}
+
+			// Collect pending mutations
+			const pendingMutations: {
+				total: number;
+				tables: Record<string, number>;
+			} = { total: 0, tables: {} };
+			for (const table of internalTables) {
+				if (table.name.endsWith("_mutations") && table.count > 0) {
+					pendingMutations.tables[table.name] = table.count;
+					pendingMutations.total += table.count;
+				}
+			}
+
+			if (pendingMutations.total > 0) {
+				recommendations.push(
+					`${pendingMutations.total} pending mutation(s) waiting to sync. Check network/auth.`,
+				);
+			}
+
+			// Collect environment info
+			let storageQuota: string | null = null;
+			try {
+				if (navigator.storage?.estimate) {
+					const estimate = await navigator.storage.estimate();
+					const usedMB = ((estimate.usage ?? 0) / 1024 / 1024).toFixed(1);
+					const quotaMB = ((estimate.quota ?? 0) / 1024 / 1024).toFixed(0);
+					storageQuota = `${usedMB}MB / ${quotaMB}MB`;
+				}
+			} catch {
+				storageQuota = "Unable to check";
+			}
+
+			let serviceWorkerStatus = "Not supported";
+			try {
+				if ("serviceWorker" in navigator) {
+					const registration = await navigator.serviceWorker.getRegistration();
+					if (registration?.active) {
+						serviceWorkerStatus = "Active";
+					} else if (registration?.installing) {
+						serviceWorkerStatus = "Installing";
+					} else if (registration?.waiting) {
+						serviceWorkerStatus = "Waiting";
+					} else {
+						serviceWorkerStatus = "Not registered";
+					}
+				}
+			} catch {
+				serviceWorkerStatus = "Error checking";
+			}
+
+			const environment = {
+				online: navigator.onLine,
+				serviceWorker: serviceWorkerStatus,
+				storageQuota,
+				dexieCloudUrl: import.meta.env.VITE_DEXIE_CLOUD_URL ?? null,
+				userAgent: navigator.userAgent,
+			};
+
+			if (!navigator.onLine) {
+				recommendations.push(
+					"Browser reports offline. Check network connection.",
+				);
+			}
+
 			if (recommendations.length === 0) {
 				recommendations.push("No issues detected. Sync appears healthy.");
 			}
+
+			// Get current sync state with error
+			const currentSyncState = {
+				phase: phase as string,
+				status: (syncState?.status as string) ?? "unknown",
+				error: syncState?.error?.message ?? null,
+				license: (syncState?.license as string) ?? null,
+			};
 
 			setDiagnosticResult({
 				timestamp: new Date(),
 				stalledJobs,
 				internalTables,
 				persistedState: persistedStateInfo,
+				currentSyncState,
+				authState,
+				environment,
+				pendingMutations,
 				recommendations,
 			});
 		} catch (err) {
@@ -360,6 +503,26 @@ export function SyncSection({ isLocalMode }: SyncSectionProps) {
 					serverRevision: null,
 					lastSyncTime: null,
 				},
+				currentSyncState: {
+					phase: "unknown",
+					status: "unknown",
+					error: err instanceof Error ? err.message : "Unknown error",
+					license: null,
+				},
+				authState: {
+					isLoggedIn: false,
+					userId: null,
+					email: null,
+					license: null,
+				},
+				environment: {
+					online: navigator.onLine,
+					serviceWorker: "Unknown",
+					storageQuota: null,
+					dexieCloudUrl: import.meta.env.VITE_DEXIE_CLOUD_URL ?? null,
+					userAgent: navigator.userAgent,
+				},
+				pendingMutations: { total: 0, tables: {} },
 				recommendations: [
 					`Diagnostics failed: ${err instanceof Error ? err.message : "Unknown error"}`,
 				],
@@ -367,7 +530,40 @@ export function SyncSection({ isLocalMode }: SyncSectionProps) {
 		} finally {
 			setIsRunningDiagnostics(false);
 		}
-	}, [persistedState, phase, syncState?.status, wsStatus]);
+	}, [
+		persistedState,
+		phase,
+		syncState?.status,
+		syncState?.error,
+		syncState?.license,
+		wsStatus,
+		currentUser,
+	]);
+
+	const handleCopyDiagnostics = async () => {
+		if (!diagnosticResult) return;
+		try {
+			const report = {
+				timestamp: diagnosticResult.timestamp.toISOString(),
+				currentSyncState: diagnosticResult.currentSyncState,
+				wsStatus: wsStatus ?? "unknown",
+				authState: diagnosticResult.authState,
+				environment: diagnosticResult.environment,
+				persistedState: diagnosticResult.persistedState,
+				pendingMutations: diagnosticResult.pendingMutations,
+				stalledJobs: diagnosticResult.stalledJobs,
+				tables: Object.fromEntries(
+					diagnosticResult.internalTables.map((t) => [t.name, t.count]),
+				),
+				recommendations: diagnosticResult.recommendations,
+			};
+			await navigator.clipboard.writeText(JSON.stringify(report, null, 2));
+			setDiagnosticsCopied(true);
+			setTimeout(() => setDiagnosticsCopied(false), 2000);
+		} catch (err) {
+			console.error("Failed to copy diagnostics:", err);
+		}
+	};
 
 	const handleForcePullSync = async () => {
 		setIsForcingSyncPull(true);
@@ -563,7 +759,13 @@ export function SyncSection({ isLocalMode }: SyncSectionProps) {
 										onClick={runDiagnostics}
 										disabled={isRunningDiagnostics}
 									>
-										{isRunningDiagnostics ? "Running..." : "Run Diagnostics"}
+										{isRunningDiagnostics ? "Running..." : "Run"}
+									</button>
+									<button
+										onClick={handleCopyDiagnostics}
+										disabled={!diagnosticResult}
+									>
+										{diagnosticsCopied ? "Copied!" : "Copy"}
 									</button>
 									<button
 										onClick={handleForcePullSync}
@@ -588,7 +790,51 @@ export function SyncSection({ isLocalMode }: SyncSectionProps) {
 										</div>
 
 										<div className="sync-diagnostics-section">
+											<div className="sync-diagnostics-title">Auth State</div>
+											<div className="sync-detail-row">
+												<span>Logged in</span>
+												<span
+													className={
+														!diagnosticResult.authState.isLoggedIn
+															? "sync-diagnostics-warning"
+															: ""
+													}
+												>
+													{diagnosticResult.authState.isLoggedIn ? "Yes" : "No"}
+												</span>
+											</div>
+											<div className="sync-detail-row">
+												<span>Email</span>
+												<span>
+													{diagnosticResult.authState.email ?? "None"}
+												</span>
+											</div>
+											<div className="sync-detail-row">
+												<span>License</span>
+												<span>
+													{diagnosticResult.currentSyncState.license ?? "None"}
+												</span>
+											</div>
+											{diagnosticResult.currentSyncState.error && (
+												<div className="sync-detail-row">
+													<span>Error</span>
+													<span className="sync-diagnostics-warning">
+														{diagnosticResult.currentSyncState.error}
+													</span>
+												</div>
+											)}
+										</div>
+
+										<div className="sync-diagnostics-section">
 											<div className="sync-diagnostics-title">Sync State</div>
+											<div className="sync-detail-row">
+												<span>Phase</span>
+												<span>{diagnosticResult.currentSyncState.phase}</span>
+											</div>
+											<div className="sync-detail-row">
+												<span>Status</span>
+												<span>{diagnosticResult.currentSyncState.status}</span>
+											</div>
 											<div className="sync-detail-row">
 												<span>Initially synced</span>
 												<span>
@@ -626,6 +872,52 @@ export function SyncSection({ isLocalMode }: SyncSectionProps) {
 													}
 												>
 													{diagnosticResult.stalledJobs}
+												</span>
+											</div>
+											<div className="sync-detail-row">
+												<span>Pending mutations</span>
+												<span
+													className={
+														diagnosticResult.pendingMutations.total > 0
+															? "sync-diagnostics-warning"
+															: ""
+													}
+												>
+													{diagnosticResult.pendingMutations.total}
+												</span>
+											</div>
+										</div>
+
+										<div className="sync-diagnostics-section">
+											<div className="sync-diagnostics-title">Environment</div>
+											<div className="sync-detail-row">
+												<span>Online</span>
+												<span
+													className={
+														!diagnosticResult.environment.online
+															? "sync-diagnostics-warning"
+															: ""
+													}
+												>
+													{diagnosticResult.environment.online ? "Yes" : "No"}
+												</span>
+											</div>
+											<div className="sync-detail-row">
+												<span>Service Worker</span>
+												<span>
+													{diagnosticResult.environment.serviceWorker}
+												</span>
+											</div>
+											<div className="sync-detail-row">
+												<span>Storage</span>
+												<span>
+													{diagnosticResult.environment.storageQuota ?? "N/A"}
+												</span>
+											</div>
+											<div className="sync-detail-row">
+												<span>Cloud URL</span>
+												<span className="sync-diagnostics-url">
+													{diagnosticResult.environment.dexieCloudUrl ?? "N/A"}
 												</span>
 											</div>
 										</div>
