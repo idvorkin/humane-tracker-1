@@ -162,8 +162,11 @@ export const habitRepository = {
 	): Promise<string> {
 		try {
 			const record = toRecord(habit);
-			// Dexie will auto-generate the id, so we cast to full type
-			const id = await db.habits.add(record as HabitRecord);
+			// Generate our own ID to avoid Dexie Cloud ID generation issues when offline
+			// Dexie Cloud @id requires table prefix (hbt for habits)
+			const id = `hbt${crypto.randomUUID().replace(/-/g, "")}`;
+			const recordWithId = { ...record, id } as HabitRecord;
+			await db.habits.add(recordWithId);
 			return id;
 		} catch (error) {
 			console.error("[HabitRepository] Failed to create habit:", {
@@ -183,13 +186,15 @@ export const habitRepository = {
 	async bulkCreate(
 		habits: Array<Omit<Habit, "id" | "createdAt" | "updatedAt">>,
 	): Promise<string[]> {
-		const records = habits.map(toRecord);
-		// Dexie will auto-generate the ids, so we cast to full type
-		const ids = await db.habits.bulkAdd(records as HabitRecord[], {
-			allKeys: true,
+		// Generate our own IDs to avoid Dexie Cloud ID generation issues when offline
+		// Dexie Cloud @id requires table prefix (hbt for habits)
+		const recordsWithIds = habits.map((habit) => {
+			const record = toRecord(habit);
+			const id = `hbt${crypto.randomUUID().replace(/-/g, "")}`;
+			return { ...record, id } as HabitRecord;
 		});
-		// bulkAdd with allKeys returns string[] when given an array
-		return ids as string[];
+		await db.habits.bulkAdd(recordsWithIds);
+		return recordsWithIds.map((r) => r.id);
 	},
 
 	async update(

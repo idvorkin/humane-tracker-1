@@ -185,8 +185,11 @@ export const entryRepository = {
 				...entry,
 				createdAt: new Date(),
 			});
-			// Dexie will auto-generate the id, so we cast to full type
-			const id = await db.entries.add(record as EntryRecord);
+			// Generate our own ID to avoid Dexie Cloud ID generation issues when offline
+			// Dexie Cloud @id requires table prefix (ent for entries)
+			const id = `ent${crypto.randomUUID().replace(/-/g, "")}`;
+			const recordWithId = { ...record, id } as EntryRecord;
+			await db.entries.add(recordWithId);
 			return id;
 		} catch (error) {
 			console.error("[EntryRepository] Failed to add entry:", {
