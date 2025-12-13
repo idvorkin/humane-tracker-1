@@ -1,9 +1,3 @@
-export interface HabitVariant {
-	id: string;
-	name: string;
-	usageCount?: number;
-}
-
 export type HabitType = "raw" | "tag";
 
 export interface Habit {
@@ -15,8 +9,6 @@ export interface Habit {
 	userId: string;
 	createdAt: Date;
 	updatedAt: Date;
-	variants?: HabitVariant[];
-	allowCustomVariant?: boolean;
 
 	// Tag system fields
 	habitType?: HabitType; // 'raw' (default) or 'tag'
@@ -42,8 +34,6 @@ export interface HabitEntry {
 	value: number; // Can be 1 for done, 0.5 for partial, or actual count
 	notes?: string; // Freeform notes (write loose)
 	createdAt: Date;
-	variantId?: string;
-	variantName?: string;
 
 	// Structured data (structure later - via LLM parsing or manual entry)
 	sets?: SetData[];

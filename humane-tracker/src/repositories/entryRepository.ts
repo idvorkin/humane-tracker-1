@@ -22,8 +22,6 @@ function toEntry(record: EntryRecord): HabitEntry {
 		value: record.value,
 		notes: record.notes,
 		createdAt: normalizeDate(record.createdAt as string | Date),
-		variantId: record.variantId,
-		variantName: record.variantName,
 		// Structured data fields
 		sets: record.sets,
 		parsed: record.parsed,
@@ -43,8 +41,6 @@ function toRecord(
 		value: entry.value,
 		notes: entry.notes,
 		createdAt: toTimestamp(entry.createdAt ?? new Date()),
-		variantId: entry.variantId,
-		variantName: entry.variantName,
 		// Structured data fields
 		sets: entry.sets,
 		parsed: entry.parsed,
@@ -183,8 +179,6 @@ export const entryRepository = {
 		date: Date;
 		value: number;
 		notes?: string;
-		variantId?: string;
-		variantName?: string;
 		sets?: HabitEntry["sets"];
 		parsed?: boolean;
 	}): Promise<string> {
