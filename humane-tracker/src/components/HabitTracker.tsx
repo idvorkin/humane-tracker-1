@@ -1,10 +1,12 @@
 import { format, isSameDay, isToday } from "date-fns";
-import React, { useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { useHabitTrackerVM } from "../hooks/useHabitTrackerVM";
+import type { HabitVariant, HabitWithStatus } from "../types/habit";
 import { buildCategoryInfo } from "../utils/categoryUtils";
 import { CleanupDuplicates } from "./CleanupDuplicates";
 import { HabitSettings } from "./HabitSettings";
 import { InitializeHabits } from "./InitializeHabits";
+import { VariantPicker } from "./VariantPicker";
 import "./HabitTracker.css";
 
 interface HabitTrackerProps {
@@ -25,8 +27,79 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 	const [showCleanup, setShowCleanup] = useState(false);
 	const [showSettings, setShowSettings] = useState(false);
 
+	// Variant picker state
+	const [variantPickerState, setVariantPickerState] = useState<{
+		habit: HabitWithStatus;
+		date: Date;
+		position: { x: number; y: number };
+	} | null>(null);
+
+	// Long-press detection refs
+	const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const longPressTriggered = useRef(false);
+
 	// All business logic from the ViewModel
 	const vm = useHabitTrackerVM({ userId });
+
+	// Long press handlers for cells with variants
+	const handleCellPressStart = useCallback(
+		(
+			habit: HabitWithStatus,
+			date: Date,
+			event: React.MouseEvent | React.TouchEvent,
+		) => {
+			// Only enable long-press for habits with variants
+			if (!habit.variants || habit.variants.length === 0) return;
+
+			longPressTriggered.current = false;
+			const clientX =
+				"touches" in event ? event.touches[0].clientX : event.clientX;
+			const clientY =
+				"touches" in event ? event.touches[0].clientY : event.clientY;
+
+			longPressTimer.current = setTimeout(() => {
+				longPressTriggered.current = true;
+				setVariantPickerState({
+					habit,
+					date,
+					position: { x: clientX, y: clientY },
+				});
+			}, 500); // 500ms for long press
+		},
+		[],
+	);
+
+	const handleCellPressEnd = useCallback(() => {
+		if (longPressTimer.current) {
+			clearTimeout(longPressTimer.current);
+			longPressTimer.current = null;
+		}
+	}, []);
+
+	const handleCellClick = useCallback(
+		(habit: HabitWithStatus, date: Date) => {
+			// If long press was triggered, don't also do click action
+			if (longPressTriggered.current) {
+				longPressTriggered.current = false;
+				return;
+			}
+			vm.toggleEntry(habit.id, date);
+		},
+		[vm],
+	);
+
+	const handleVariantSelect = useCallback(
+		async (variant: HabitVariant | null) => {
+			if (!variantPickerState) return;
+			await vm.addEntryWithVariant(
+				variantPickerState.habit.id,
+				variantPickerState.date,
+				variant,
+			);
+			setVariantPickerState(null);
+		},
+		[variantPickerState, vm],
+	);
 
 	// Loading screen
 	if (vm.isLoading) {
@@ -142,7 +215,11 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 							return (
 								<th
 									key={date.toISOString()}
-									className={getDateColumnClass("col-day", isTodayDate, isSelected)}
+									className={getDateColumnClass(
+										"col-day",
+										isTodayDate,
+										isSelected,
+									)}
 									onClick={() =>
 										handleDateHeaderClick(date, isTodayDate, isSelected)
 									}
@@ -255,11 +332,17 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 														const cellDisplay = vm.getCellDisplay(habit, date);
 														const isTodayDate = isToday(date);
 														const isSelected = Boolean(
-															vm.selectedDate && isSameDay(date, vm.selectedDate),
+															vm.selectedDate &&
+																isSameDay(date, vm.selectedDate),
 														);
 														const cellClass = [
 															cellDisplay.className,
-															getDateColumnClass("cell", isTodayDate, isSelected),
+															getDateColumnClass(
+																"cell",
+																isTodayDate,
+																isSelected,
+															),
+															habit.variants?.length ? "has-variants" : "",
 														]
 															.filter(Boolean)
 															.join(" ");
@@ -267,7 +350,16 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 															<td
 																key={date.toISOString()}
 																className={cellClass}
-																onClick={() => vm.toggleEntry(habit.id, date)}
+																onClick={() => handleCellClick(habit, date)}
+																onMouseDown={(e) =>
+																	handleCellPressStart(habit, date, e)
+																}
+																onMouseUp={handleCellPressEnd}
+																onMouseLeave={handleCellPressEnd}
+																onTouchStart={(e) =>
+																	handleCellPressStart(habit, date, e)
+																}
+																onTouchEnd={handleCellPressEnd}
 																style={{ cursor: "pointer" }}
 															>
 																{cellDisplay.content}
@@ -355,6 +447,16 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 						setShowSettings(false);
 						window.location.reload();
 					}}
+				/>
+			)}
+
+			{variantPickerState && (
+				<VariantPicker
+					habit={variantPickerState.habit}
+					date={variantPickerState.date}
+					position={variantPickerState.position}
+					onSelect={handleVariantSelect}
+					onClose={() => setVariantPickerState(null)}
 				/>
 			)}
 		</div>

@@ -1,10 +1,9 @@
 import type React from "react";
 import { useState } from "react";
-import { HabitService } from "../services/habitService";
+import { useHabitService } from "../hooks/useHabitService";
 import { buildCategoryInfo } from "../utils/categoryUtils";
+import { validateHabitForm } from "../utils/habitValidation";
 import "./HabitManager.css";
-
-const habitService = new HabitService();
 
 interface HabitManagerProps {
 	userId: string;
@@ -17,19 +16,25 @@ export const HabitManager: React.FC<HabitManagerProps> = ({
 	onClose,
 	existingCategories,
 }) => {
+	const habitService = useHabitService();
 	const [habitName, setHabitName] = useState("");
 	const [category, setCategory] = useState("Mobility");
 	const [targetPerWeek, setTargetPerWeek] = useState(3);
 	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState("");
 
 	const categoryInfo = buildCategoryInfo(category);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!habitName.trim()) return;
-		if (!category.trim()) return;
+		const validation = validateHabitForm({ name: habitName, category });
+		if (!validation.isValid) {
+			setError(validation.errors.name || validation.errors.category || "");
+			return;
+		}
 
 		setLoading(true);
+		setError("");
 		try {
 			await habitService.createHabit({
 				name: habitName.trim(),
@@ -58,6 +63,7 @@ export const HabitManager: React.FC<HabitManagerProps> = ({
 				</div>
 
 				<form onSubmit={handleSubmit}>
+					{error && <div className="error-message">{error}</div>}
 					<div className="form-group">
 						<label htmlFor="habitName">Habit Name</label>
 						<input

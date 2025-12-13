@@ -2,16 +2,16 @@ import { addDays, format, isSameDay, isToday, isYesterday } from "date-fns";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_HABITS } from "../data/defaultHabits";
 import { toDateString } from "../repositories";
-import { HabitService } from "../services/habitService";
+import { habitService } from "../services/habitService";
 import type {
 	CategorySection,
 	HabitStatus,
+	HabitVariant,
 	HabitWithStatus,
 	SummaryStats,
 } from "../types/habit";
 import { buildCategoryInfo, extractCategories } from "../utils/categoryUtils";
-
-const habitService = new HabitService();
+import { getTrailingWeekDateRange } from "../utils/dateUtils";
 
 // ============================================================================
 // Pure helper functions (easily testable)
@@ -190,6 +190,11 @@ export interface HabitTrackerVM {
 
 	// Actions
 	toggleEntry: (habitId: string, date: Date) => Promise<void>;
+	addEntryWithVariant: (
+		habitId: string,
+		date: Date,
+		variant: HabitVariant | null,
+	) => Promise<void>;
 	toggleSection: (category: string) => void;
 	expandAll: () => void;
 	collapseAll: () => void;
@@ -289,11 +294,7 @@ export function useHabitTrackerVM({
 			handleSubscriptionError,
 		);
 
-		const endDate = new Date();
-		endDate.setHours(23, 59, 59, 999);
-		const startDate = new Date();
-		startDate.setDate(startDate.getDate() - 6);
-		startDate.setHours(0, 0, 0, 0);
+		const { startDate, endDate } = getTrailingWeekDateRange();
 
 		const unsubscribeEntries = habitService.subscribeToWeekEntries(
 			userId,
@@ -366,6 +367,30 @@ export function useHabitTrackerVM({
 		setSelectedDate(date);
 	}, []);
 
+	const addEntryWithVariant = useCallback(
+		async (habitId: string, date: Date, variant: HabitVariant | null) => {
+			const habit = habits.find((h) => h.id === habitId);
+			if (!habit) {
+				console.error("Habit not found:", habitId);
+				return;
+			}
+
+			try {
+				await habitService.addEntry({
+					habitId,
+					userId,
+					date,
+					value: 1,
+					variantId: variant?.id,
+					variantName: variant?.name,
+				});
+			} catch (error) {
+				console.error("Error adding entry with variant:", error);
+			}
+		},
+		[habits, userId],
+	);
+
 	const toggleEntry = useCallback(
 		async (habitId: string, date: Date) => {
 			// Check if date is older than yesterday and confirm
@@ -437,6 +462,7 @@ export function useHabitTrackerVM({
 
 		// Actions
 		toggleEntry,
+		addEntryWithVariant,
 		toggleSection,
 		expandAll,
 		collapseAll,

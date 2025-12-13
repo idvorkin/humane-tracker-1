@@ -1,9 +1,7 @@
 import type React from "react";
 import { useState } from "react";
-import { HabitService } from "../services/habitService";
+import { useHabitService } from "../hooks/useHabitService";
 import type { Habit } from "../types/habit";
-
-const habitService = new HabitService();
 
 interface CleanupDuplicatesProps {
 	userId: string;
@@ -14,6 +12,7 @@ export const CleanupDuplicates: React.FC<CleanupDuplicatesProps> = ({
 	userId,
 	onComplete,
 }) => {
+	const habitService = useHabitService();
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [status, setStatus] = useState<string>("");
 	const [duplicatesFound, setDuplicatesFound] = useState<string[]>([]);

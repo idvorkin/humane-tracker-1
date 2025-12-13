@@ -1,6 +1,9 @@
+import {
+	entryRepository,
+	habitRepository,
+	runImportTransaction,
+} from "../repositories";
 import type { Habit, HabitEntry } from "../types/habit";
-import { habitRepository, entryRepository } from "../repositories";
-import { db } from "../config/db";
 
 export interface ExportData {
 	version: 1;
@@ -39,20 +42,9 @@ export async function importAllData(
 		createdAt: new Date(e.createdAt),
 	}));
 
-	// Wrap all operations in a transaction for atomicity.
+	// Use repository-layer transaction for atomicity.
 	// If any operation fails, everything rolls back automatically.
-	// This prevents data loss if an error occurs mid-import.
-	// See: https://dexie.org/docs/cloud/consistency
-	await db.transaction("rw", db.habits, db.entries, async () => {
-		if (mode === "replace") {
-			await habitRepository.clear();
-			await entryRepository.clear();
-		}
-
-		// Use repositories for storage - they handle date conversion
-		await habitRepository.bulkPut(habits);
-		await entryRepository.bulkPut(entries);
-	});
+	await runImportTransaction(habits, entries, mode);
 
 	return { habitsImported: habits.length, entriesImported: entries.length };
 }

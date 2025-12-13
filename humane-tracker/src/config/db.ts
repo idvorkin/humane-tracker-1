@@ -386,6 +386,16 @@ export class HumaneTrackerDB extends Dexie {
 			entries: "@id, habitId, userId, date, value, createdAt",
 			syncLogs: null, // Remove syncLogs table from this database
 		});
+
+		// Version 8: Add habit variants support
+		// Habits can now have optional 'variants' array for granular tracking.
+		// Entries can optionally reference a variantId/variantName.
+		// No schema change needed - fields are optional and stored in existing records.
+		this.version(8).stores({
+			habits:
+				"@id, userId, name, category, targetPerWeek, createdAt, updatedAt",
+			entries: "@id, habitId, userId, date, value, createdAt",
+		});
 	}
 }
 

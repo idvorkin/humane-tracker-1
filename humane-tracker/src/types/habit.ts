@@ -1,3 +1,9 @@
+export interface HabitVariant {
+	id: string;
+	name: string;
+	usageCount?: number;
+}
+
 export interface Habit {
 	id: string;
 	name: string;
@@ -7,6 +13,8 @@ export interface Habit {
 	userId: string;
 	createdAt: Date;
 	updatedAt: Date;
+	variants?: HabitVariant[];
+	allowCustomVariant?: boolean;
 }
 
 export interface HabitEntry {
@@ -17,6 +25,8 @@ export interface HabitEntry {
 	value: number; // Can be 1 for done, 0.5 for partial, or actual count
 	notes?: string;
 	createdAt: Date;
+	variantId?: string;
+	variantName?: string;
 }
 
 export interface CategoryInfo {

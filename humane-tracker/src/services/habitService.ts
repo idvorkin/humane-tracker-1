@@ -9,6 +9,7 @@ import type {
 	HabitStatus,
 	HabitWithStatus,
 } from "../types/habit";
+import { getTrailingWeekDateRange } from "../utils/dateUtils";
 
 // ============================================================================
 // Pure functions (easily testable)
@@ -31,11 +32,8 @@ export function calculateHabitStatus(
 	currentDate: Date = new Date(),
 ): HabitStatus {
 	// Use trailing 7 days (today and 6 days back) to match UI display
-	const weekEnd = new Date(currentDate);
-	weekEnd.setHours(23, 59, 59, 999);
-	const weekStart = new Date(currentDate);
-	weekStart.setDate(weekStart.getDate() - 6);
-	weekStart.setHours(0, 0, 0, 0);
+	const { startDate: weekStart, endDate: weekEnd } =
+		getTrailingWeekDateRange(currentDate);
 
 	const todayStr = toDateString(currentDate);
 
@@ -152,12 +150,7 @@ export class HabitService {
 	async getHabitsWithStatus(userId: string): Promise<HabitWithStatus[]> {
 		const habits = await this.getUserHabits(userId);
 		const currentDate = new Date();
-		// Get trailing 7 days (today and previous 6 days)
-		const endDate = new Date(currentDate);
-		endDate.setHours(23, 59, 59, 999);
-		const startDate = new Date(currentDate);
-		startDate.setDate(startDate.getDate() - 6);
-		startDate.setHours(0, 0, 0, 0);
+		const { startDate, endDate } = getTrailingWeekDateRange(currentDate);
 
 		const habitsWithStatus: HabitWithStatus[] = [];
 
