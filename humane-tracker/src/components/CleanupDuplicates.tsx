@@ -38,9 +38,9 @@ export const CleanupDuplicates: React.FC<CleanupDuplicatesProps> = ({
 				{} as Record<string, Habit[]>,
 			);
 
-			// Find duplicates
+			// Find duplicates and collect IDs to delete
 			const duplicateNames: string[] = [];
-			let deletedCount = 0;
+			const idsToDelete: string[] = [];
 
 			for (const [name, habits] of Object.entries(habitsByName)) {
 				if (habits.length > 1) {
@@ -55,14 +55,21 @@ export const CleanupDuplicates: React.FC<CleanupDuplicatesProps> = ({
 						return dateA - dateB;
 					});
 
-					// Delete all but the first (oldest) habit
+					// Collect IDs of all duplicates (all but the oldest)
 					for (let i = 1; i < habits.length; i++) {
-						setStatus(`Removing duplicate: ${name}...`);
-						await habitService.deleteHabit(habits[i].id);
-						deletedCount++;
+						idsToDelete.push(habits[i].id);
 					}
 				}
 			}
+
+			// Delete all duplicates atomically in a single transaction
+			// This prevents race conditions and ensures all-or-nothing behavior
+			if (idsToDelete.length > 0) {
+				setStatus(`Removing ${idsToDelete.length} duplicate habits...`);
+				await habitService.bulkDeleteHabits(idsToDelete);
+			}
+
+			const deletedCount = idsToDelete.length;
 
 			if (duplicateNames.length > 0) {
 				setDuplicatesFound(duplicateNames);

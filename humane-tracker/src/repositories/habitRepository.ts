@@ -235,6 +235,34 @@ export const habitRepository = {
 		}
 	},
 
+	/**
+	 * Delete multiple habits atomically in a single transaction.
+	 * All deletes succeed or all fail together.
+	 */
+	async bulkDelete(habitIds: string[]): Promise<void> {
+		if (habitIds.length === 0) return;
+
+		try {
+			console.log(
+				`[HabitRepository] Bulk deleting ${habitIds.length} habits atomically`,
+			);
+			await db.transaction("rw", db.habits, async () => {
+				await db.habits.bulkDelete(habitIds);
+			});
+			console.log(
+				`[HabitRepository] Successfully bulk deleted ${habitIds.length} habits`,
+			);
+		} catch (error) {
+			console.error(
+				`[HabitRepository] Failed to bulk delete ${habitIds.length} habits:`,
+				error,
+			);
+			throw new Error(
+				`Failed to delete habits: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
+	},
+
 	async bulkPut(habits: Habit[]): Promise<void> {
 		try {
 			const records: HabitRecord[] = habits.map((habit) => ({
