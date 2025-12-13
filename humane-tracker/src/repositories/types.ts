@@ -28,6 +28,9 @@ export interface HabitRecord {
 	habitType?: HabitType; // 'raw' (default) or 'tag'
 	childIds?: string[]; // For tags: IDs of children (raw habits or other tags)
 	parentIds?: string[]; // For reverse lookup: which tags contain this habit
+
+	// Visibility
+	hidden?: boolean; // If true, habit is hidden from tracker view
 }
 
 // Structured set data for "write loose, structure later"

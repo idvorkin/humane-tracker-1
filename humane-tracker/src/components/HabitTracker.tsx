@@ -362,6 +362,17 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 											const treeNode = vm.habitTree.find(
 												(n) => n.habit.id === habit.id,
 											);
+
+											// Skip habits that have parents but aren't in the tree
+											// (they only appear nested under their parent tag)
+											if (
+												!treeNode &&
+												habit.parentIds &&
+												habit.parentIds.length > 0
+											) {
+												return null;
+											}
+
 											const depth = treeNode?.depth ?? 0;
 											const isTag = treeNode?.isTag ?? false;
 											const isExpanded = treeNode?.isExpanded ?? false;

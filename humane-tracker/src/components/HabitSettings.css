@@ -409,6 +409,30 @@
 	font-size: 0.8rem;
 }
 
+.visibility-btn {
+	padding: 10px;
+	background: var(--color-charcoal);
+	border: var(--border-subtle);
+	border-radius: var(--radius-md);
+	color: var(--color-warm-gray);
+	cursor: pointer;
+	font-size: 1rem;
+	transition: all var(--transition-fast);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.visibility-btn:hover {
+	background: var(--color-espresso);
+	border-color: var(--color-amber);
+}
+
+.visibility-btn.hidden {
+	opacity: 0.5;
+	background: var(--color-espresso);
+}
+
 .delete-btn {
 	padding: 10px;
 	background: var(--color-charcoal);
