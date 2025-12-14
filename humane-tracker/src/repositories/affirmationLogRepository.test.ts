@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { db } from "../config/db";
 import { affirmationLogRepository } from "./affirmationLogRepository";
+import { toDateString } from "./types";
 
 describe("affirmationLogRepository", () => {
 	const testUserId = "test-user-123";
@@ -16,7 +17,7 @@ describe("affirmationLogRepository", () => {
 
 	describe("create", () => {
 		it("creates an affirmation log with correct data", async () => {
-			const testDate = new Date("2025-01-15");
+			const testDate = new Date();
 
 			const id = await affirmationLogRepository.create({
 				userId: testUserId,
@@ -34,7 +35,8 @@ describe("affirmationLogRepository", () => {
 			expect(record?.affirmationTitle).toBe("Do It Anyways");
 			expect(record?.logType).toBe("opportunity");
 			expect(record?.note).toBe("I will apply discipline today");
-			expect(record?.date).toBe("2025-01-15");
+			// Use toDateString for timezone-safe comparison
+			expect(record?.date).toBe(toDateString(testDate));
 		});
 
 		it("creates logs with didit type", async () => {
@@ -43,7 +45,7 @@ describe("affirmationLogRepository", () => {
 				affirmationTitle: "Calm Like Water",
 				logType: "didit",
 				note: "Stayed present in a difficult meeting",
-				date: new Date("2025-01-15"),
+				date: new Date(),
 			});
 
 			const record = await db.affirmationLogs.get(id);
@@ -53,12 +55,16 @@ describe("affirmationLogRepository", () => {
 
 	describe("getByUserId", () => {
 		it("returns all logs for a user", async () => {
+			const today = new Date();
+			const tomorrow = new Date(today);
+			tomorrow.setDate(tomorrow.getDate() + 1);
+
 			await affirmationLogRepository.create({
 				userId: testUserId,
 				affirmationTitle: "Do It Anyways",
 				logType: "opportunity",
 				note: "Note 1",
-				date: new Date("2025-01-15"),
+				date: today,
 			});
 
 			await affirmationLogRepository.create({
@@ -66,7 +72,7 @@ describe("affirmationLogRepository", () => {
 				affirmationTitle: "A Class Act",
 				logType: "didit",
 				note: "Note 2",
-				date: new Date("2025-01-16"),
+				date: tomorrow,
 			});
 
 			await affirmationLogRepository.create({
@@ -74,7 +80,7 @@ describe("affirmationLogRepository", () => {
 				affirmationTitle: "Test",
 				logType: "opportunity",
 				note: "Other user note",
-				date: new Date("2025-01-15"),
+				date: today,
 			});
 
 			const logs = await affirmationLogRepository.getByUserId(testUserId);
@@ -91,7 +97,9 @@ describe("affirmationLogRepository", () => {
 
 	describe("getByUserIdAndDate", () => {
 		it("returns logs for specific date", async () => {
-			const targetDate = new Date("2025-01-15");
+			const targetDate = new Date();
+			const differentDate = new Date(targetDate);
+			differentDate.setDate(differentDate.getDate() + 1);
 
 			await affirmationLogRepository.create({
 				userId: testUserId,
@@ -106,7 +114,7 @@ describe("affirmationLogRepository", () => {
 				affirmationTitle: "A Class Act",
 				logType: "didit",
 				note: "Different day note",
-				date: new Date("2025-01-16"),
+				date: differentDate,
 			});
 
 			const logs = await affirmationLogRepository.getByUserIdAndDate(
