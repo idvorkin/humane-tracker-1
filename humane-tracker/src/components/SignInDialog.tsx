@@ -39,8 +39,8 @@ export const SignInDialog: React.FC<SignInDialogProps> = ({
 				</div>
 
 				<div className="signin-dialog-habits">
-					{habitNames.map((name) => (
-						<span key={name} className="signin-dialog-habit-tag">
+					{habitNames.map((name, idx) => (
+						<span key={`${name}-${idx}`} className="signin-dialog-habit-tag">
 							{name}
 						</span>
 					))}

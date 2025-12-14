@@ -62,6 +62,9 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 			const clientY =
 				"touches" in event ? event.touches[0].clientY : event.clientY;
 
+			// Prevent context menu on long-press
+			event.preventDefault();
+
 			longPressTimer.current = setTimeout(() => {
 				longPressTriggered.current = true;
 				setTagChildPickerState({

@@ -51,6 +51,7 @@ test("anonymous user can load default habits via UI", async ({ page }) => {
 
       // Take extra screenshot for debugging
       await page.screenshot({ path: 'test-results/debug-dialog-still-visible.png' });
+      throw new Error("Initialization dialog did not close - possible failure");
     }
 
     // Log any console errors

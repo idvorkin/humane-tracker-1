@@ -171,18 +171,20 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 				childIds: newHabit.habitType === "tag" ? newHabit.childIds : undefined,
 			});
 
-			// Update parentIds on children if this is a tag
+			// Update parentIds on children if this is a tag (parallel for atomicity)
 			if (newHabit.habitType === "tag" && newHabit.childIds.length > 0) {
-				for (const childId of newHabit.childIds) {
-					const child = habits.find((h) => h.id === childId);
-					if (child) {
+				const updatePromises = newHabit.childIds
+					.map((childId) => {
+						const child = habits.find((h) => h.id === childId);
+						if (!child) return null;
 						const newParentIds = [...(child.parentIds || []), newHabitId];
-						await habitService.updateHabit(childId, {
+						return habitService.updateHabit(childId, {
 							parentIds: newParentIds,
 							updatedAt: new Date(),
 						});
-					}
-				}
+					})
+					.filter(Boolean);
+				await Promise.all(updatePromises);
 			}
 
 			// Reset form and reload habits
