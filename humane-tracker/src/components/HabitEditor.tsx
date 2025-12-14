@@ -64,7 +64,6 @@ export const HabitEditor: React.FC<HabitEditorProps> = ({
 				category: category.trim(),
 				targetPerWeek,
 				trackingType,
-				updatedAt: new Date(),
 			});
 			onUpdate();
 			onClose();
