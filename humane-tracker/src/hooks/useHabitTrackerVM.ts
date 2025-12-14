@@ -33,16 +33,30 @@ export interface CategorySummary {
 }
 
 export function getCategorySummary(habits: HabitWithStatus[]): CategorySummary {
+	// Build set of all child IDs - children of tags shouldn't count separately
+	// They roll up into their parent tag's count
+	const childIds = new Set<string>();
+	for (const h of habits) {
+		if (h.habitType === "tag" && h.childIds) {
+			for (const childId of h.childIds) {
+				childIds.add(childId);
+			}
+		}
+	}
+
+	// Filter to top-level habits only (exclude children of tags)
+	const topLevelHabits = habits.filter((h) => !childIds.has(h.id));
+
 	// Count habits with entries for today (not just status "done")
 	const todayStr = toDateString(new Date());
-	const doneToday = habits.filter((h) =>
+	const doneToday = topLevelHabits.filter((h) =>
 		h.entries.some((e) => toDateString(e.date) === todayStr && e.value >= 1),
 	).length;
 
-	const total = habits.length;
+	const total = topLevelHabits.length;
 
 	// Count habits that met their weekly target
-	const met = habits.filter(
+	const met = topLevelHabits.filter(
 		(h) => h.currentWeekCount >= h.targetPerWeek,
 	).length;
 

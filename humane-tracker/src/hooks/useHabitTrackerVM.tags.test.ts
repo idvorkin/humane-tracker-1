@@ -6,7 +6,11 @@
  */
 import { describe, expect, it } from "vitest";
 import type { HabitWithStatus } from "../types/habit";
-import { getCellDisplay, groupHabitsByCategory } from "./useHabitTrackerVM";
+import {
+	getCategorySummary,
+	getCellDisplay,
+	groupHabitsByCategory,
+} from "./useHabitTrackerVM";
 
 // Helper to create a mock habit with tag support
 function createMockHabit(
@@ -428,5 +432,126 @@ describe("tag weekly count (days completed)", () => {
 		// The count should be 2 (unique days), not more
 		expect(tag.currentWeekCount).toBe(2);
 		expect(tag.entries.length).toBe(2);
+	});
+});
+
+describe("getCategorySummary with tags", () => {
+	it("excludes children of tags from total count", () => {
+		// Mobility category with:
+		// - 1 tag (Shoulder Accessory) with 4 children
+		// - 2 standalone raw habits
+		// Total should be 3, NOT 7 (1 tag + 4 children + 2 raw)
+		const habits = [
+			createMockHabit({
+				id: "tag-1",
+				name: "Shoulder Accessory",
+				habitType: "tag",
+				childIds: ["child-1", "child-2", "child-3", "child-4"],
+				currentWeekCount: 2,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				id: "child-1",
+				name: "Shoulder Y",
+				habitType: "raw",
+				parentIds: ["tag-1"],
+				currentWeekCount: 1,
+				targetPerWeek: 2,
+			}),
+			createMockHabit({
+				id: "child-2",
+				name: "Wall Slide",
+				habitType: "raw",
+				parentIds: ["tag-1"],
+				currentWeekCount: 1,
+				targetPerWeek: 2,
+			}),
+			createMockHabit({
+				id: "child-3",
+				name: "Shoulder W",
+				habitType: "raw",
+				parentIds: ["tag-1"],
+				currentWeekCount: 0,
+				targetPerWeek: 2,
+			}),
+			createMockHabit({
+				id: "child-4",
+				name: "Swimmers",
+				habitType: "raw",
+				parentIds: ["tag-1"],
+				currentWeekCount: 0,
+				targetPerWeek: 2,
+			}),
+			createMockHabit({
+				id: "raw-1",
+				name: "Back Twists",
+				habitType: "raw",
+				currentWeekCount: 3,
+				targetPerWeek: 3,
+			}),
+			createMockHabit({
+				id: "raw-2",
+				name: "Shin Boxes",
+				habitType: "raw",
+				currentWeekCount: 0,
+				targetPerWeek: 3,
+			}),
+		];
+
+		const summary = getCategorySummary(habits);
+
+		// Should count only top-level: 1 tag + 2 raw = 3
+		expect(summary.total).toBe(3);
+		// Met: tag (2/3 = no), Back Twists (3/3 = yes), Shin Boxes (0/3 = no) = 1
+		expect(summary.met).toBe(1);
+	});
+
+	it("counts tag as done today if tag has entry today", () => {
+		const today = new Date();
+		const habits = [
+			createMockHabit({
+				id: "tag-1",
+				name: "Shoulder Accessory",
+				habitType: "tag",
+				childIds: ["child-1"],
+				currentWeekCount: 1,
+				targetPerWeek: 3,
+				entries: [
+					{
+						id: "e1",
+						habitId: "tag-1",
+						userId: "u1",
+						date: today,
+						value: 1,
+						createdAt: new Date(),
+					},
+				],
+			}),
+			createMockHabit({
+				id: "child-1",
+				name: "Shoulder Y",
+				habitType: "raw",
+				parentIds: ["tag-1"],
+				currentWeekCount: 1,
+				targetPerWeek: 2,
+				entries: [
+					{
+						id: "e2",
+						habitId: "child-1",
+						userId: "u1",
+						date: today,
+						value: 1,
+						createdAt: new Date(),
+					},
+				],
+			}),
+		];
+
+		const summary = getCategorySummary(habits);
+
+		// Only tag counts, not child
+		expect(summary.total).toBe(1);
+		expect(summary.doneToday).toBe(1);
+		expect(summary.dueToday).toBe(1);
 	});
 });
