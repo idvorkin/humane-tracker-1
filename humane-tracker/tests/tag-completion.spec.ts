@@ -155,6 +155,38 @@ test.describe("Tag Completion (Single-Complete Model)", () => {
 		);
 	});
 
+	test("clicking directly on tag creates entry and shows completion", async ({
+		page,
+	}) => {
+		// Expand all sections
+		const expandButton = page.locator('button:has-text("Expand All")');
+		await expandButton.click();
+		await page.waitForTimeout(500);
+
+		// Find tag row
+		const tagRow = page.locator(
+			'tr.section-row:has-text("Shoulder Accessory")'
+		);
+		await expect(tagRow).toBeVisible();
+
+		const initialEntryCount = await getDBEntryCount(page);
+
+		// Click directly on the tag cell (not a child)
+		const tagTodayCell = tagRow.locator("td.cell-today");
+		const initialContent = await tagTodayCell.textContent();
+		console.log("Initial tag cell:", initialContent);
+
+		await tagTodayCell.click();
+		console.log("Clicked directly on tag");
+
+		// Wait for entry to be written
+		await waitForEntryCount(page, initialEntryCount + 1, { timeout: 5000 });
+
+		// Tag should show as completed
+		await expect(tagTodayCell).toHaveText(/[✓1]/, { timeout: 5000 });
+		console.log("Tag shows completion after direct click - humane!");
+	});
+
 	test("tag weekly count reflects unique days completed", async ({ page }) => {
 		// Expand all sections
 		const expandButton = page.locator('button:has-text("Expand All")');

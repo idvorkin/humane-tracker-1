@@ -95,10 +95,13 @@ export interface TagStatusResult {
 }
 
 /**
- * Compute tag status based on children's entries (single-complete model).
+ * Compute tag status based on tag's own entries AND children's entries.
  *
- * A tag is "completed" for a day if ANY child has ANY entry for that day.
- * This is humane - showing up is what matters.
+ * A tag is "completed" for a day if:
+ * - The tag itself has an entry for that day, OR
+ * - ANY child has ANY entry for that day
+ *
+ * This is humane - click the tag directly or click a child, both work.
  *
  * Returns synthetic entries (one per unique day) and the computed status.
  */
@@ -122,6 +125,13 @@ export function computeTagStatus(
 	const { startDate: weekStart, endDate: weekEnd } =
 		getTrailingWeekDateRange(currentDate);
 
+	// Find tag's own entries within the week
+	const tagOwnEntries = allEntries.filter((e) => {
+		if (e.habitId !== tag.id) return false;
+		const entryDate = e.date instanceof Date ? e.date : new Date(e.date);
+		return entryDate >= weekStart && entryDate <= weekEnd;
+	});
+
 	// Find all entries for descendants within the week
 	const descendantEntries = allEntries.filter((e) => {
 		if (!descendantIds.has(e.habitId)) return false;
@@ -129,9 +139,12 @@ export function computeTagStatus(
 		return entryDate >= weekStart && entryDate <= weekEnd;
 	});
 
+	// Combine tag's own entries and descendant entries
+	const allRelevantEntries = [...tagOwnEntries, ...descendantEntries];
+
 	// Group by unique day - one synthetic entry per day
 	const uniqueDays = new Map<string, Date>();
-	for (const entry of descendantEntries) {
+	for (const entry of allRelevantEntries) {
 		const entryDate = entry.date instanceof Date ? entry.date : new Date(entry.date);
 		const dayKey = toDateString(entryDate);
 		if (!uniqueDays.has(dayKey)) {
