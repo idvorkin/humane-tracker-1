@@ -10,6 +10,7 @@ import type {
 	HabitWithStatus,
 } from "../types/habit";
 import { getTrailingWeekDateRange } from "../utils/dateUtils";
+import { getDescendantRawHabits } from "../utils/tagUtils";
 
 // ============================================================================
 // Pure functions (easily testable)
@@ -84,6 +85,85 @@ export function calculateHabitStatus(
 	return "pending";
 }
 
+/**
+ * Result of computing tag status - includes synthetic entries and count.
+ */
+export interface TagStatusResult {
+	entries: HabitEntry[];
+	currentWeekCount: number;
+	status: HabitStatus;
+}
+
+/**
+ * Compute tag status based on children's entries (single-complete model).
+ *
+ * A tag is "completed" for a day if ANY child has ANY entry for that day.
+ * This is humane - showing up is what matters.
+ *
+ * Returns synthetic entries (one per unique day) and the computed status.
+ */
+export function computeTagStatus(
+	tag: Habit,
+	allHabits: Habit[],
+	allEntries: HabitEntry[],
+	currentDate: Date = new Date(),
+): TagStatusResult {
+	// Build habits map for getDescendantRawHabits
+	const habitsMap = new Map<string, Habit>();
+	for (const habit of allHabits) {
+		habitsMap.set(habit.id, habit);
+	}
+
+	// Get all descendant raw habits
+	const descendants = getDescendantRawHabits(tag, habitsMap);
+	const descendantIds = new Set(descendants.map((h) => h.id));
+
+	// Get trailing week range
+	const { startDate: weekStart, endDate: weekEnd } =
+		getTrailingWeekDateRange(currentDate);
+
+	// Find all entries for descendants within the week
+	const descendantEntries = allEntries.filter((e) => {
+		if (!descendantIds.has(e.habitId)) return false;
+		const entryDate = e.date instanceof Date ? e.date : new Date(e.date);
+		return entryDate >= weekStart && entryDate <= weekEnd;
+	});
+
+	// Group by unique day - one synthetic entry per day
+	const uniqueDays = new Map<string, Date>();
+	for (const entry of descendantEntries) {
+		const entryDate = entry.date instanceof Date ? entry.date : new Date(entry.date);
+		const dayKey = toDateString(entryDate);
+		if (!uniqueDays.has(dayKey)) {
+			uniqueDays.set(dayKey, entryDate);
+		}
+	}
+
+	// Create synthetic entries (value=1 for each unique day)
+	const syntheticEntries: HabitEntry[] = Array.from(uniqueDays.entries()).map(
+		([dayKey, date], index) => ({
+			id: `synthetic-${tag.id}-${dayKey}`,
+			habitId: tag.id,
+			userId: tag.userId,
+			date,
+			value: 1, // Binary: completed for this day
+			createdAt: new Date(),
+		}),
+	);
+
+	// Count unique days
+	const currentWeekCount = uniqueDays.size;
+
+	// Calculate status using the same logic as regular habits
+	const status = calculateHabitStatus(tag, syntheticEntries, currentDate);
+
+	return {
+		entries: syntheticEntries,
+		currentWeekCount,
+		status,
+	};
+}
+
 export class HabitService {
 	// Create a new habit with validation
 	async createHabit(
@@ -152,24 +232,48 @@ export class HabitService {
 		const currentDate = new Date();
 		const { startDate, endDate } = getTrailingWeekDateRange(currentDate);
 
+		// Fetch ALL entries for the date range once (needed for tag aggregation)
+		const allEntries = await entryRepository.getForDateRange(
+			userId,
+			startDate,
+			endDate,
+		);
+
 		const habitsWithStatus: HabitWithStatus[] = [];
 
 		for (const habit of habits) {
-			const entries = await this.getHabitEntries(habit.id, startDate, endDate);
-			const status = this.calculateHabitStatus(habit, entries, currentDate);
+			// For tags, compute synthetic entries from children
+			if (habit.habitType === "tag") {
+				const tagStatus = computeTagStatus(
+					habit,
+					habits,
+					allEntries,
+					currentDate,
+				);
+				habitsWithStatus.push({
+					...habit,
+					status: tagStatus.status,
+					currentWeekCount: tagStatus.currentWeekCount,
+					entries: tagStatus.entries,
+				});
+			} else {
+				// For raw habits, use entries for this specific habit
+				const entries = allEntries.filter((e) => e.habitId === habit.id);
+				const status = this.calculateHabitStatus(habit, entries, currentDate);
 
-			// Count unique days with entries (not total values)
-			// According to PRD: "Weekly goals count DAYS not total sets"
-			const currentWeekCount = new Set(
-				entries.filter((e) => e.value > 0).map((e) => toDateString(e.date)),
-			).size;
+				// Count unique days with entries (not total values)
+				// According to PRD: "Weekly goals count DAYS not total sets"
+				const currentWeekCount = new Set(
+					entries.filter((e) => e.value > 0).map((e) => toDateString(e.date)),
+				).size;
 
-			habitsWithStatus.push({
-				...habit,
-				status,
-				currentWeekCount,
-				entries,
-			});
+				habitsWithStatus.push({
+					...habit,
+					status,
+					currentWeekCount,
+					entries,
+				});
+			}
 		}
 
 		return habitsWithStatus;

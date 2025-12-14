@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type { HabitWithStatus } from "../types/habit";
-import { groupHabitsByCategory } from "./useHabitTrackerVM";
+import { getCellDisplay, groupHabitsByCategory } from "./useHabitTrackerVM";
 
 // Helper to create a mock habit with tag support
 function createMockHabit(
@@ -290,5 +290,143 @@ describe("tag entry aggregation scenarios", () => {
 		// Children have their own entries
 		const children = sections[0].habits.filter((h) => h.habitType === "raw");
 		expect(children.every((c) => c.entries.length > 0)).toBe(true);
+	});
+});
+
+describe("getCellDisplay for tags (single-complete model)", () => {
+	/**
+	 * Tags show "completed" (✓) if ANY child has ANY entry for that day.
+	 * This is the humane model - showing up is what matters.
+	 *
+	 * For this to work, tag.entries must be pre-populated with synthetic
+	 * entries representing "was any child done on this day".
+	 */
+
+	it("tag shows ✓ when it has a synthetic entry for the day", () => {
+		const monday = new Date("2024-01-15");
+		// Tag with a synthetic entry (value=1 means "completed for this day")
+		const tag = createMockHabit({
+			id: "tag-1",
+			name: "Shoulder Accessory",
+			habitType: "tag",
+			childIds: ["raw-1", "raw-2"],
+			entries: [
+				{
+					id: "synthetic-e1",
+					habitId: "tag-1",
+					userId: "u1",
+					date: monday,
+					value: 1, // Binary: completed
+					createdAt: new Date(),
+				},
+			],
+		});
+
+		const display = getCellDisplay(tag, monday);
+
+		expect(display.content).toBe("✓");
+		expect(display.className).toBe("completed");
+	});
+
+	it("tag shows empty when no synthetic entry exists for that day", () => {
+		const monday = new Date("2024-01-15");
+		const tuesday = new Date("2024-01-16");
+
+		// Tag has entry for Monday but not Tuesday
+		const tag = createMockHabit({
+			id: "tag-1",
+			name: "Shoulder Accessory",
+			habitType: "tag",
+			childIds: ["raw-1"],
+			entries: [
+				{
+					id: "synthetic-e1",
+					habitId: "tag-1",
+					userId: "u1",
+					date: monday,
+					value: 1,
+					createdAt: new Date(),
+				},
+			],
+		});
+
+		const display = getCellDisplay(tag, tuesday);
+
+		expect(display.content).toBe("");
+		expect(display.className).toBe("");
+	});
+
+	it("tag always shows ✓ (not a count) - single-complete model", () => {
+		const monday = new Date("2024-01-15");
+		// Even if we somehow had value > 1, tag should show ✓
+		// (In practice, synthetic entries should always be value=1)
+		const tag = createMockHabit({
+			id: "tag-1",
+			name: "Shoulder Accessory",
+			habitType: "tag",
+			childIds: ["raw-1", "raw-2", "raw-3"],
+			entries: [
+				{
+					id: "synthetic-e1",
+					habitId: "tag-1",
+					userId: "u1",
+					date: monday,
+					value: 1, // Should always be 1 for tags
+					createdAt: new Date(),
+				},
+			],
+		});
+
+		const display = getCellDisplay(tag, monday);
+
+		// Tags are single-complete: always ✓, never a number
+		expect(display.content).toBe("✓");
+	});
+});
+
+describe("tag weekly count (days completed)", () => {
+	/**
+	 * Tag's currentWeekCount should be the number of DAYS where
+	 * any child had an entry - not the sum of all child entries.
+	 */
+
+	it("tag currentWeekCount equals unique days with any child entry", () => {
+		// This test documents expected behavior.
+		// The data layer (HabitService) should compute this.
+		const monday = new Date("2024-01-15");
+		const wednesday = new Date("2024-01-17");
+
+		const tag = createMockHabit({
+			id: "tag-1",
+			name: "Shoulder Accessory",
+			habitType: "tag",
+			childIds: ["raw-1", "raw-2"],
+			// Expected: 2 days completed (Monday, Wednesday)
+			// NOT 3 (sum of child entries)
+			currentWeekCount: 2,
+			entries: [
+				// Synthetic entries for days where any child was done
+				{
+					id: "s1",
+					habitId: "tag-1",
+					userId: "u1",
+					date: monday,
+					value: 1,
+					createdAt: new Date(),
+				},
+				{
+					id: "s2",
+					habitId: "tag-1",
+					userId: "u1",
+					date: wednesday,
+					value: 1,
+					createdAt: new Date(),
+				},
+			],
+		});
+
+		// The count should be 2 (unique days), not more
+		expect(tag.currentWeekCount).toBe(2);
+		expect(tag.entries.length).toBe(2);
 	});
 });

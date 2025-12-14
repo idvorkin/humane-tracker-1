@@ -1,7 +1,9 @@
 import { addDays } from "date-fns";
 import { describe, expect, it } from "vitest";
+import type { Habit, HabitEntry } from "../types/habit";
 import {
 	calculateHabitStatus,
+	computeTagStatus,
 	validateCategory,
 	validateHabitName,
 	validateTargetPerWeek,
@@ -265,5 +267,229 @@ describe("validateTargetPerWeek", () => {
 
 	it("returns default for non-number input", () => {
 		expect(validateTargetPerWeek("five" as unknown as number)).toBe(3);
+	});
+});
+
+// Helpers for tag tests
+function createFullHabit(overrides: Partial<Habit> = {}): Habit {
+	return {
+		id: "test-id",
+		name: "Test Habit",
+		category: "Mobility",
+		targetPerWeek: 3,
+		userId: "user-1",
+		createdAt: new Date(),
+		updatedAt: new Date(),
+		habitType: "raw",
+		...overrides,
+	};
+}
+
+function createFullEntry(overrides: Partial<HabitEntry> = {}): HabitEntry {
+	return {
+		id: "entry-id",
+		habitId: "test-id",
+		userId: "user-1",
+		date: new Date(),
+		value: 1,
+		createdAt: new Date(),
+		...overrides,
+	};
+}
+
+describe("computeTagStatus (single-complete model)", () => {
+	/**
+	 * Tags are virtual habits - they aggregate children's entries.
+	 * This function computes synthetic entries and counts for a tag
+	 * based on its children's entries.
+	 *
+	 * Key principle: A tag is "completed" for a day if ANY child
+	 * has ANY entry for that day. This is humane - showing up matters.
+	 */
+
+	const today = new Date("2024-01-15T12:00:00");
+
+	it("returns synthetic entries for each day any child has an entry", () => {
+		// Use dates in the past relative to "today" (Jan 17)
+		const monday = new Date("2024-01-15");
+		const wednesday = new Date("2024-01-17");
+
+		const tag = createFullHabit({
+			id: "tag-1",
+			name: "Shoulder Accessory",
+			habitType: "tag",
+			childIds: ["raw-1", "raw-2"],
+		});
+
+		const allHabits: Habit[] = [
+			tag,
+			createFullHabit({
+				id: "raw-1",
+				name: "Shoulder Y",
+				habitType: "raw",
+				parentIds: ["tag-1"],
+			}),
+			createFullHabit({
+				id: "raw-2",
+				name: "Wall Slide",
+				habitType: "raw",
+				parentIds: ["tag-1"],
+			}),
+		];
+
+		const allEntries: HabitEntry[] = [
+			createFullEntry({ id: "e1", habitId: "raw-1", date: monday }),
+			createFullEntry({ id: "e2", habitId: "raw-2", date: wednesday }),
+		];
+
+		// Use Wednesday as "today" so both dates are in the trailing window
+		const result = computeTagStatus(tag, allHabits, allEntries, wednesday);
+
+		// Should have 2 synthetic entries (one per unique day)
+		expect(result.entries).toHaveLength(2);
+		expect(result.currentWeekCount).toBe(2);
+	});
+
+	it("creates one synthetic entry per day even if multiple children done", () => {
+		const monday = new Date("2024-01-15");
+
+		const tag = createFullHabit({
+			id: "tag-1",
+			habitType: "tag",
+			childIds: ["raw-1", "raw-2"],
+		});
+
+		const allHabits: Habit[] = [
+			tag,
+			createFullHabit({ id: "raw-1", habitType: "raw", parentIds: ["tag-1"] }),
+			createFullHabit({ id: "raw-2", habitType: "raw", parentIds: ["tag-1"] }),
+		];
+
+		// Both children done on Monday
+		const allEntries: HabitEntry[] = [
+			createFullEntry({ id: "e1", habitId: "raw-1", date: monday }),
+			createFullEntry({ id: "e2", habitId: "raw-2", date: monday }),
+		];
+
+		const result = computeTagStatus(tag, allHabits, allEntries, today);
+
+		// Single-complete: only 1 entry for Monday, not 2
+		expect(result.entries).toHaveLength(1);
+		expect(result.currentWeekCount).toBe(1);
+	});
+
+	it("synthetic entries always have value=1 (binary completion)", () => {
+		const monday = new Date("2024-01-15");
+
+		const tag = createFullHabit({
+			id: "tag-1",
+			habitType: "tag",
+			childIds: ["raw-1"],
+		});
+
+		const allHabits: Habit[] = [
+			tag,
+			createFullHabit({ id: "raw-1", habitType: "raw", parentIds: ["tag-1"] }),
+		];
+
+		// Child has entry with value=5
+		const allEntries: HabitEntry[] = [
+			createFullEntry({ id: "e1", habitId: "raw-1", date: monday, value: 5 }),
+		];
+
+		const result = computeTagStatus(tag, allHabits, allEntries, today);
+
+		// Tag entry should be value=1 (completed), not 5
+		expect(result.entries[0].value).toBe(1);
+	});
+
+	it("returns empty entries array when no children have entries", () => {
+		const tag = createFullHabit({
+			id: "tag-1",
+			habitType: "tag",
+			childIds: ["raw-1"],
+		});
+
+		const allHabits: Habit[] = [
+			tag,
+			createFullHabit({ id: "raw-1", habitType: "raw", parentIds: ["tag-1"] }),
+		];
+
+		const allEntries: HabitEntry[] = []; // No entries
+
+		const result = computeTagStatus(tag, allHabits, allEntries, today);
+
+		expect(result.entries).toHaveLength(0);
+		expect(result.currentWeekCount).toBe(0);
+	});
+
+	it("includes entries from nested tags (grandchildren)", () => {
+		const monday = new Date("2024-01-15");
+
+		// Parent tag -> Child tag -> Raw habit
+		const parentTag = createFullHabit({
+			id: "parent-tag",
+			habitType: "tag",
+			childIds: ["child-tag"],
+		});
+
+		const childTag = createFullHabit({
+			id: "child-tag",
+			habitType: "tag",
+			childIds: ["raw-1"],
+			parentIds: ["parent-tag"],
+		});
+
+		const rawHabit = createFullHabit({
+			id: "raw-1",
+			habitType: "raw",
+			parentIds: ["child-tag"],
+		});
+
+		const allHabits: Habit[] = [parentTag, childTag, rawHabit];
+
+		const allEntries: HabitEntry[] = [
+			createFullEntry({ id: "e1", habitId: "raw-1", date: monday }),
+		];
+
+		const result = computeTagStatus(parentTag, allHabits, allEntries, today);
+
+		// Parent tag should see the grandchild's entry
+		expect(result.entries).toHaveLength(1);
+		expect(result.currentWeekCount).toBe(1);
+	});
+
+	it("calculates correct status based on target and entries", () => {
+		const monday = new Date("2024-01-15");
+		const tuesday = new Date("2024-01-16");
+		const wednesday = new Date("2024-01-17");
+
+		const tag = createFullHabit({
+			id: "tag-1",
+			habitType: "tag",
+			childIds: ["raw-1"],
+			targetPerWeek: 3, // Need 3 days
+		});
+
+		const allHabits: Habit[] = [
+			tag,
+			createFullHabit({ id: "raw-1", habitType: "raw", parentIds: ["tag-1"] }),
+		];
+
+		// 3 days of entries - should meet target
+		const allEntries: HabitEntry[] = [
+			createFullEntry({ id: "e1", habitId: "raw-1", date: monday }),
+			createFullEntry({ id: "e2", habitId: "raw-1", date: tuesday }),
+			createFullEntry({
+				id: "e3",
+				habitId: "raw-1",
+				date: wednesday, // This is "today" in our test
+			}),
+		];
+
+		const result = computeTagStatus(tag, allHabits, allEntries, wednesday);
+
+		expect(result.currentWeekCount).toBe(3);
+		expect(result.status).toBe("done"); // Met target AND done today
 	});
 });
