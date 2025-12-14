@@ -207,7 +207,18 @@ export const habitRepository = {
 
 	async update(
 		habitId: string,
-		updates: Partial<Pick<Habit, "name" | "category" | "targetPerWeek">>,
+		updates: Partial<
+			Pick<
+				Habit,
+				| "name"
+				| "category"
+				| "targetPerWeek"
+				| "trackingType"
+				| "hidden"
+				| "childIds"
+				| "parentIds"
+			>
+		>,
 	): Promise<void> {
 		try {
 			const validatedUpdates: Partial<HabitRecord> = {
@@ -224,6 +235,18 @@ export const habitRepository = {
 				validatedUpdates.targetPerWeek = validateTargetPerWeek(
 					updates.targetPerWeek,
 				);
+			}
+			if (updates.trackingType !== undefined) {
+				validatedUpdates.trackingType = updates.trackingType;
+			}
+			if (updates.hidden !== undefined) {
+				validatedUpdates.hidden = updates.hidden;
+			}
+			if (updates.childIds !== undefined) {
+				validatedUpdates.childIds = updates.childIds;
+			}
+			if (updates.parentIds !== undefined) {
+				validatedUpdates.parentIds = updates.parentIds;
 			}
 
 			await db.habits.update(habitId, validatedUpdates);
