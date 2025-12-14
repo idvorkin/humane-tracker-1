@@ -215,6 +215,44 @@ function getTagWeeklyCount(tag: Habit, allHabits: Map<string, Habit>): number {
 }
 ```
 
+## Completion Semantics
+
+### Tags are Virtual Habits
+
+Tags don't have their own entries - they're organizational containers. A tag's completion status is **derived** from its children.
+
+### Single-Complete Model
+
+Tags follow a "single-complete" model: **binary completion per day**.
+
+- If **any** child has **any** entry for a day → tag is "Completed" for that day
+- Doesn't matter which child was done
+- Doesn't matter what value the entry has (1, 3, 10 - all count as "done")
+
+This is humane: you showed up and did something in this category. That's what matters.
+
+### Weekly Progress
+
+A tag's weekly progress = **number of days completed** (not sum of child entry values).
+
+Example:
+```
+▼ Shoulder Accessory (tag)        [✓][ ][✓][ ][ ][ ][ ]  2/3
+    Shoulder Y                    [1][ ][2][ ][ ][ ][ ]
+    Wall Slide                    [ ][ ][1][ ][ ][ ][ ]
+```
+
+- Monday: Shoulder Y done (value=1) → tag completed ✓
+- Wednesday: Both done → still just one completion for that day ✓
+- Weekly progress: 2 days out of 3 target
+
+### Why This Model?
+
+1. **Humane** - Celebrates showing up, not micromanaging counts
+2. **Honest** - A tag represents "did I do this category today?"
+3. **Simple** - Binary per day is easy to understand
+4. **Flexible** - Children can be multi-complete; tag stays simple
+
 ## Display Behavior
 
 ### Default View: Nested Tags with Expand/Collapse
