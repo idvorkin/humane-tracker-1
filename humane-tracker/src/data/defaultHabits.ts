@@ -2,6 +2,9 @@ export interface DefaultHabit {
 	name: string;
 	category: string;
 	targetPerWeek: number;
+	habitType?: "raw" | "tag";
+	/** For tags: names of child habits (resolved to IDs after creation) */
+	childNames?: string[];
 }
 
 export const DEFAULT_HABITS: DefaultHabit[] = [
@@ -9,7 +12,19 @@ export const DEFAULT_HABITS: DefaultHabit[] = [
 	{ name: "Physical Mobility", category: "Mobility", targetPerWeek: 5 },
 	{ name: "Back Twists", category: "Mobility", targetPerWeek: 3 },
 	{ name: "Shin Boxes", category: "Mobility", targetPerWeek: 3 },
-	{ name: "Shoulder Accessory", category: "Mobility", targetPerWeek: 3 },
+	// Shoulder Accessory is now a TAG that groups specific exercises
+	{
+		name: "Shoulder Accessory",
+		category: "Mobility",
+		targetPerWeek: 3,
+		habitType: "tag",
+		childNames: ["Shoulder Y", "Wall Slide", "Shoulder W", "Swimmers"],
+	},
+	// Individual shoulder exercises (children of the tag)
+	{ name: "Shoulder Y", category: "Mobility", targetPerWeek: 2 },
+	{ name: "Wall Slide", category: "Mobility", targetPerWeek: 2 },
+	{ name: "Shoulder W", category: "Mobility", targetPerWeek: 2 },
+	{ name: "Swimmers", category: "Mobility", targetPerWeek: 2 },
 	{ name: "Side Planks", category: "Mobility", targetPerWeek: 2 },
 	{ name: "Heavy Clubs 3x10", category: "Mobility", targetPerWeek: 2 },
 	{ name: "Half Lotus", category: "Mobility", targetPerWeek: 2 },

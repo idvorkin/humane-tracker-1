@@ -42,15 +42,52 @@ export const InitializeHabits: React.FC<InitializeHabitsProps> = ({
 
 			const total = habitsToAdd.length;
 
-			for (let i = 0; i < habitsToAdd.length; i++) {
-				const habit = habitsToAdd[i];
-				await habitService.createHabit({
+			// First pass: create all raw habits (children must exist before tags)
+			const rawHabits = habitsToAdd.filter((h) => h.habitType !== "tag");
+			const tagHabits = habitsToAdd.filter((h) => h.habitType === "tag");
+
+			// Map from name to created ID
+			const nameToId = new Map<string, string>();
+
+			// Create raw habits first
+			for (let i = 0; i < rawHabits.length; i++) {
+				const habit = rawHabits[i];
+				const id = await habitService.createHabit({
 					name: habit.name,
 					category: habit.category,
 					targetPerWeek: habit.targetPerWeek,
 					userId,
+					habitType: "raw",
 				});
+				nameToId.set(habit.name, id);
 				setProgress(Math.round(((i + 1) / total) * 100));
+			}
+
+			// Second pass: create tags with child references
+			for (let i = 0; i < tagHabits.length; i++) {
+				const habit = tagHabits[i];
+				// Resolve child names to IDs
+				const childIds = (habit.childNames ?? [])
+					.map((name) => nameToId.get(name))
+					.filter((id): id is string => id !== undefined);
+
+				const tagId = await habitService.createHabit({
+					name: habit.name,
+					category: habit.category,
+					targetPerWeek: habit.targetPerWeek,
+					userId,
+					habitType: "tag",
+					childIds,
+				});
+
+				// Update children to have parentIds pointing to this tag
+				for (const childId of childIds) {
+					await habitService.updateHabit(childId, {
+						parentIds: [tagId],
+					});
+				}
+
+				setProgress(Math.round(((rawHabits.length + i + 1) / total) * 100));
 			}
 
 			onComplete();
