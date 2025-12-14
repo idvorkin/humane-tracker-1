@@ -4,6 +4,7 @@ import {
 	getDescendantRawHabits,
 	getTagEntries,
 	getTagWeeklyCount,
+	isTagCompletedForDay,
 	repairTagRelationships,
 	wouldCreateCycle,
 } from "./tagUtils";
@@ -331,6 +332,167 @@ describe("getTagWeeklyCount", () => {
 
 		const count = getTagWeeklyCount(tag, habits, entries, startDate, endDate);
 		expect(count).toBe(1); // Only day2 (Jan 5) is in range
+	});
+
+	it("weekly count equals sum of daily completions (conceptual consistency)", () => {
+		const habits = new Map<string, Habit>();
+		const tag = createHabit("A", "Tag A", "tag", ["B", "C"]);
+		const rawB = createHabit("B", "Habit B", "raw");
+		const rawC = createHabit("C", "Habit C", "raw");
+		habits.set("A", tag);
+		habits.set("B", rawB);
+		habits.set("C", rawC);
+
+		// Week of entries - some days have entries, some don't
+		const mon = new Date(2024, 0, 1);
+		const tue = new Date(2024, 0, 2);
+		const wed = new Date(2024, 0, 3);
+		const thu = new Date(2024, 0, 4);
+		const fri = new Date(2024, 0, 5);
+		const sat = new Date(2024, 0, 6);
+		const sun = new Date(2024, 0, 7);
+
+		const entries = [
+			createEntry("e1", "B", mon), // Mon: B done
+			createEntry("e2", "C", mon), // Mon: C also done (still just 1 completion)
+			// Tue: nothing
+			createEntry("e3", "B", wed), // Wed: B done
+			// Thu: nothing
+			createEntry("e4", "C", fri), // Fri: C done
+			// Sat: nothing
+			createEntry("e5", "B", sun), // Sun: B done
+		];
+
+		// Count daily completions manually
+		const weekDays = [mon, tue, wed, thu, fri, sat, sun];
+		const dailyCompletions = weekDays.filter((day) =>
+			isTagCompletedForDay(tag, habits, entries, day),
+		);
+
+		// Weekly count should equal the number of days with completions
+		const weeklyCount = getTagWeeklyCount(tag, habits, entries, mon, sun);
+		expect(weeklyCount).toBe(dailyCompletions.length);
+		expect(weeklyCount).toBe(4); // Mon, Wed, Fri, Sun
+	});
+});
+
+describe("isTagCompletedForDay", () => {
+	it("returns false when no entries exist", () => {
+		const habits = new Map<string, Habit>();
+		const tag = createHabit("A", "Tag A", "tag", ["B"]);
+		const rawB = createHabit("B", "Habit B", "raw");
+		habits.set("A", tag);
+		habits.set("B", rawB);
+
+		const monday = new Date(2024, 0, 1);
+		expect(isTagCompletedForDay(tag, habits, [], monday)).toBe(false);
+	});
+
+	it("returns true when any child has an entry for that day", () => {
+		const habits = new Map<string, Habit>();
+		const tag = createHabit("A", "Tag A", "tag", ["B", "C"]);
+		const rawB = createHabit("B", "Habit B", "raw");
+		const rawC = createHabit("C", "Habit C", "raw");
+		habits.set("A", tag);
+		habits.set("B", rawB);
+		habits.set("C", rawC);
+
+		const monday = new Date(2024, 0, 1);
+		const entries = [createEntry("e1", "B", monday)]; // Only B done
+
+		expect(isTagCompletedForDay(tag, habits, entries, monday)).toBe(true);
+	});
+
+	it("returns true regardless of entry value (humane: showing up is what matters)", () => {
+		const habits = new Map<string, Habit>();
+		const tag = createHabit("A", "Tag A", "tag", ["B"]);
+		const rawB = createHabit("B", "Habit B", "raw");
+		habits.set("A", tag);
+		habits.set("B", rawB);
+
+		const monday = new Date(2024, 0, 1);
+		// Entry with value=5 (multi-complete child)
+		const entry: HabitEntry = {
+			id: "e1",
+			habitId: "B",
+			userId: "test-user",
+			date: monday,
+			value: 5,
+			createdAt: new Date(),
+		};
+
+		// Tag is just "completed" - doesn't matter that value is 5
+		expect(isTagCompletedForDay(tag, habits, [entry], monday)).toBe(true);
+	});
+
+	it("returns false when entries exist but not for the requested day", () => {
+		const habits = new Map<string, Habit>();
+		const tag = createHabit("A", "Tag A", "tag", ["B"]);
+		const rawB = createHabit("B", "Habit B", "raw");
+		habits.set("A", tag);
+		habits.set("B", rawB);
+
+		const monday = new Date(2024, 0, 1);
+		const tuesday = new Date(2024, 0, 2);
+		const entries = [createEntry("e1", "B", tuesday)]; // Entry on Tuesday
+
+		expect(isTagCompletedForDay(tag, habits, entries, monday)).toBe(false);
+	});
+
+	it("considers tag completed if ANY descendant has entry (nested tags)", () => {
+		const habits = new Map<string, Habit>();
+		const rawC = createHabit("C", "Habit C", "raw");
+		const tagB = createHabit("B", "Tag B", "tag", ["C"]);
+		const tagA = createHabit("A", "Tag A", "tag", ["B"]); // A -> B -> C
+		habits.set("A", tagA);
+		habits.set("B", tagB);
+		habits.set("C", rawC);
+
+		const monday = new Date(2024, 0, 1);
+		const entries = [createEntry("e1", "C", monday)]; // Only C done
+
+		// Both tags should be completed
+		expect(isTagCompletedForDay(tagA, habits, entries, monday)).toBe(true);
+		expect(isTagCompletedForDay(tagB, habits, entries, monday)).toBe(true);
+	});
+
+	it("ignores time component when comparing dates", () => {
+		const habits = new Map<string, Habit>();
+		const tag = createHabit("A", "Tag A", "tag", ["B"]);
+		const rawB = createHabit("B", "Habit B", "raw");
+		habits.set("A", tag);
+		habits.set("B", rawB);
+
+		// Entry at 9:30 AM
+		const mondayMorning = new Date(2024, 0, 1, 9, 30);
+		const entries = [createEntry("e1", "B", mondayMorning)];
+
+		// Check at 11:59 PM same day - should still be completed
+		const mondayNight = new Date(2024, 0, 1, 23, 59);
+		expect(isTagCompletedForDay(tag, habits, entries, mondayNight)).toBe(true);
+	});
+
+	it("multiple children done on same day still just means 'completed' (not counted)", () => {
+		const habits = new Map<string, Habit>();
+		const tag = createHabit("A", "Tag A", "tag", ["B", "C", "D"]);
+		const rawB = createHabit("B", "Habit B", "raw");
+		const rawC = createHabit("C", "Habit C", "raw");
+		const rawD = createHabit("D", "Habit D", "raw");
+		habits.set("A", tag);
+		habits.set("B", rawB);
+		habits.set("C", rawC);
+		habits.set("D", rawD);
+
+		const monday = new Date(2024, 0, 1);
+		const entries = [
+			createEntry("e1", "B", monday),
+			createEntry("e2", "C", monday),
+			createEntry("e3", "D", monday),
+		];
+
+		// Function returns boolean - completed or not
+		// Multiple children done doesn't change the result
+		expect(isTagCompletedForDay(tag, habits, entries, monday)).toBe(true);
 	});
 });
 

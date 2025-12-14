@@ -233,6 +233,36 @@ export function getTagEntries(
 }
 
 /**
+ * Check if a tag is completed for a specific day.
+ *
+ * A tag follows "single-complete" semantics: it's completed for a day
+ * if ANY child has ANY entry for that day. This is humane - you showed
+ * up and did something in this category, that's what matters.
+ *
+ * @param tag - The tag habit to check
+ * @param allHabits - Map of all habits by ID
+ * @param allEntries - Array of all entries
+ * @param date - The date to check completion for
+ * @returns true if the tag has any descendant entry for that day
+ */
+export function isTagCompletedForDay(
+	tag: Habit,
+	allHabits: Map<string, Habit>,
+	allEntries: HabitEntry[],
+	date: Date,
+): boolean {
+	const entries = getTagEntries(tag, allHabits, allEntries);
+
+	// Normalize to date-only comparison (ignore time)
+	const targetDay = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+
+	return entries.some((e) => {
+		const entryDay = `${e.date.getFullYear()}-${e.date.getMonth()}-${e.date.getDate()}`;
+		return entryDay === targetDay;
+	});
+}
+
+/**
  * Get unique entry days count for a tag within a date range.
  *
  * @param tag - The tag habit to count for
