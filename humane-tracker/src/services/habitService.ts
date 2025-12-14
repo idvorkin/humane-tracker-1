@@ -196,7 +196,22 @@ export class HabitService {
 	}
 
 	// Update habit with validation
-	async updateHabit(habitId: string, updates: Partial<Habit>): Promise<void> {
+	// Note: habitType is intentionally excluded - it's immutable after creation
+	async updateHabit(
+		habitId: string,
+		updates: Partial<
+			Pick<
+				Habit,
+				| "name"
+				| "category"
+				| "targetPerWeek"
+				| "trackingType"
+				| "hidden"
+				| "childIds"
+				| "parentIds"
+			>
+		>,
+	): Promise<void> {
 		return habitRepository.update(habitId, updates);
 	}
 
