@@ -4,6 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Address your human partner as "Igor" at all times.
 
+## Convention Updates
+
+**Last reviewed:** 2025-12-14 (chop-conventions)
+
+Projects using [chop-conventions](https://github.com/idvorkin/chop-conventions) should periodically:
+
+1. **Pull updates** - Check chop-conventions for new conventions or improvements
+2. **Push improvements** - If you've developed useful patterns locally, submit a PR to chop-conventions
+3. **Update this date** - After reviewing, update the "Last reviewed" date above
+
+**Before reviewing external repos**: Always `git fetch upstream && git reset --hard upstream/main` first.
+
 ## Relationship Rules
 
 - We're colleagues working together - no formal hierarchy
@@ -68,6 +80,25 @@ This repo supports multiple AI agents working in parallel via full clones.
 
 **NEVER commit directly to main.** Main should only be a mirror of upstream.
 
+### Feature-Based Branch Naming
+
+Use **feature-based branch names**, not agent-number-based names:
+
+```bash
+# Good - describes what you're working on
+feature/pose-download
+fix/date-handling-bug
+refactor/habit-card
+
+# Avoid - doesn't describe the work
+agent/humane-1
+wip/stuff
+```
+
+**Why:** Feature names are self-documenting, make PRs clearer, and help when reviewing git history.
+
+### Session Start
+
 ```bash
 # 1. Start new work - ALWAYS branch from upstream/main
 git fetch upstream
@@ -79,6 +110,28 @@ git push -u origin feature/my-thing
 # 3. Create PR to upstream
 gh pr create --repo idvorkin/humane-tracker-1 --base main
 ```
+
+### During Work (Commit → Push Immediately)
+
+```bash
+git pull origin feature/your-branch --rebase  # Get any updates first
+git add <specific-files> && git commit -m "..."  # Use specific files, not -A
+git push origin feature/your-branch              # Push right after commit!
+```
+
+Always push after every commit - keeps your work visible and safe.
+
+### Stay Current (Rebase Often)
+
+```bash
+git fetch upstream && git rebase upstream/main
+git push origin feature/your-branch --force-with-lease
+```
+
+Rebase on upstream/main:
+- Before starting any major new task
+- Before merging to main
+- When conflicts arise
 
 ### Pre-PR Checklist (CRITICAL)
 
@@ -141,6 +194,110 @@ Located in `.githooks/` (activated via `just setup` or `git config core.hooksPat
 - **✅ ORIGIN MERGES**: Agents can merge directly to origin/main (agent working repo)
 - **⚠️ UPSTREAM MERGES**: Only humans merge to upstream/main. Agents must create PRs.
 - **🚫 NO --no-verify**: Never use `--no-verify` to bypass hooks
+- **🚫 NO FORCE PUSH**: Never use `git push --force` unless Igor explicitly types "yes"
+- **🔄 REBASE OFTEN**: Always rebase before starting work: `git fetch upstream && git rebase upstream/main`
+- **📦 MINIMAL PRs**: Include ONLY the changes explicitly requested. Don't bundle unrelated changes.
+- **🧹 LINT FIRST**: Before making code changes, run pre-commit on affected files. Commit lint fixes first, then make your actual change.
+
+## Guardrails
+
+Actions requiring explicit "YES" approval from Igor:
+
+- **Removing broken tests** - Fix the test or code, never delete failing tests
+- **Pushing to upstream (idvorkin repo)** - Requires PR and human approval
+- **Force pushing** - Can destroy history
+- **Any action that loses work** - Deleting branches with unmerged commits, hard resets
+- **`bd init --force`** - Erases the beads database
+
+**Allowed without approval:**
+
+- Merging to origin/main (idvorkin-ai-tools) - this is the agent working repo
+
+**Encouraged** (not losing work): Deleting unused functions/files, removing commented-out code, cleaning unused imports - these are preserved in git history.
+
+**End of session**: When Igor signals done or says "workflow review":
+
+1. Review session for patterns: repeated corrections, friction, missing context
+2. Ask Igor if they want to create a retro entry or update CLAUDE.md
+3. For generalizable patterns, offer to PR to chop-conventions
+
+### Collaborative Feature Branches
+
+When a feature needs multiple agents, use a feature branch and create beads issues:
+
+```bash
+# Agent creates feature branch
+git checkout -b feature/tag-system
+git push -u origin feature/tag-system
+
+# Create beads issue for help needed
+bd create --title="Help needed: add tag tests on feature/tag-system" --type=task
+```
+
+**Other agent picks up work:**
+
+```bash
+bd ready                                    # Sees the help request
+bd update HT-xyz --status=in_progress       # Claims it
+git fetch origin
+git checkout feature/tag-system             # Joins the branch
+git pull --rebase
+# Work, commit, push to same branch
+bd close HT-xyz --reason="Done"
+```
+
+### Branch Hygiene (Every Few Days)
+
+Run branch audit to prevent stale branch accumulation:
+
+```bash
+# List remote branches by last commit date with behind/ahead counts
+for branch in $(git branch -r | grep -v HEAD | head -20); do
+  behind=$(git rev-list --count origin/main ^$branch 2>/dev/null || echo "?")
+  ahead=$(git rev-list --count $branch ^origin/main 2>/dev/null || echo "?")
+  date=$(git log -1 --format='%ci' $branch 2>/dev/null | cut -d' ' -f1)
+  echo "$date | $branch | +$ahead -$behind"
+done | sort -r
+```
+
+**Delete criteria:**
+- Branches 100+ commits behind with 0 unique commits (already merged)
+- Branches 200+ commits behind (too stale to salvage)
+
+**Keep criteria:**
+- Active feature branches with recent work
+- Branches with open PRs
+- `main`, `beads-metadata`
+
+### Clone Health Check (Weekly)
+
+Multiple humane-tracker directories can accumulate stale state:
+
+```bash
+# Check all humane-tracker clones for issues
+for dir in ~/gits/humane-tracker-*; do
+  [ -d "$dir/.git" ] || continue
+  cd "$dir"
+  branch=$(git branch --show-current 2>/dev/null)
+  ahead=$(git rev-list --count origin/main..HEAD 2>/dev/null || echo "?")
+  changes=$(git status --porcelain 2>/dev/null | wc -l)
+  if [ "$ahead" -gt 20 ] || [ "$changes" -gt 0 ]; then
+    echo "⚠️  $(basename $dir): $branch (+$ahead ahead) uncommitted:$changes"
+  fi
+done
+```
+
+### Post-PR: Check CodeRabbit Comments
+
+After creating a PR to upstream, CodeRabbit will review it automatically. Check for critical issues:
+
+```bash
+# View CodeRabbit comments on a PR
+gh api repos/idvorkin/humane-tracker-1/pulls/PR_NUMBER/comments \
+  --jq '.[] | "File: \(.path):\(.line // .original_line)\n\(.body[0:300])\n---"' | head -100
+```
+
+**Address all critical issues before merge.**
 
 ## Beads Integration
 
@@ -322,9 +479,11 @@ expect(toDateString(entry.date)).toBe(todayStr);
 ### Clean Commits
 
 - Run `git status` before committing to review staged files
+- Use `git add <specific-files>` not `git add -A` - prevents unrelated changes creeping in
 - Keep distinct changes in distinct commits
 - Avoid mixing linting/formatting changes with feature changes
-- Run pre-commit hooks before committing
+- Run pre-commit on affected files BEFORE making changes, commit lint fixes first
+- For complex commits, write message to file and verify with Igor
 
 ### Component Architecture
 
@@ -444,6 +603,27 @@ Trace viewer requires HTTPS or localhost (service worker requirement). Two optio
 3. Check recent changes (git diff)
 4. Find working examples to compare against
 5. Form a single hypothesis and test minimally
+
+### Bug Investigation Protocol
+
+**When you find a bug, STOP and answer these questions before fixing:**
+
+**Spec Questions:**
+1. Is this actually a bug, or is my understanding of the spec wrong?
+2. Is there a missing or unclear spec that led to this?
+3. **Ask Igor** if there's any ambiguity: "The behavior is X, but I expected Y. Which is correct?"
+
+**Test Coverage Questions:**
+1. Why did tests not catch this?
+2. What level of our test pyramid could have caught this earliest? (unit → component → E2E)
+3. Add the missing test BEFORE fixing the bug
+
+**Architecture Questions:**
+1. Is there an architectural problem that made this bug possible?
+2. If yes, create a beads issue: `bd create --title="Architecture: <problem>" --type=bug`
+3. **Ask Igor**: "I found an architectural issue: [description]. Type YES to address it now, or I'll just fix the immediate bug."
+
+**Why this matters**: Bugs that are hard to test or hard to fix often signal deeper problems. Patching around bad architecture creates technical debt. Catching issues at the unit test level is 10x cheaper than E2E, and 100x cheaper than production.
 
 **Important notes:**
 
