@@ -503,7 +503,8 @@ export class HumaneTrackerDB extends Dexie {
 			habits:
 				"@id, userId, name, category, targetPerWeek, createdAt, updatedAt",
 			entries: "@id, habitId, userId, date, value, createdAt",
-			affirmationLogs: "@id, userId, date, affirmationTitle, logType, createdAt",
+			affirmationLogs:
+				"@id, userId, [userId+date], affirmationTitle, logType, createdAt",
 		});
 	}
 }
