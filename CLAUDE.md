@@ -58,6 +58,29 @@ When running in a container with Tailscale:
 
 This allows viewing the dev server or test reports from any device on your Tailscale network (like your laptop while the container runs on a remote machine).
 
+### Opening Files in Neovim
+
+Open files for Igor's review in a tmux split (keeps Claude's terminal available):
+
+```bash
+# Open file(s) in 2/3 width split on right
+tmux split-window -h -l 66% "nvim /path/to/file"
+
+# Open multiple files
+tmux split-window -h -l 66% "nvim file1.ts file2.ts file3.ts"
+
+# Open at specific line number
+tmux split-window -h -l 66% "nvim +42 /path/to/file"
+
+# Open git diff in nvim
+tmux split-window -h -l 66% "nvim -c 'Git diff'"
+```
+
+Use this when:
+- Showing changed files, diffs, or architecture docs for review
+- Igor wants to edit while Claude continues working
+- Comparing files side-by-side with the terminal
+
 ## Code Quality
 
 - **Biome** for formatting (tabs, double quotes) and linting - runs via pre-commit hook
