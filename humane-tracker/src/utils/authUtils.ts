@@ -1,4 +1,5 @@
 import { db } from "../config/db";
+import { entryRepository, habitRepository } from "../repositories";
 
 export interface LocalDataSummary {
 	habitCount: number;
@@ -11,18 +12,12 @@ export interface LocalDataSummary {
  */
 export async function getLocalAnonymousDataSummary(): Promise<LocalDataSummary | null> {
 	try {
-		const habits = await db.habits
-			.where("userId")
-			.equals("anonymous")
-			.toArray();
+		const habits = await habitRepository.getByUserId("anonymous");
 		if (habits.length === 0) {
 			return null;
 		}
 
-		const entryCount = await db.entries
-			.where("userId")
-			.equals("anonymous")
-			.count();
+		const entryCount = await entryRepository.countByUserId("anonymous");
 
 		return {
 			habitCount: habits.length,
@@ -41,18 +36,10 @@ export async function getLocalAnonymousDataSummary(): Promise<LocalDataSummary |
 async function clearLocalAnonymousData(): Promise<void> {
 	try {
 		// Delete entries for anonymous user
-		const entryCount = await db.entries
-			.where("userId")
-			.equals("anonymous")
-			.count();
-		await db.entries.where("userId").equals("anonymous").delete();
+		const entryCount = await entryRepository.deleteByUserId("anonymous");
 
 		// Delete habits for anonymous user
-		const habitCount = await db.habits
-			.where("userId")
-			.equals("anonymous")
-			.count();
-		await db.habits.where("userId").equals("anonymous").delete();
+		const habitCount = await habitRepository.deleteByUserId("anonymous");
 
 		console.log(
 			`[Auth] Cleared ${habitCount} anonymous habits and ${entryCount} entries`,

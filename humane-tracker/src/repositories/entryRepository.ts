@@ -95,6 +95,39 @@ export const entryRepository = {
 		}
 	},
 
+	async countByUserId(userId: string): Promise<number> {
+		try {
+			return await db.entries.where("userId").equals(userId).count();
+		} catch (error) {
+			console.error(
+				`[EntryRepository] Failed to count entries for user ${userId}:`,
+				error,
+			);
+			throw new Error(
+				`Failed to count entries: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
+	},
+
+	async deleteByUserId(userId: string): Promise<number> {
+		try {
+			const count = await db.entries.where("userId").equals(userId).count();
+			await db.entries.where("userId").equals(userId).delete();
+			console.log(
+				`[EntryRepository] Deleted ${count} entries for user ${userId}`,
+			);
+			return count;
+		} catch (error) {
+			console.error(
+				`[EntryRepository] Failed to delete entries for user ${userId}:`,
+				error,
+			);
+			throw new Error(
+				`Failed to delete entries: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
+	},
+
 	async getByHabitId(habitId: string): Promise<HabitEntry[]> {
 		try {
 			const records = await db.entries

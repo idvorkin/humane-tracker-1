@@ -153,6 +153,39 @@ export const habitRepository = {
 		}
 	},
 
+	async countByUserId(userId: string): Promise<number> {
+		try {
+			return await db.habits.where("userId").equals(userId).count();
+		} catch (error) {
+			console.error(
+				`[HabitRepository] Failed to count habits for user ${userId}:`,
+				error,
+			);
+			throw new Error(
+				`Failed to count habits: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
+	},
+
+	async deleteByUserId(userId: string): Promise<number> {
+		try {
+			const count = await db.habits.where("userId").equals(userId).count();
+			await db.habits.where("userId").equals(userId).delete();
+			console.log(
+				`[HabitRepository] Deleted ${count} habits for user ${userId}`,
+			);
+			return count;
+		} catch (error) {
+			console.error(
+				`[HabitRepository] Failed to delete habits for user ${userId}:`,
+				error,
+			);
+			throw new Error(
+				`Failed to delete habits: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
+	},
+
 	async getById(habitId: string): Promise<Habit | undefined> {
 		try {
 			const record = await db.habits.get(habitId);
