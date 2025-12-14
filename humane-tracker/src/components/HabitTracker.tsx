@@ -361,14 +361,6 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 																	▼
 																</span>
 															)}
-															{isTag && (
-																<span
-																	className="tag-indicator"
-																	title="Tag (aggregates children)"
-																>
-																	🏷️
-																</span>
-															)}
 															{habit.name}
 															<span className="habit-target">
 																({habit.targetPerWeek}/w)

@@ -403,7 +403,6 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 			>
 				<div className="habit-row">
 					<div className="habit-name-field">
-						{isTag && <span className="tag-badge">🏷️</span>}
 						<input
 							type="text"
 							value={getHabitValue(habit, "name") as string}
@@ -649,7 +648,7 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 												setNewHabit({ ...newHabit, habitType: "tag" })
 											}
 										>
-											🏷️ Tag
+											Tag
 										</button>
 									</div>
 
