@@ -6,6 +6,7 @@ import {
 } from "../repositories";
 import type { AffirmationLog } from "../repositories/affirmationLogRepository";
 import type { Habit, HabitEntry } from "../types/habit";
+import { repairTagRelationships } from "../utils/tagUtils";
 
 export interface ExportData {
 	version: 1 | 2;
@@ -39,11 +40,21 @@ export async function importAllData(
 }> {
 	// Convert date strings back to Date objects for domain types
 	// The repository will convert them back to ISO strings for storage
-	const habits: Habit[] = data.habits.map((h) => ({
+	const rawHabits: Habit[] = data.habits.map((h) => ({
 		...h,
 		createdAt: new Date(h.createdAt),
 		updatedAt: new Date(h.updatedAt),
 	}));
+
+	// Repair any inconsistencies between childIds and parentIds
+	// This ensures imported data has bidirectionally consistent tag relationships
+	const repairResult = repairTagRelationships(rawHabits);
+	const habits = repairResult.habits;
+	if (repairResult.parentIdsFixed > 0 || repairResult.childIdsFixed > 0) {
+		console.log(
+			`[Import] Repaired tag relationships: ${repairResult.parentIdsFixed} parentIds, ${repairResult.childIdsFixed} childIds`,
+		);
+	}
 
 	const entries: HabitEntry[] = data.entries.map((e) => ({
 		...e,

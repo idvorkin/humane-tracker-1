@@ -1,6 +1,115 @@
 import type { Habit, HabitEntry } from "../types/habit";
 
 /**
+ * Repair result indicating what was fixed.
+ */
+export interface RepairResult {
+	/** Number of habits that had their parentIds updated */
+	parentIdsFixed: number;
+	/** Number of tags that had their childIds updated */
+	childIdsFixed: number;
+	/** The repaired habits (may be mutated or new objects) */
+	habits: Habit[];
+}
+
+/**
+ * Ensure childIds and parentIds are bidirectionally consistent.
+ *
+ * This repairs two types of inconsistencies:
+ * 1. A tag has childIds but the children don't have the tag in their parentIds
+ * 2. A habit has parentIds but the parent tags don't have it in their childIds
+ *
+ * @param habits - Array of habits to repair
+ * @returns RepairResult with fixed habits and counts of what was repaired
+ */
+export function repairTagRelationships(habits: Habit[]): RepairResult {
+	const habitMap = new Map<string, Habit>();
+	for (const h of habits) {
+		habitMap.set(h.id, h);
+	}
+
+	let parentIdsFixed = 0;
+	let childIdsFixed = 0;
+
+	// Build what parentIds SHOULD be based on all tags' childIds
+	const derivedParentIds = new Map<string, Set<string>>();
+	for (const h of habits) {
+		if (h.habitType === "tag" && h.childIds) {
+			for (const childId of h.childIds) {
+				if (!derivedParentIds.has(childId)) {
+					derivedParentIds.set(childId, new Set());
+				}
+				derivedParentIds.get(childId)!.add(h.id);
+			}
+		}
+	}
+
+	// Build what childIds SHOULD be based on all habits' parentIds
+	const derivedChildIds = new Map<string, Set<string>>();
+	for (const h of habits) {
+		if (h.parentIds) {
+			for (const parentId of h.parentIds) {
+				if (!derivedChildIds.has(parentId)) {
+					derivedChildIds.set(parentId, new Set());
+				}
+				derivedChildIds.get(parentId)!.add(h.id);
+			}
+		}
+	}
+
+	// Repair each habit
+	const repairedHabits = habits.map((h) => {
+		let needsUpdate = false;
+		let newParentIds = h.parentIds ? [...h.parentIds] : [];
+		let newChildIds = h.childIds ? [...h.childIds] : [];
+
+		// Fix parentIds: merge in any parents derived from childIds
+		const shouldHaveParents = derivedParentIds.get(h.id);
+		if (shouldHaveParents) {
+			for (const parentId of shouldHaveParents) {
+				if (!newParentIds.includes(parentId)) {
+					newParentIds.push(parentId);
+					needsUpdate = true;
+					parentIdsFixed++;
+				}
+			}
+		}
+
+		// Fix childIds (only for tags): merge in any children derived from parentIds
+		if (h.habitType === "tag") {
+			const shouldHaveChildren = derivedChildIds.get(h.id);
+			if (shouldHaveChildren) {
+				for (const childId of shouldHaveChildren) {
+					if (!newChildIds.includes(childId)) {
+						newChildIds.push(childId);
+						needsUpdate = true;
+						childIdsFixed++;
+					}
+				}
+			}
+		}
+
+		if (needsUpdate) {
+			return {
+				...h,
+				parentIds: newParentIds.length > 0 ? newParentIds : undefined,
+				childIds:
+					h.habitType === "tag" && newChildIds.length > 0
+						? newChildIds
+						: h.childIds,
+			};
+		}
+		return h;
+	});
+
+	return {
+		parentIdsFixed,
+		childIdsFixed,
+		habits: repairedHabits,
+	};
+}
+
+/**
  * Check if adding a parent-child relationship would create a cycle.
  * Uses DFS to check if childId is an ancestor of parentId.
  *
