@@ -15,7 +15,8 @@ import {
 	migrateCategoryValue,
 } from "../utils/categoryUtils";
 import { validateHabitForm } from "../utils/habitValidation";
-import { wouldCreateCycle } from "../utils/tagUtils";
+// Note: wouldCreateCycle exists in tagUtils but isn't needed here because
+// the children editor only allows selecting raw habits, not tags
 import "./HabitSettings.css";
 
 interface HabitSettingsProps {
@@ -536,6 +537,11 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 									const currentChildIds =
 										(getHabitValue(habit, "childIds") as string[]) || [];
 									const isChild = currentChildIds.includes(h.id);
+									// Get child's current parentIds (from pending changes or original)
+									const childParentIds =
+										(changes[h.id]?.parentIds as string[] | undefined) ??
+										h.parentIds ??
+										[];
 
 									return (
 										<label key={h.id} className="child-option">
@@ -547,6 +553,12 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 														? [...currentChildIds, h.id]
 														: currentChildIds.filter((id) => id !== h.id);
 													handleFieldChange(habit.id, "childIds", newChildIds);
+
+													// Keep parentIds in sync on the child habit
+													const newParentIds = e.target.checked
+														? [...childParentIds, habit.id]
+														: childParentIds.filter((id) => id !== habit.id);
+													handleFieldChange(h.id, "parentIds", newParentIds);
 												}}
 											/>
 											{h.name}
