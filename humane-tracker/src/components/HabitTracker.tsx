@@ -331,22 +331,16 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 										</td>
 									</tr>
 									{!section.isCollapsed &&
-										section.habits.map((habit) => {
-											// Find tree node for this habit to get depth info
-											const treeNode = vm.habitTree.find(
-												(n) => n.habit.id === habit.id,
-											);
-
-											// Skip habits that aren't in the visible tree
-											// (children are only visible when their parent tag is expanded)
-											if (!treeNode) {
-												return null;
-											}
-
-											const depth = treeNode?.depth ?? 0;
-											const isTag = treeNode?.isTag ?? false;
-											const isExpanded = treeNode?.isExpanded ?? false;
-											const hasChildren = treeNode?.hasChildren ?? false;
+										vm.habitTree
+											.filter(
+												(node) => node.habit.category === section.category,
+											)
+											.map((treeNode) => {
+												const habit = treeNode.habit;
+												const depth = treeNode.depth;
+												const isTag = treeNode.isTag;
+												const isExpanded = treeNode.isExpanded;
+												const hasChildren = treeNode.hasChildren;
 
 											return (
 												<tr key={habit.id} className="section-row">
