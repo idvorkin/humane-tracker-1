@@ -64,26 +64,41 @@ This repo supports multiple AI agents working in parallel via full clones.
 - `origin` = **idvorkin-ai-tools** fork (agents push here, can merge to main directly)
 - `upstream` = **idvorkin** (human-only repo, requires PR approval to merge)
 
-### Workflow
+### Workflow: Always Use Feature Branches
 
-1. **Agents work on feature branches** - Create branches like `feature/my-change`
-2. **Push to origin** - `git push -u origin feature/my-change`
-3. **Create PRs to origin/main** - Agents can merge these directly
-4. **PRs to upstream require human approval** - Use `gh pr create --repo idvorkin/humane-tracker-1`
+**NEVER commit directly to main.** Main should only be a mirror of upstream.
 
-### After PR is Merged to Upstream (IMPORTANT)
+```bash
+# 1. Start new work - ALWAYS branch from upstream/main
+git fetch upstream
+git checkout -b feature/my-thing upstream/main
 
-After a PR is merged to upstream, **always sync local main** before starting new work:
+# 2. Do work, commit, push to origin
+git push -u origin feature/my-thing
+
+# 3. Create PR to upstream
+gh pr create --repo idvorkin/humane-tracker-1 --base main
+```
+
+### After PR is Merged to Upstream
+
+Reset main to stay in sync (safe because no work lives on main):
 
 ```bash
 git fetch upstream
+git checkout main
 git reset --hard upstream/main
 git push --force-with-lease origin main
 ```
 
-**Why?** GitHub merge creates new commit SHAs. Without reset, local main diverges and you'll need painful rebases later.
+If you have in-progress feature branches, rebase them:
+```bash
+git checkout feature/other-thing
+git rebase upstream/main
+git push --force-with-lease
+```
 
-**Git config** (set once per clone):
+**Git config** (set once per clone, or run `just setup`):
 ```bash
 git config pull.rebase true  # Always rebase on pull, never merge
 ```
