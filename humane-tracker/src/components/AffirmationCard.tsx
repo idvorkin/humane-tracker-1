@@ -1,25 +1,7 @@
 import { useCallback, useState } from "react";
+import { DEFAULT_AFFIRMATIONS } from "../constants/affirmations";
 import { affirmationLogRepository } from "../repositories/affirmationLogRepository";
 import "./AffirmationCard.css";
-
-const DEFAULT_AFFIRMATIONS = [
-	{
-		title: "Do It Anyways",
-		subtitle: "Deliberate. Disciplined. Daily.",
-	},
-	{
-		title: "An Essentialist",
-		subtitle: "Know Essential. Provide Context. Prioritize Ruthlessly.",
-	},
-	{
-		title: "A Class Act",
-		subtitle: "First Understand. Appreciate. Isn't that Curious.",
-	},
-	{
-		title: "Calm Like Water",
-		subtitle: "Be Present. This too shall pass. Work the problem.",
-	},
-];
 
 function getRandomIndex(currentIndex?: number): number {
 	if (DEFAULT_AFFIRMATIONS.length <= 1) return 0;
@@ -40,12 +22,14 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 	const [index, setIndex] = useState(() => getRandomIndex());
 	const [noteMode, setNoteMode] = useState<NoteMode>(null);
 	const [noteText, setNoteText] = useState("");
+	const [saveError, setSaveError] = useState(false);
 	const affirmation = DEFAULT_AFFIRMATIONS[index];
 
 	const handleRefresh = useCallback(() => {
 		setIndex((prev) => getRandomIndex(prev));
 		setNoteMode(null);
 		setNoteText("");
+		setSaveError(false);
 	}, []);
 
 	const handleSaveNote = useCallback(async () => {
@@ -53,6 +37,7 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 			setNoteMode(null);
 			return;
 		}
+		setSaveError(false);
 		try {
 			await affirmationLogRepository.create({
 				userId,
@@ -61,12 +46,13 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 				note: noteText.trim(),
 				date: new Date(),
 			});
-			console.log(`Saved: [${noteMode}] ${affirmation.title}: ${noteText}`);
+			setNoteMode(null);
+			setNoteText("");
 		} catch (error) {
 			console.error("Failed to save affirmation log:", error);
+			setSaveError(true);
+			// Keep form open so user can retry
 		}
-		setNoteMode(null);
-		setNoteText("");
 	}, [noteMode, noteText, affirmation.title, userId]);
 
 	const handleKeyDown = useCallback(
@@ -125,7 +111,10 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 								: "How did you apply this?"
 						}
 						value={noteText}
-						onChange={(e) => setNoteText(e.target.value)}
+						onChange={(e) => {
+							setNoteText(e.target.value);
+							setSaveError(false);
+						}}
 						onKeyDown={handleKeyDown}
 						autoFocus
 					/>
@@ -142,10 +131,14 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 						onClick={() => {
 							setNoteMode(null);
 							setNoteText("");
+							setSaveError(false);
 						}}
 					>
 						✕
 					</button>
+					{saveError && (
+						<span className="affirmation-error">Failed to save</span>
+					)}
 				</div>
 			)}
 		</div>

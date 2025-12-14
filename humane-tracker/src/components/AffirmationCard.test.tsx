@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_AFFIRMATIONS } from "../constants/affirmations";
 import { AffirmationCard } from "./AffirmationCard";
 
 // Mock the repository
@@ -17,13 +18,8 @@ describe("AffirmationCard", () => {
 	it("renders an affirmation title and subtitle", () => {
 		render(<AffirmationCard userId="test-user" />);
 
-		// Should render one of the four affirmations
-		const possibleTitles = [
-			"Do It Anyways",
-			"An Essentialist",
-			"A Class Act",
-			"Calm Like Water",
-		];
+		// Should render one of the affirmations from the shared constant
+		const possibleTitles = DEFAULT_AFFIRMATIONS.map((a) => a.title);
 
 		// At least one title should be visible
 		const foundTitle = possibleTitles.some((title) =>

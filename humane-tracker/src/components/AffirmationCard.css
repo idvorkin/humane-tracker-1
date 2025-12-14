@@ -131,6 +131,12 @@
 	opacity: 0.8;
 }
 
+.affirmation-error {
+	font-size: 0.8rem;
+	color: #dc2626;
+	padding: 4px 8px;
+}
+
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
 	.affirmation-card {
