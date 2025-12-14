@@ -80,6 +80,31 @@ git push -u origin feature/my-thing
 gh pr create --repo idvorkin/humane-tracker-1 --base main
 ```
 
+### Pre-PR Checklist (CRITICAL)
+
+**Before creating ANY pull request, run through this checklist:**
+
+```bash
+# 1. Verify you're on a feature branch (NOT main)
+git branch --show-current  # Should NOT be "main"
+
+# 2. Fetch and rebase on upstream/main
+git fetch upstream
+git rebase upstream/main
+
+# 3. Run all checks locally
+just test && just e2e-desktop
+
+# 4. Create PR to UPSTREAM (not origin!)
+gh pr create --repo idvorkin/humane-tracker-1 --base main
+```
+
+**Common mistakes to AVOID:**
+- ❌ Creating PR to origin (wrong - that's the fork, not upstream)
+- ❌ Creating PR without rebasing first (causes merge conflicts)
+- ❌ Losing track of which branch you're on
+- ❌ Forgetting `--repo idvorkin/humane-tracker-1` flag
+
 ### After PR is Merged to Upstream
 
 Reset main to stay in sync (safe because no work lives on main):
@@ -166,6 +191,22 @@ React 18 + TypeScript + Vite application for tracking habits and behaviors with 
 - **dexie-cloud-addon** - Optional cloud sync capability
 - **Repository Pattern** - All DB access goes through repositories
 
+### Dexie Cloud Troubleshooting
+
+**Symptom: Sync stuck in "connecting" or not syncing**
+
+**First steps (in order):**
+1. Check auth state in Settings → Sync Diagnostics
+2. Log out and log back in (clears stale tokens)
+3. Search web: "Dexie Cloud sync stuck [error message]"
+
+**Known issues:**
+- **Stale auth tokens**: Dexie Cloud auth expires silently. App has auto-detection, but manual re-login often fixes issues.
+- **Network issues**: Check browser console for specific errors
+- **Pending mutations**: Check diagnostics for mutation count
+
+**DON'T:** Spend hours debugging sync code. Dexie Cloud is a third-party service with known quirks. Search for known issues first, debug code second.
+
 ### Repository Pattern (IMPORTANT)
 
 **NEVER access `db.entries` or `db.habits` directly.** Always use the repository layer:
@@ -196,6 +237,29 @@ The only place that should import `db` directly is the repositories themselves.
 - `src/App.test.tsx` - Unit tests
 
 ## Development Conventions
+
+### Empirical Verification Rule (IMPORTANT)
+
+**When asked about UI behavior, ALWAYS run the dev server first.**
+
+```bash
+# DON'T: Read code and infer what should happen
+# DO: Run the server and observe actual behavior
+just dev
+# Open browser, test the feature, THEN answer
+```
+
+**Why:** Code reading leads to wrong assumptions. Empirical verification saves time. If Igor asks "what does X look like?" or "how does Y work?", run the app and check before answering.
+
+### Feature Completion Checklist
+
+Before marking any feature complete:
+
+- [ ] Tests written FIRST (TDD - test should fail before implementation)
+- [ ] Tests cover edge cases (not just happy path)
+- [ ] Feature verified in dev server (not just tests passing)
+- [ ] Pre-commit hooks pass (`just test`)
+- [ ] Rebased on upstream/main
 
 ### Clean Code Principles
 
@@ -238,6 +302,23 @@ const dateStr = toDateString(d);
 
 **Never create custom date formatting functions** - always use the repository helpers.
 
+**Date Handling in Tests (CRITICAL):**
+
+Tests run on different machines and timezones. Follow these rules strictly:
+
+```typescript
+// ❌ WRONG - timezone-dependent, will cause flaky tests
+const today = new Date();
+expect(entry.date).toEqual(new Date());
+
+// ✅ CORRECT - use toDateString for date comparisons
+import { toDateString } from "../repositories/types";
+const todayStr = toDateString(new Date());
+expect(toDateString(entry.date)).toBe(todayStr);
+```
+
+**Why:** A test that passes at 11pm in one timezone may fail at 1am in another because `new Date()` crosses midnight differently.
+
 ### Clean Commits
 
 - Run `git status` before committing to review staged files
@@ -268,6 +349,33 @@ Follow the `useHabitTrackerVM` + `HabitTracker` pattern:
 - Tests must comprehensively cover functionality
 - Never delete a failing test - fix the code or discuss
 - Test output must be clean - capture and validate expected errors
+
+### Test Strategy: When to Use Each Test Type
+
+**Decision Tree:**
+
+```
+Is this testing USER BEHAVIOR (clicks, navigation, full workflows)?
+  → YES: Use E2E test (Playwright in tests/)
+  → NO: Continue...
+
+Is this testing COMPONENT LOGIC (rendering, state, props)?
+  → YES: Use component test (*.test.tsx with @testing-library/react)
+  → NO: Continue...
+
+Is this testing PURE FUNCTIONS (helpers, utilities, calculations)?
+  → YES: Use unit test (*.test.ts)
+```
+
+**Examples:**
+- ✅ E2E: "User logs in, creates habit, marks it complete"
+- ✅ Component: "HabitCard renders completion state correctly"
+- ✅ Unit: "toDateString() formats dates correctly"
+
+**NEVER:**
+- ❌ E2E test for component rendering logic (use component test)
+- ❌ Component test for database operations (use unit test or E2E)
+- ❌ Default to E2E when component tests would suffice
 
 ### E2E Testing
 
@@ -341,3 +449,9 @@ Trace viewer requires HTTPS or localhost (service worker requirement). Two optio
 
 - E2E tests run on both chromium (desktop) and mobile (iPhone 14 Pro) - use `just e2e-desktop` or `just e2e-mobile` to run specific projects
 - If in a container, NEVER direct commit to main, always create a PR
+
+## Retros
+
+Run weekly (or when user says "retro"). See [chop-conventions/dev-inner-loop/retros.md](https://github.com/idvorkin/chop-conventions/blob/main/dev-inner-loop/retros.md) for process.
+
+Storage: `retros/`
