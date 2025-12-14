@@ -24,9 +24,13 @@ else
     echo "   Install with: pip install pre-commit"
 fi
 
-# 3. Run unit tests
+# 3. Run TypeScript type check (catches errors that vitest misses)
+echo "📝 Running TypeScript type check..."
+cd humane-tracker && npx tsc --noEmit || exit 1
+
+# 4. Run unit tests
 echo "🧪 Running unit tests..."
-cd humane-tracker && npm test -- --run --reporter=dot || exit 1
+npm test -- --run --reporter=dot || exit 1
 cd ..
 
 echo "✅ All pre-commit checks passed!"
