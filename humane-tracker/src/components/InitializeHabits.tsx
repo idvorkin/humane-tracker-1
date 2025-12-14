@@ -59,10 +59,19 @@ export const InitializeHabits: React.FC<InitializeHabitsProps> = ({
 			// Second pass: create tags with child references
 			for (let i = 0; i < tagHabits.length; i++) {
 				const habit = tagHabits[i];
-				// Resolve child names to IDs
-				const childIds = (habit.childNames ?? [])
-					.map((name) => nameToId.get(name))
-					.filter((id): id is string => id !== undefined);
+				// Resolve child names to IDs, warning on missing children
+				const childIds: string[] = [];
+				for (const childName of habit.childNames ?? []) {
+					const childId = nameToId.get(childName);
+					if (childId) {
+						childIds.push(childId);
+					} else {
+						console.warn(
+							`[InitializeHabits] Child habit "${childName}" not found for tag "${habit.name}". ` +
+								`Check defaultHabits.ts for typos.`,
+						);
+					}
+				}
 
 				const tagId = await habitService.createHabit({
 					name: habit.name,

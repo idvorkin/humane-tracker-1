@@ -1,3 +1,4 @@
+import { toDateString } from "../repositories/types";
 import type { Habit, HabitEntry } from "../types/habit";
 
 /**
@@ -253,13 +254,13 @@ export function isTagCompletedForDay(
 ): boolean {
 	const entries = getTagEntries(tag, allHabits, allEntries);
 
-	// Normalize to date-only comparison (ignore time)
-	const targetDay = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+	// Use standard date string format (YYYY-MM-DD) for comparison
+	const targetDay = toDateString(date);
 
 	return entries.some((e) => {
 		// Handle both Date objects and ISO strings from IndexedDB
 		const entryDate = e.date instanceof Date ? e.date : new Date(e.date);
-		const entryDay = `${entryDate.getFullYear()}-${entryDate.getMonth()}-${entryDate.getDate()}`;
+		const entryDay = toDateString(entryDate);
 		return entryDay === targetDay;
 	});
 }
@@ -299,12 +300,12 @@ export function getTagWeeklyCount(
 		});
 	}
 
-	// Count unique days
+	// Count unique days using standard date string format (YYYY-MM-DD)
 	const uniqueDays = new Set(
 		entries.map((e) => {
 			// Handle both Date objects and ISO strings from IndexedDB
 			const d = e.date instanceof Date ? e.date : new Date(e.date);
-			return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+			return toDateString(d);
 		}),
 	);
 	return uniqueDays.size;

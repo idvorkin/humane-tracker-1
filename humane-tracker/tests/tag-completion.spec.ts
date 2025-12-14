@@ -77,13 +77,21 @@ test.describe("Tag Completion (Single-Complete Model)", () => {
 		// Expand all sections to see nested habits
 		const expandButton = page.locator('button:has-text("Expand All")');
 		await expandButton.click();
-		await page.waitForTimeout(500);
+
+		// Wait for expansion to complete by checking button text changes
+		await expect(
+			page.locator('button:has-text("Collapse All")'),
+		).toBeVisible();
 
 		// Expand the tag to show its children (click the arrow)
 		const tagRow = page.locator('tr.section-row:has-text("Shoulder Accessory")');
-		const tagArrow = tagRow.locator('.tag-arrow');
+		const tagArrow = tagRow.locator(".tag-arrow");
 		await tagArrow.click();
-		await page.waitForTimeout(300);
+
+		// Wait for children to be visible (Shoulder W is a child)
+		await expect(
+			page.locator('tr.section-row:has-text("Shoulder W")'),
+		).toBeVisible();
 
 		// Find the Shoulder W row (child habit)
 		const shoulderWRow = page.locator('tr.section-row:has-text("Shoulder W")');
@@ -130,15 +138,23 @@ test.describe("Tag Completion (Single-Complete Model)", () => {
 		// Expand all sections
 		const expandButton = page.locator('button:has-text("Expand All")');
 		await expandButton.click();
-		await page.waitForTimeout(500);
+
+		// Wait for expansion to complete
+		await expect(
+			page.locator('button:has-text("Collapse All")'),
+		).toBeVisible();
 
 		// Find tag row and expand it to show children
 		const tagRow = page.locator(
-			'tr.section-row:has-text("Shoulder Accessory")'
+			'tr.section-row:has-text("Shoulder Accessory")',
 		);
-		const tagArrow = tagRow.locator('.tag-arrow');
+		const tagArrow = tagRow.locator(".tag-arrow");
 		await tagArrow.click();
-		await page.waitForTimeout(300);
+
+		// Wait for children to be visible
+		await expect(
+			page.locator('tr.section-row:has-text("Swimmers")'),
+		).toBeVisible();
 
 		// Find Swimmers row (another child)
 		const swimmersRow = page.locator('tr.section-row:has-text("Swimmers")');
@@ -167,7 +183,11 @@ test.describe("Tag Completion (Single-Complete Model)", () => {
 		// Expand all sections
 		const expandButton = page.locator('button:has-text("Expand All")');
 		await expandButton.click();
-		await page.waitForTimeout(500);
+
+		// Wait for expansion to complete
+		await expect(
+			page.locator('button:has-text("Collapse All")'),
+		).toBeVisible();
 
 		// Find tag row
 		const tagRow = page.locator(
@@ -197,11 +217,15 @@ test.describe("Tag Completion (Single-Complete Model)", () => {
 		// Expand all sections
 		const expandButton = page.locator('button:has-text("Expand All")');
 		await expandButton.click();
-		await page.waitForTimeout(500);
+
+		// Wait for expansion to complete
+		await expect(
+			page.locator('button:has-text("Collapse All")'),
+		).toBeVisible();
 
 		// Find tag row and check initial count
 		const tagRow = page.locator(
-			'tr.section-row:has-text("Shoulder Accessory")'
+			'tr.section-row:has-text("Shoulder Accessory")',
 		);
 		const totalCell = tagRow.locator("td.total");
 		const initialTotal = await totalCell.textContent();
@@ -211,17 +235,22 @@ test.describe("Tag Completion (Single-Complete Model)", () => {
 		expect(initialTotal).toContain("0/3");
 
 		// Expand the tag to show children
-		const tagArrow = tagRow.locator('.tag-arrow');
+		const tagArrow = tagRow.locator(".tag-arrow");
 		await tagArrow.click();
-		await page.waitForTimeout(300);
+
+		// Wait for children to be visible
+		const shoulderYRow = page.locator('tr.section-row:has-text("Shoulder Y")');
+		await expect(shoulderYRow).toBeVisible();
+
+		// Get initial entry count for waiting
+		const initialEntryCount = await getDBEntryCount(page);
 
 		// Complete a child
-		const shoulderYRow = page.locator('tr.section-row:has-text("Shoulder Y")');
 		const shoulderYTodayCell = shoulderYRow.locator("td.cell-today");
 		await shoulderYTodayCell.click();
 
-		// Wait for update
-		await page.waitForTimeout(500);
+		// Wait for entry to be written to DB
+		await waitForEntryCount(page, initialEntryCount + 1, { timeout: 5000 });
 
 		// Check tag count updated to 1/3
 		await expect(totalCell).toHaveText(/1\/3/, { timeout: 5000 });

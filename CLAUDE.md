@@ -173,6 +173,39 @@ The only place that should import `db` directly is the repositories themselves.
 - Use `const` whenever possible
 - Use TypeScript types
 
+### Date Handling (IMPORTANT)
+
+This codebase has had repeated date-related bugs. Follow these rules strictly:
+
+**Always use the standard helpers from `src/repositories/types.ts`:**
+
+```typescript
+import { toDateString, fromDateString, normalizeDate } from "../repositories/types";
+
+// ✅ CORRECT - use toDateString for date-only comparison
+const dateStr = toDateString(date);  // Returns "YYYY-MM-DD"
+
+// ❌ WRONG - custom date formatting (inconsistent, error-prone)
+const dateStr = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;  // Missing padding, month off by 1
+```
+
+**Why this matters:**
+- `toDateString()` pads months/days with zeros (`"2024-01-05"` not `"2024-1-5"`)
+- `toDateString()` uses correct month values (JavaScript months are 0-indexed)
+- Custom formats cause subtle bugs when comparing dates across the codebase
+
+**Date comparison patterns:**
+```typescript
+// Compare dates by converting to standard strings
+if (toDateString(date1) === toDateString(date2)) { ... }
+
+// Handle mixed Date/string from IndexedDB
+const d = entry.date instanceof Date ? entry.date : new Date(entry.date);
+const dateStr = toDateString(d);
+```
+
+**Never create custom date formatting functions** - always use the repository helpers.
+
 ### Clean Commits
 
 - Run `git status` before committing to review staged files
