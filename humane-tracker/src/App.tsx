@@ -1,5 +1,6 @@
 import { useObservable } from "dexie-react-hooks";
 import { useCallback, useEffect, useState } from "react";
+import { AffirmationBanner } from "./components/AffirmationBanner";
 import { AnonymousWarning } from "./components/AnonymousWarning";
 import { HabitTracker } from "./components/HabitTracker";
 import { LoginButton } from "./components/LoginButton";
@@ -88,6 +89,7 @@ function App() {
 	if (loading) {
 		return (
 			<div className="loading-container">
+				<AffirmationBanner />
 				<div className="loading-spinner">Loading...</div>
 			</div>
 		);

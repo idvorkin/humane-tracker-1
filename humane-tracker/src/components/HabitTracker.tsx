@@ -3,6 +3,7 @@ import React, { useCallback, useMemo, useRef, useState } from "react";
 import { useHabitTrackerVM } from "../hooks/useHabitTrackerVM";
 import type { Habit, HabitWithStatus } from "../types/habit";
 import { buildCategoryInfo } from "../utils/categoryUtils";
+import { AffirmationCard } from "./AffirmationCard";
 import { CleanupDuplicates } from "./CleanupDuplicates";
 import { HabitSettings } from "./HabitSettings";
 import { InitializeHabits } from "./InitializeHabits";
@@ -482,6 +483,8 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 					</span>
 				</div>
 			</div>
+
+			<AffirmationCard userId={userId} />
 
 			{showInitializer && (
 				<InitializeHabits
