@@ -319,8 +319,12 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 			const result = await importAllData(pendingImportData, mode);
 			const modeLabel =
 				mode === "replace" ? "Replaced all data with" : "Merged";
+			const affirmationPart =
+				result.affirmationLogsImported > 0
+					? `, ${result.affirmationLogsImported} affirmation logs`
+					: "";
 			setImportStatus(
-				`${modeLabel} ${result.habitsImported} habits and ${result.entriesImported} entries`,
+				`${modeLabel} ${result.habitsImported} habits, ${result.entriesImported} entries${affirmationPart}`,
 			);
 			await loadHabits();
 			onUpdate();

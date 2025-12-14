@@ -106,9 +106,20 @@ describe("validateExportData", () => {
 		expect(validateExportData(undefined)).toBe(false);
 	});
 
-	it("returns false for wrong version", () => {
+	it("returns true for version 2 (with affirmationLogs)", () => {
 		const data = {
 			version: 2,
+			exportedAt: "2024-01-01T00:00:00.000Z",
+			habits: [],
+			entries: [],
+			affirmationLogs: [],
+		};
+		expect(validateExportData(data)).toBe(true);
+	});
+
+	it("returns false for wrong version", () => {
+		const data = {
+			version: 3,
 			exportedAt: "2024-01-01T00:00:00.000Z",
 			habits: [],
 			entries: [],
