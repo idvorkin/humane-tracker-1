@@ -1,11 +1,12 @@
 import type React from "react";
 import { useEffect, useRef } from "react";
-import type { Habit, HabitWithStatus } from "../types/habit";
+import { toDateString } from "../repositories";
+import type { HabitWithStatus } from "../types/habit";
 import "./TagChildPicker.css";
 
 interface TagChildPickerProps {
 	tag: HabitWithStatus;
-	childHabits: Habit[];
+	childHabits: HabitWithStatus[];
 	date: Date;
 	position: { x: number; y: number };
 	onSelectChild: (childId: string | null) => void;
@@ -55,6 +56,20 @@ export const TagChildPicker: React.FC<TagChildPickerProps> = ({
 		top: Math.min(position.y, window.innerHeight - 200),
 	};
 
+	// Check if a habit has an entry for the selected date
+	const hasEntryForDate = (habit: HabitWithStatus, skipSynthetic = false) => {
+		const dateStr = toDateString(date);
+		const entries = habit.entries || [];
+		return entries.some(
+			(e) =>
+				toDateString(e.date) === dateStr &&
+				e.value >= 1 &&
+				(!skipSynthetic || !e.id.startsWith("synthetic-")),
+		);
+	};
+
+	const tagHasRealEntry = hasEntryForDate(tag, true);
+
 	return (
 		<div className="tag-child-picker-overlay">
 			<div
@@ -76,21 +91,26 @@ export const TagChildPicker: React.FC<TagChildPickerProps> = ({
 					</button>
 				</div>
 				<div className="tag-child-picker-options">
-					{childHabits.map((child) => (
-						<button
-							key={child.id}
-							className="child-option"
-							onClick={() => onSelectChild(child.id)}
-							type="button"
-						>
-							{child.name}
-						</button>
-					))}
+					{childHabits.map((child) => {
+						const hasEntry = hasEntryForDate(child);
+						return (
+							<button
+								key={child.id}
+								className={`child-option ${hasEntry ? "child-option-done" : ""}`}
+								onClick={() => onSelectChild(child.id)}
+								type="button"
+							>
+								{hasEntry && <span className="child-check">✓</span>}
+								{child.name}
+							</button>
+						);
+					})}
 					<button
-						className="child-option child-option-generic"
+						className={`child-option child-option-generic ${tagHasRealEntry ? "child-option-done" : ""}`}
 						onClick={() => onSelectChild(null)}
 						type="button"
 					>
+						{tagHasRealEntry && <span className="child-check">✓</span>}
 						Just did it (unspecified)
 					</button>
 				</div>

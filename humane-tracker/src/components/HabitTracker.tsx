@@ -97,14 +97,20 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 		[vm],
 	);
 
-	// Get child habits for the tag child picker
-	const tagChildHabits = useMemo((): Habit[] => {
-		if (!tagChildPickerState) return [];
-		const childIds = tagChildPickerState.tag.childIds || [];
-		return vm.habits.filter((h) => childIds.includes(h.id));
+	// Get live tag data (refreshes when entries change)
+	const liveTag = useMemo((): HabitWithStatus | null => {
+		if (!tagChildPickerState) return null;
+		return vm.habits.find((h) => h.id === tagChildPickerState.tag.id) || null;
 	}, [tagChildPickerState, vm.habits]);
 
-	// Handler for tag child selection
+	// Get child habits with status for the tag child picker
+	const tagChildHabits = useMemo((): HabitWithStatus[] => {
+		if (!liveTag) return [];
+		const childIds = liveTag.childIds || [];
+		return vm.habits.filter((h) => childIds.includes(h.id));
+	}, [liveTag, vm.habits]);
+
+	// Handler for tag child selection (toggles entry, picker stays open)
 	const handleTagChildSelect = useCallback(
 		async (childId: string | null) => {
 			if (!tagChildPickerState) return;
@@ -115,7 +121,7 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 				// Entry on the selected child habit
 				vm.toggleEntry(childId, tagChildPickerState.date);
 			}
-			setTagChildPickerState(null);
+			// Don't close picker - let user toggle multiple items
 		},
 		[tagChildPickerState, vm],
 	);
@@ -507,9 +513,9 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 				/>
 			)}
 
-			{tagChildPickerState && (
+			{tagChildPickerState && liveTag && (
 				<TagChildPicker
-					tag={tagChildPickerState.tag}
+					tag={liveTag}
 					childHabits={tagChildHabits}
 					date={tagChildPickerState.date}
 					position={tagChildPickerState.position}

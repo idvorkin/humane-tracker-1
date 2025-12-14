@@ -86,3 +86,31 @@
 	background: #1e40af;
 	border-color: #60a5fa;
 }
+
+/* Completed state */
+.tag-child-picker-options .child-option-done {
+	background: #14532d;
+	border-color: #22c55e;
+	color: #86efac;
+}
+
+.tag-child-picker-options .child-option-done:hover {
+	background: #166534;
+	border-color: #4ade80;
+}
+
+.tag-child-picker-options .child-option-generic.child-option-done {
+	background: #14532d;
+	border-color: #22c55e;
+	color: #86efac;
+}
+
+.tag-child-picker-options .child-option-generic.child-option-done:hover {
+	background: #166534;
+	border-color: #4ade80;
+}
+
+.child-check {
+	margin-right: 8px;
+	font-weight: bold;
+}
