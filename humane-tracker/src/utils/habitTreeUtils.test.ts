@@ -108,6 +108,41 @@ describe("buildHabitTree", () => {
 
 		expect(tree[0].isExpanded).toBe(false);
 	});
+
+	it("handles inconsistent childIds/parentIds - child with empty parentIds", () => {
+		// BUG FIX: When a tag has childIds but the child has empty parentIds,
+		// the child should NOT appear at top-level. It should only appear under the tag.
+		const habits = [
+			createHabit("meditate", "Meditate", "tag", ["lk", "focus"]),
+			createHabit("lk", "Loving-kindness", "raw", undefined, []), // Empty parentIds!
+			createHabit("focus", "Focus meditation", "raw", undefined, []), // Empty parentIds!
+		];
+
+		const tree = buildHabitTree(habits, new Set());
+
+		// Only the tag should be at top-level
+		expect(tree).toHaveLength(1);
+		expect(tree[0].habit.id).toBe("meditate");
+
+		// Children should be nested under the tag (not at top-level)
+		expect(tree[0].childNodes).toHaveLength(2);
+		expect(tree[0].childNodes.map((n) => n.habit.id)).toEqual(["lk", "focus"]);
+	});
+
+	it("handles inconsistent childIds/parentIds - only uses childIds from visible tags", () => {
+		// If a child references a parent that doesn't exist in the habit list,
+		// it should appear at top-level (orphaned)
+		const habits = [
+			createHabit("A", "Orphan", "raw", undefined, ["non-existent-tag"]),
+			createHabit("B", "Standalone", "raw"),
+		];
+
+		const tree = buildHabitTree(habits, new Set());
+
+		// Both should be at top-level since the parent tag isn't in the list
+		expect(tree).toHaveLength(2);
+		expect(tree.map((n) => n.habit.id)).toEqual(["A", "B"]);
+	});
 });
 
 describe("flattenTree", () => {

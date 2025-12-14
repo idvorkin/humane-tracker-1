@@ -385,6 +385,33 @@ With arbitrary nesting, we could create cycles:
 
 **Solution:** Validate on relationship creation. Reject if adding a parent would create a cycle. DAG only, no cycles.
 
+### 5. Data consistency: childIds ↔ parentIds
+
+**INVARIANT:** `childIds` and `parentIds` must stay in sync:
+
+- If tag T has habit H in its `childIds`, then H's `parentIds` should include T
+- If habit H has tag T in its `parentIds`, then T's `childIds` should include H
+
+**What happens when they're out of sync:**
+
+If a habit has empty `parentIds` but a tag lists it in `childIds`:
+
+- Old behavior (bug): Habit appears TWICE - at top-level AND under the tag
+- Fixed behavior: Tree-building checks `childIds` to determine parenthood, so habit only appears under the tag
+
+**Defensive algorithm:** `buildHabitTree()` derives parenthood from BOTH sources:
+
+1. Scans all tags to build set of all children (from `childIds`)
+2. A habit is top-level only if: no tag has it in `childIds` AND no parent exists in the list
+
+**Where desync can occur:**
+
+- Import (no validation of relationship consistency)
+- Historical data (created before sync logic)
+- Edge cases in CRUD operations
+
+**Prevention:** HabitSettings syncs both arrays when modifying tag children.
+
 ## Benefits
 
 1. **Flexibility**: Reorganize display without touching facts

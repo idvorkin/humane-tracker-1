@@ -26,8 +26,13 @@ export interface FlatTreeNode {
 
 /**
  * Build a tree structure from habits.
- * Top-level = habits with no parents (or parentIds empty).
+ * Top-level = habits that are not children of any tag in the list.
  * Children are nested under their parent tags.
+ *
+ * IMPORTANT: We derive parenthood from BOTH parentIds AND childIds to handle
+ * cases where these arrays are out of sync. A habit is considered a child if:
+ * - It has parentIds pointing to a tag in the list, OR
+ * - Any tag in the list has this habit in its childIds
  */
 export function buildHabitTree(
 	habits: HabitWithStatus[],
@@ -38,14 +43,36 @@ export function buildHabitTree(
 		habitMap.set(h.id, h);
 	}
 
-	// Find top-level habits (no parents, or parents not in this list)
-	const topLevel = habits.filter((h) => {
-		if (!h.parentIds || h.parentIds.length === 0) {
-			return true;
+	// Build a set of all habit IDs that are children of any tag (from childIds)
+	// This handles the case where parentIds is empty but the habit is in a tag's childIds
+	const childrenOfTags = new Set<string>();
+	for (const h of habits) {
+		if (h.habitType === "tag" && h.childIds) {
+			for (const childId of h.childIds) {
+				// Only count as child if the child exists in our habit list
+				if (habitMap.has(childId)) {
+					childrenOfTags.add(childId);
+				}
+			}
 		}
-		// Check if any parent is in the current habit list
-		const hasParentInList = h.parentIds.some((pid) => habitMap.has(pid));
-		return !hasParentInList;
+	}
+
+	// Find top-level habits: not a child of any tag in this list
+	const topLevel = habits.filter((h) => {
+		// If any tag has this habit as a child, it's not top-level
+		if (childrenOfTags.has(h.id)) {
+			return false;
+		}
+
+		// Also check parentIds for habits whose parent is in the list
+		if (h.parentIds && h.parentIds.length > 0) {
+			const hasParentInList = h.parentIds.some((pid) => habitMap.has(pid));
+			if (hasParentInList) {
+				return false;
+			}
+		}
+
+		return true;
 	});
 
 	// Build tree recursively
