@@ -180,7 +180,6 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 						const newParentIds = [...(child.parentIds || []), newHabitId];
 						return habitService.updateHabit(childId, {
 							parentIds: newParentIds,
-							updatedAt: new Date(),
 						});
 					})
 					.filter(Boolean);
@@ -209,10 +208,7 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 			// Save changes
 			for (const [habitId, habitChanges] of Object.entries(changes)) {
 				if (Object.keys(habitChanges).length > 0) {
-					await habitService.updateHabit(habitId, {
-						...habitChanges,
-						updatedAt: new Date(),
-					});
+					await habitService.updateHabit(habitId, habitChanges);
 				}
 			}
 
@@ -360,7 +356,6 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 				const newCategory = migrateCategoryValue(habit.category);
 				await habitService.updateHabit(habit.id, {
 					category: newCategory,
-					updatedAt: new Date(),
 				});
 				migratedCount++;
 			}
