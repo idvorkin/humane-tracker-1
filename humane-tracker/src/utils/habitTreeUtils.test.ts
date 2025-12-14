@@ -220,4 +220,58 @@ describe("flattenTree", () => {
 		expect(aNode?.hasChildren).toBe(false);
 		expect(bNode?.hasChildren).toBe(false);
 	});
+
+	it("orders parent before children when children have no parentIds", () => {
+		// BUG FIX: This tests the exact scenario from production data where
+		// children (Box Breathing, Cult Meditate) have no parentIds but are
+		// referenced in parent tag's childIds. The flattened order must be:
+		// parent tag first, then children below.
+		const habits = [
+			createHabit("750words", "750 words", "raw"),
+			createHabit("box-breathing", "Box Breathing", "raw", undefined, []), // No parentIds!
+			createHabit("cult-meditate", "Cult Meditate", "raw", undefined, []), // No parentIds!
+			createHabit("meditate", "Meditate", "tag", ["box-breathing", "cult-meditate"]),
+			createHabit("read-devotional", "Read devotional", "raw"),
+		];
+
+		const expandedTags = new Set(["meditate"]);
+		const tree = buildHabitTree(habits, expandedTags);
+		const flat = flattenTree(tree);
+
+		// Verify order: standalone habits, then tag, then children, then more standalone
+		const ids = flat.map((n) => n.habit.id);
+		expect(ids).toEqual([
+			"750words",
+			"meditate", // Parent tag comes before its children
+			"box-breathing", // Child 1 (after parent)
+			"cult-meditate", // Child 2 (after parent)
+			"read-devotional",
+		]);
+
+		// Verify depths
+		expect(flat.find((n) => n.habit.id === "meditate")?.depth).toBe(0);
+		expect(flat.find((n) => n.habit.id === "box-breathing")?.depth).toBe(1);
+		expect(flat.find((n) => n.habit.id === "cult-meditate")?.depth).toBe(1);
+	});
+
+	it("hides children with no parentIds when tag is collapsed", () => {
+		// Same scenario but with collapsed tag - children should not appear
+		const habits = [
+			createHabit("750words", "750 words", "raw"),
+			createHabit("box-breathing", "Box Breathing", "raw", undefined, []),
+			createHabit("cult-meditate", "Cult Meditate", "raw", undefined, []),
+			createHabit("meditate", "Meditate", "tag", ["box-breathing", "cult-meditate"]),
+			createHabit("read-devotional", "Read devotional", "raw"),
+		];
+
+		// Tag NOT expanded
+		const tree = buildHabitTree(habits, new Set());
+		const flat = flattenTree(tree);
+
+		// Only 3 items: the two standalone habits and the collapsed tag
+		const ids = flat.map((n) => n.habit.id);
+		expect(ids).toEqual(["750words", "meditate", "read-devotional"]);
+		expect(ids).not.toContain("box-breathing");
+		expect(ids).not.toContain("cult-meditate");
+	});
 });
