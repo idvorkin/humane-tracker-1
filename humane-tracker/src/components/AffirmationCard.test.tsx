@@ -19,10 +19,10 @@ describe("AffirmationCard", () => {
 
 		// Should render one of the four affirmations
 		const possibleTitles = [
-			"Do It Anyways:",
-			"An Essentialist:",
-			"A Class Act:",
-			"Calm Like Water:",
+			"Do It Anyways",
+			"An Essentialist",
+			"A Class Act",
+			"Calm Like Water",
 		];
 
 		// At least one title should be visible
@@ -84,27 +84,27 @@ describe("AffirmationCard", () => {
 	});
 
 	it("changes affirmation when refresh button is clicked", () => {
-		render(<AffirmationCard userId="test-user" />);
+		const { container } = render(<AffirmationCard userId="test-user" />);
 
 		const refreshButton = screen.getByLabelText("Show different affirmation");
 
 		// Get initial title
-		const initialText = screen.getByText(/:/);
+		const getTitle = () =>
+			container.querySelector(".affirmation-card-title")?.textContent;
+		const initialTitle = getTitle();
 
 		// Click refresh multiple times - eventually should show a different one
 		// (Since there are 4 affirmations and it never repeats, after 3 clicks we must see a change)
 		let changed = false;
 		for (let i = 0; i < 4; i++) {
-			const oldText = initialText.textContent;
 			fireEvent.click(refreshButton);
-			const newText = screen.getByText(/:/).textContent;
-			if (oldText !== newText) {
+			if (getTitle() !== initialTitle) {
 				changed = true;
 				break;
 			}
 		}
 
-		// This is probabilistic but with 4 options and no-repeat logic, should always change
+		// With 4 options and no-repeat logic, should always change
 		expect(changed).toBe(true);
 	});
 

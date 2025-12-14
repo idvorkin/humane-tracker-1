@@ -10,15 +10,18 @@
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-.affirmation-main {
+.affirmation-header {
 	display: flex;
-	flex-wrap: wrap;
-	align-items: baseline;
-	gap: 6px;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.affirmation-subtitle-row {
+	margin-top: 2px;
 }
 
 .affirmation-refresh {
-	margin-left: auto;
 	background: none;
 	border: none;
 	font-size: 1.1rem;

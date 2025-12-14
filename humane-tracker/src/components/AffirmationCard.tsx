@@ -84,9 +84,8 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 
 	return (
 		<div className="affirmation-card">
-			<div className="affirmation-main">
-				<span className="affirmation-card-title">{affirmation.title}:</span>
-				<span className="affirmation-card-subtitle">{affirmation.subtitle}</span>
+			<div className="affirmation-header">
+				<span className="affirmation-card-title">{affirmation.title}</span>
 				<button
 					type="button"
 					className="affirmation-refresh"
@@ -95,6 +94,9 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 				>
 					↻
 				</button>
+			</div>
+			<div className="affirmation-subtitle-row">
+				<span className="affirmation-card-subtitle">{affirmation.subtitle}</span>
 			</div>
 
 			{noteMode === null ? (
