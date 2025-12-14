@@ -215,8 +215,19 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 					)}
 					{userMenu?.({
 						onManageHabits: () => setShowSettings(true),
-						onLoadDefaults: () => setShowInitializer(true),
-						showLoadDefaults: vm.hasNoHabits,
+						onLoadDefaults: () => {
+							if (!vm.hasNoHabits) {
+								if (
+									!window.confirm(
+										"You already have habits. Loading defaults will add any missing default habits (existing ones won't be duplicated). Continue?"
+									)
+								) {
+									return;
+								}
+							}
+							setShowInitializer(true);
+						},
+						showLoadDefaults: true,
 					})}
 				</div>
 			</div>

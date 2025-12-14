@@ -152,26 +152,39 @@ export function computeTagStatus(
 		}
 	}
 
-	// Create synthetic entries (value=1 for each unique day)
-	const syntheticEntries: HabitEntry[] = Array.from(uniqueDays.entries()).map(
-		([dayKey, date], index) => ({
+	// Build entries array:
+	// - Include tag's own REAL entries (so they can be toggled)
+	// - Add SYNTHETIC entries for days where only children have entries
+	const tagOwnDays = new Set(
+		tagOwnEntries.map((e) => {
+			const d = e.date instanceof Date ? e.date : new Date(e.date);
+			return toDateString(d);
+		}),
+	);
+
+	// Create synthetic entries only for days NOT covered by tag's own entries
+	const syntheticEntries: HabitEntry[] = Array.from(uniqueDays.entries())
+		.filter(([dayKey]) => !tagOwnDays.has(dayKey))
+		.map(([dayKey, date]) => ({
 			id: `synthetic-${tag.id}-${dayKey}`,
 			habitId: tag.id,
 			userId: tag.userId,
 			date,
 			value: 1, // Binary: completed for this day
 			createdAt: new Date(),
-		}),
-	);
+		}));
+
+	// Combine: real tag entries first (for toggling), then synthetic
+	const combinedEntries = [...tagOwnEntries, ...syntheticEntries];
 
 	// Count unique days
 	const currentWeekCount = uniqueDays.size;
 
 	// Calculate status using the same logic as regular habits
-	const status = calculateHabitStatus(tag, syntheticEntries, currentDate);
+	const status = calculateHabitStatus(tag, combinedEntries, currentDate);
 
 	return {
-		entries: syntheticEntries,
+		entries: combinedEntries,
 		currentWeekCount,
 		status,
 	};

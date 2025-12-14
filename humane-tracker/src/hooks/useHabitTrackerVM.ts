@@ -416,8 +416,13 @@ export function useHabitTrackerVM({
 			}
 
 			const targetDateStr = toDateString(date);
+
+			// For tags, entries array contains synthetic entries (for display).
+			// We need to find a REAL entry on the tag itself, not synthetic ones.
 			const existingEntry = habit.entries.find(
-				(e) => toDateString(e.date) === targetDateStr,
+				(e) =>
+					toDateString(e.date) === targetDateStr &&
+					!e.id.startsWith("synthetic-"),
 			);
 
 			const currentValue = existingEntry?.value ?? null;
