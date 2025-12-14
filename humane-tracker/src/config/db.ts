@@ -558,6 +558,7 @@ if (
 
 	let staleAuthCheckTimer: ReturnType<typeof setTimeout> | null = null;
 	let lastSyncPhase: string | null = null;
+	let lastSyncStatus: string | null = null;
 	let stuckInInitialSince: number | null = null;
 	let hasAttemptedSyncRecovery = false;
 
@@ -700,7 +701,7 @@ if (
 			const isInStuckState =
 				syncState.phase === "initial" && syncState.status === "connected";
 			const wasInStuckState =
-				lastSyncPhase === "initial" && syncState.status === "connected";
+				lastSyncPhase === "initial" && lastSyncStatus === "connected";
 
 			if (isInStuckState && !wasInStuckState) {
 				// Just entered potential stuck state
@@ -727,6 +728,7 @@ if (
 			}
 
 			lastSyncPhase = syncState.phase;
+			lastSyncStatus = syncState.status;
 			// ============================================================
 
 			// Log specific sync events with more detail
