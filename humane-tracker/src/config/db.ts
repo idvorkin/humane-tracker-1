@@ -11,6 +11,10 @@ import {
 	toTimestamp,
 } from "../repositories/types";
 import { SyncLogService } from "../services/syncLogService";
+import {
+	didEnterStuckState,
+	didExitStuckState,
+} from "../utils/staleAuthUtils";
 import { syncLogDB } from "./syncLogDB";
 
 // Extend Dexie with cloud addon
@@ -698,12 +702,17 @@ if (
 			// STALE AUTH DETECTION TRIGGER
 			// ============================================================
 			// Start timer when entering stuck state, clear when exiting
-			const isInStuckState =
-				syncState.phase === "initial" && syncState.status === "connected";
-			const wasInStuckState =
-				lastSyncPhase === "initial" && lastSyncStatus === "connected";
+			// See staleAuthUtils.ts for the logic and tests
+			const currentState = {
+				phase: syncState.phase,
+				status: syncState.status,
+			};
+			const previousState = {
+				phase: lastSyncPhase,
+				status: lastSyncStatus,
+			};
 
-			if (isInStuckState && !wasInStuckState) {
+			if (didEnterStuckState(currentState, previousState)) {
 				// Just entered potential stuck state
 				stuckInInitialSince = Date.now();
 				if (staleAuthCheckTimer) {
@@ -716,7 +725,7 @@ if (
 				console.log(
 					"[Dexie Cloud] Started stale auth detection timer (30s)",
 				);
-			} else if (!isInStuckState && stuckInInitialSince !== null) {
+			} else if (didExitStuckState(currentState, stuckInInitialSince !== null)) {
 				// Exited stuck state - cancel timer and reset
 				if (staleAuthCheckTimer) {
 					clearTimeout(staleAuthCheckTimer);
