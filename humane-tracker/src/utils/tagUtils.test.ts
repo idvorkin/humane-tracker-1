@@ -4,6 +4,7 @@ import {
 	getDescendantRawHabits,
 	getTagEntries,
 	getTagWeeklyCount,
+	repairTagRelationships,
 	wouldCreateCycle,
 } from "./tagUtils";
 
@@ -13,6 +14,7 @@ function createHabit(
 	name: string,
 	habitType: "raw" | "tag" = "raw",
 	childIds?: string[],
+	parentIds?: string[],
 ): Habit {
 	return {
 		id,
@@ -24,6 +26,7 @@ function createHabit(
 		updatedAt: new Date(),
 		habitType,
 		childIds,
+		parentIds,
 	};
 }
 
@@ -328,5 +331,105 @@ describe("getTagWeeklyCount", () => {
 
 		const count = getTagWeeklyCount(tag, habits, entries, startDate, endDate);
 		expect(count).toBe(1); // Only day2 (Jan 5) is in range
+	});
+});
+
+describe("repairTagRelationships", () => {
+	it("returns unchanged habits when already consistent", () => {
+		const habits = [
+			createHabit("tag1", "Tag 1", "tag", ["A", "B"]),
+			createHabit("A", "Habit A", "raw", undefined, ["tag1"]),
+			createHabit("B", "Habit B", "raw", undefined, ["tag1"]),
+		];
+
+		const result = repairTagRelationships(habits);
+
+		expect(result.parentIdsFixed).toBe(0);
+		expect(result.childIdsFixed).toBe(0);
+		expect(result.habits).toHaveLength(3);
+	});
+
+	it("fixes missing parentIds when tag has childIds", () => {
+		// Tag has childIds but children have empty parentIds
+		const habits = [
+			createHabit("tag1", "Tag 1", "tag", ["A", "B"]),
+			createHabit("A", "Habit A", "raw", undefined, []), // Missing parentId
+			createHabit("B", "Habit B", "raw"), // Missing parentIds entirely
+		];
+
+		const result = repairTagRelationships(habits);
+
+		expect(result.parentIdsFixed).toBe(2);
+		expect(result.childIdsFixed).toBe(0);
+
+		const habitA = result.habits.find((h) => h.id === "A");
+		const habitB = result.habits.find((h) => h.id === "B");
+
+		expect(habitA?.parentIds).toContain("tag1");
+		expect(habitB?.parentIds).toContain("tag1");
+	});
+
+	it("fixes missing childIds when habit has parentIds", () => {
+		// Habit has parentIds but tag has empty childIds
+		const habits = [
+			createHabit("tag1", "Tag 1", "tag", []), // Missing childId
+			createHabit("A", "Habit A", "raw", undefined, ["tag1"]),
+		];
+
+		const result = repairTagRelationships(habits);
+
+		expect(result.parentIdsFixed).toBe(0);
+		expect(result.childIdsFixed).toBe(1);
+
+		const tag = result.habits.find((h) => h.id === "tag1");
+		expect(tag?.childIds).toContain("A");
+	});
+
+	it("handles bidirectional repair", () => {
+		// Mixed inconsistencies
+		const habits = [
+			createHabit("tag1", "Tag 1", "tag", ["A"]), // Has A, missing B
+			createHabit("A", "Habit A", "raw", undefined, []), // Missing parentId
+			createHabit("B", "Habit B", "raw", undefined, ["tag1"]), // Has parentId but not in tag's childIds
+		];
+
+		const result = repairTagRelationships(habits);
+
+		expect(result.parentIdsFixed).toBe(1); // A got tag1 added
+		expect(result.childIdsFixed).toBe(1); // tag1 got B added
+
+		const tag = result.habits.find((h) => h.id === "tag1");
+		const habitA = result.habits.find((h) => h.id === "A");
+		const habitB = result.habits.find((h) => h.id === "B");
+
+		expect(tag?.childIds).toContain("A");
+		expect(tag?.childIds).toContain("B");
+		expect(habitA?.parentIds).toContain("tag1");
+		expect(habitB?.parentIds).toContain("tag1");
+	});
+
+	it("preserves existing relationships while adding missing ones", () => {
+		const habits = [
+			createHabit("tag1", "Tag 1", "tag", ["A"]),
+			createHabit("tag2", "Tag 2", "tag", ["A"]), // A is in both tags
+			createHabit("A", "Habit A", "raw", undefined, ["tag1"]), // Only has tag1, missing tag2
+		];
+
+		const result = repairTagRelationships(habits);
+
+		expect(result.parentIdsFixed).toBe(1);
+
+		const habitA = result.habits.find((h) => h.id === "A");
+		expect(habitA?.parentIds).toContain("tag1");
+		expect(habitA?.parentIds).toContain("tag2");
+		expect(habitA?.parentIds).toHaveLength(2);
+	});
+
+	it("handles empty habits array", () => {
+		const result = repairTagRelationships([]);
+
+		expect(result.parentIdsFixed).toBe(0);
+		expect(result.childIdsFixed).toBe(0);
+		expect(result.habits).toEqual([]);
 	});
 });
