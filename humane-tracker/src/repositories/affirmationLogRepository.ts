@@ -27,6 +27,18 @@ function toAffirmationLog(record: AffirmationLogRecord): AffirmationLog {
 	};
 }
 
+function toRecord(log: AffirmationLog): AffirmationLogRecord {
+	return {
+		id: log.id,
+		userId: log.userId,
+		affirmationTitle: log.affirmationTitle,
+		logType: log.logType,
+		note: log.note,
+		date: toDateString(log.date),
+		createdAt: toTimestamp(log.createdAt),
+	};
+}
+
 export const affirmationLogRepository = {
 	async create(
 		log: Omit<AffirmationLog, "id" | "createdAt">,
@@ -44,6 +56,24 @@ export const affirmationLogRepository = {
 		};
 		await db.affirmationLogs.add(record);
 		return id;
+	},
+
+	async getAll(): Promise<AffirmationLog[]> {
+		const records = await db.affirmationLogs.toArray();
+		return records.map(toAffirmationLog);
+	},
+
+	async clear(): Promise<void> {
+		const count = await db.affirmationLogs.count();
+		console.warn(
+			`[AffirmationLogRepository] DESTRUCTIVE: Clearing ${count} affirmation logs. This should only happen during import replace mode.`,
+		);
+		await db.affirmationLogs.clear();
+	},
+
+	async bulkPut(logs: AffirmationLog[]): Promise<void> {
+		const records = logs.map(toRecord);
+		await db.affirmationLogs.bulkPut(records);
 	},
 
 	async getByUserIdAndDate(
