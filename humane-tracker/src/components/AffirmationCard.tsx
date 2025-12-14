@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { affirmationLogRepository } from "../repositories/affirmationLogRepository";
 import "./AffirmationCard.css";
 
 const DEFAULT_AFFIRMATIONS = [
@@ -47,16 +48,26 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 		setNoteText("");
 	}, []);
 
-	const handleSaveNote = useCallback(() => {
-		if (!noteText.trim()) {
+	const handleSaveNote = useCallback(async () => {
+		if (!noteText.trim() || !noteMode) {
 			setNoteMode(null);
 			return;
 		}
-		// TODO: Save to DB
-		console.log(`[${noteMode}] ${affirmation.title}: ${noteText}`);
+		try {
+			await affirmationLogRepository.create({
+				userId,
+				affirmationTitle: affirmation.title,
+				logType: noteMode,
+				note: noteText.trim(),
+				date: new Date(),
+			});
+			console.log(`Saved: [${noteMode}] ${affirmation.title}: ${noteText}`);
+		} catch (error) {
+			console.error("Failed to save affirmation log:", error);
+		}
 		setNoteMode(null);
 		setNoteText("");
-	}, [noteMode, noteText, affirmation.title]);
+	}, [noteMode, noteText, affirmation.title, userId]);
 
 	const handleKeyDown = useCallback(
 		(e: React.KeyboardEvent) => {
@@ -105,8 +116,7 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 				</div>
 			) : (
 				<div className="affirmation-note-input">
-					<input
-						type="text"
+					<textarea
 						placeholder={
 							noteMode === "opportunity"
 								? "How will you apply this today?"

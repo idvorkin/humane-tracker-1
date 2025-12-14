@@ -46,6 +46,16 @@ export interface EntryRecord {
 	parsed?: boolean; // Has this entry been LLM-processed?
 }
 
+export interface AffirmationLogRecord {
+	id: string;
+	userId: string;
+	affirmationTitle: string;
+	logType: "opportunity" | "didit";
+	note: string;
+	date: string; // ISO string (date portion only: YYYY-MM-DD)
+	createdAt: string; // ISO string
+}
+
 /**
  * Convert a Date to an ISO date string (YYYY-MM-DD) for storage.
  * Uses local timezone - the date you see is the date stored.

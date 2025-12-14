@@ -1,6 +1,10 @@
 import Dexie, { type Table } from "dexie";
 import dexieCloud from "dexie-cloud-addon";
-import type { EntryRecord, HabitRecord } from "../repositories/types";
+import type {
+	AffirmationLogRecord,
+	EntryRecord,
+	HabitRecord,
+} from "../repositories/types";
 import {
 	normalizeDate,
 	toDateString,
@@ -15,6 +19,7 @@ export class HumaneTrackerDB extends Dexie {
 	// The repository layer handles conversion between Record and domain types
 	habits!: Table<HabitRecord, string>;
 	entries!: Table<EntryRecord, string>;
+	affirmationLogs!: Table<AffirmationLogRecord, string>;
 
 	constructor() {
 		super("HumaneTrackerDB", { addons: [dexieCloud] });
@@ -492,6 +497,14 @@ export class HumaneTrackerDB extends Dexie {
 					throw error;
 				}
 			});
+
+		// Version 10: Add affirmationLogs table for tracking affirmation notes
+		this.version(10).stores({
+			habits:
+				"@id, userId, name, category, targetPerWeek, createdAt, updatedAt",
+			entries: "@id, habitId, userId, date, value, createdAt",
+			affirmationLogs: "@id, userId, date, affirmationTitle, logType, createdAt",
+		});
 	}
 }
 

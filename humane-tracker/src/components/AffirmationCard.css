@@ -76,20 +76,22 @@
 .affirmation-note-input {
 	display: flex;
 	gap: 8px;
-	align-items: center;
+	align-items: flex-end;
 }
 
-.affirmation-note-input input {
+.affirmation-note-input textarea {
 	flex: 1;
-	padding: 8px 12px;
-	font-size: 0.9rem;
+	padding: 10px 14px;
+	font-size: 0.95rem;
 	font-family: var(--font-body);
 	border: 1px solid var(--color-amber-glow);
 	border-radius: var(--radius-sm);
 	background: white;
+	min-height: 60px;
+	resize: vertical;
 }
 
-.affirmation-note-input input:focus {
+.affirmation-note-input textarea:focus {
 	outline: none;
 	border-color: var(--color-sky);
 	box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
@@ -155,7 +157,7 @@
 		background: rgba(0, 0, 0, 0.5);
 	}
 
-	.affirmation-note-input input {
+	.affirmation-note-input textarea {
 		background: #1f1d1a;
 		border-color: #78350f;
 		color: var(--color-cream);
