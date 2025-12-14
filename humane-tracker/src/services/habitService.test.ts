@@ -492,4 +492,86 @@ describe("computeTagStatus (single-complete model)", () => {
 		expect(result.currentWeekCount).toBe(3);
 		expect(result.status).toBe("done"); // Met target AND done today
 	});
+
+	it("includes tag's own direct entries (humane: click tag directly)", () => {
+		const monday = new Date("2024-01-15");
+
+		const tag = createFullHabit({
+			id: "tag-1",
+			habitType: "tag",
+			childIds: ["raw-1"],
+		});
+
+		const allHabits: Habit[] = [
+			tag,
+			createFullHabit({ id: "raw-1", habitType: "raw", parentIds: ["tag-1"] }),
+		];
+
+		// Entry directly on the tag (user clicked tag cell)
+		const allEntries: HabitEntry[] = [
+			createFullEntry({ id: "e1", habitId: "tag-1", date: monday }), // Direct tag entry!
+		];
+
+		const result = computeTagStatus(tag, allHabits, allEntries, monday);
+
+		// Tag should show as completed from its own entry
+		expect(result.entries).toHaveLength(1);
+		expect(result.currentWeekCount).toBe(1);
+	});
+
+	it("combines tag's own entries with children's entries", () => {
+		const monday = new Date("2024-01-15");
+		const tuesday = new Date("2024-01-16");
+		const wednesday = new Date("2024-01-17");
+
+		const tag = createFullHabit({
+			id: "tag-1",
+			habitType: "tag",
+			childIds: ["raw-1"],
+		});
+
+		const allHabits: Habit[] = [
+			tag,
+			createFullHabit({ id: "raw-1", habitType: "raw", parentIds: ["tag-1"] }),
+		];
+
+		const allEntries: HabitEntry[] = [
+			createFullEntry({ id: "e1", habitId: "tag-1", date: monday }), // Direct tag entry
+			createFullEntry({ id: "e2", habitId: "raw-1", date: tuesday }), // Child entry
+			createFullEntry({ id: "e3", habitId: "tag-1", date: wednesday }), // Another direct tag entry
+		];
+
+		const result = computeTagStatus(tag, allHabits, allEntries, wednesday);
+
+		// Should count all 3 unique days
+		expect(result.entries).toHaveLength(3);
+		expect(result.currentWeekCount).toBe(3);
+	});
+
+	it("deduplicates when tag and child have entries on same day", () => {
+		const monday = new Date("2024-01-15");
+
+		const tag = createFullHabit({
+			id: "tag-1",
+			habitType: "tag",
+			childIds: ["raw-1"],
+		});
+
+		const allHabits: Habit[] = [
+			tag,
+			createFullHabit({ id: "raw-1", habitType: "raw", parentIds: ["tag-1"] }),
+		];
+
+		// Both tag and child have entries on Monday
+		const allEntries: HabitEntry[] = [
+			createFullEntry({ id: "e1", habitId: "tag-1", date: monday }),
+			createFullEntry({ id: "e2", habitId: "raw-1", date: monday }),
+		];
+
+		const result = computeTagStatus(tag, allHabits, allEntries, monday);
+
+		// Should only count Monday once (single-complete model)
+		expect(result.entries).toHaveLength(1);
+		expect(result.currentWeekCount).toBe(1);
+	});
 });

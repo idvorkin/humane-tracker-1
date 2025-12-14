@@ -103,7 +103,7 @@ interface SetData {
 
 interface HabitEntry {
   id: string;
-  habitId: string; // ALWAYS points to a raw habit (never a tag)
+  habitId: string; // Points to a raw habit OR a tag (for direct tag entries)
   userId: string;
   date: Date;
   value: number; // quick count (taps) or derived from sets.length
@@ -217,15 +217,21 @@ function getTagWeeklyCount(tag: Habit, allHabits: Map<string, Habit>): number {
 
 ## Completion Semantics
 
-### Tags are Virtual Habits
+### Tags Can Have Direct Entries
 
-Tags don't have their own entries - they're organizational containers. A tag's completion status is **derived** from its children.
+Tags can have their own direct entries for convenience. A tag's completion status is **derived** from both its own entries AND its children's entries.
+
+**Why allow direct tag entries?**
+- Humane: User clicks "Shoulder Accessory" → it just works
+- No extra decisions: "Which specific exercise did I do?"
+- Minimal friction: One tap, done
 
 ### Single-Complete Model
 
 Tags follow a "single-complete" model: **binary completion per day**.
 
-- If **any** child has **any** entry for a day → tag is "Completed" for that day
+- If the **tag itself** has an entry for a day → tag is "Completed"
+- If **any child** has **any** entry for a day → tag is "Completed"
 - Doesn't matter which child was done
 - Doesn't matter what value the entry has (1, 3, 10 - all count as "done")
 
@@ -284,30 +290,19 @@ Example:
 
 ### Clicking a Tag Habit Cell
 
-**Question: What should happen?**
+**DECIDED: Direct tag entries (most humane)**
 
-**Option 1: Open picker to select raw habit**
+- Click on "Shoulder Accessory" cell → entry logged directly on the tag
+- Tag shows as completed
+- No picker, no extra decisions
+- One tap, done
 
-- Click on "Shoulder Accessory" cell for Monday
-- Picker opens: "Which one did you do?"
-- Select "Shoulder Y" → entry logged to Shoulder Y
-- Tag's count updates automatically
+**Why this approach?**
+- Humane: Minimal friction, respects user's intent
+- Simple: Click works just like any other habit
+- Flexible: Users can still click specific children if they want granular tracking
 
-**Option 2: Tag cells are read-only (display only)**
-
-- Click does nothing (or shows breakdown)
-- Users must click on the specific raw habit row
-- Tags purely for visualization/grouping
-
-**Option 3: Allow "generic" tag entries**
-
-- Quick click = creates entry on a synthetic "generic" raw habit
-- Long press = opens picker for specific raw habit
-- Maintains flexibility for "I did shoulder work but don't remember which"
-
-### Recommended: Option 1 (Picker)
-
-Most intuitive - clicking the aggregate row prompts for specifics. Users can still click directly on raw habit rows if they prefer.
+Users who want to track which specific exercise they did can expand the tag and click on the child directly.
 
 ## Management UI (HabitSettings)
 
