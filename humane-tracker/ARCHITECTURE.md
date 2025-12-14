@@ -113,33 +113,114 @@ const habits = await db.habits.where("userId").equals(userId).toArray();
 - E2E tests via `page.evaluate()` for test setup/assertions
 - Repository implementations themselves
 
-### 2. ViewModel Hook Pattern
+### 2. Component vs ViewModel vs Service
 
-Business logic lives in hooks like `useHabitTrackerVM`, not in components.
+**Quick decision guide:**
+
+| Question | Layer |
+|----------|-------|
+| Could this logic run in a CLI or API? (No React needed) | **Service** |
+| Does this manage React state or subscriptions? | **ViewModel (hook)** |
+| Is this just rendering JSX or delegating clicks? | **Component** |
+
+**When does a component need a ViewModel?**
+- ✅ 3+ pieces of interrelated state
+- ✅ Data fetching or subscriptions
+- ✅ Complex derived/computed state
+- ✅ State shared between child components
+- ✅ Logic worth unit testing separately
+- ❌ Simple local UI state (hover, open/closed) → keep in component
+
+#### Services (`src/services/`)
+
+**What goes here:** Business logic independent of React.
 
 ```typescript
-// Hook handles: state, subscriptions, calculations, mutations
-const vm = useHabitTrackerVM({ userId });
+// ✅ Pure calculations - no React, easily testable
+export function calculateHabitStatus(habit, entries): HabitStatus
 
-// Component just renders and calls vm methods
-<button onClick={() => vm.toggleEntry(habit.id, date)}>...</button>
+// ✅ Data operations that combine multiple repos
+async getHabitsWithStatus(userId): Promise<HabitWithStatus[]>
+
+// ✅ CRUD wrappers (thin pass-through to repos is OK)
+async createHabit(habit): Promise<string>
 ```
 
-**Why?**
-- Testable: Pure functions extracted from hooks can be unit tested
-- Separation: Components focus on UI, hooks focus on logic
-- Reusable: Same VM can power different UI presentations
+**What does NOT go here:**
+- React state (`useState`, `useRef`)
+- React effects or subscriptions management
+- UI-specific transformations (grouping for display)
 
-### 3. Service Layer
+#### ViewModels (`src/hooks/useXxxVM.ts`)
 
-Services contain pure business logic with no React dependencies.
+**What goes here:** React state coordination for a feature.
 
 ```typescript
-// Services are called by hooks, not components
-const status = habitService.calculateHabitStatus(habit, entries);
+// ✅ React state
+const [habits, setHabits] = useState<HabitWithStatus[]>([]);
+const [isLoading, setIsLoading] = useState(true);
+const [collapsedSections, setCollapsed] = useState(new Set());
+
+// ✅ Subscription setup with cleanup
+useEffect(() => {
+  const unsub = habitService.subscribeToHabits(userId, setHabits);
+  return unsub;
+}, [userId]);
+
+// ✅ UI-specific derived state
+const sections = useMemo(() =>
+  groupHabitsByCategory(habits, collapsedSections),
+  [habits, collapsedSections]
+);
+
+// ✅ Actions that update state AND/OR call services
+const toggleEntry = async (habitId, date) => {
+  await habitService.updateEntry(...); // DB write
+  // liveQuery auto-updates state
+};
+
+// ✅ UI-specific pure functions (can be exported for testing)
+export function getCellDisplay(habit, date): { content, className }
+export function getNextEntryValue(current, isTag): number | null
 ```
 
-### 4. Date Handling
+#### Components (`src/components/`)
+
+**What goes here:** Rendering and event delegation.
+
+```typescript
+// ✅ Use VM, render, delegate
+function HabitTracker({ userId }) {
+  const vm = useHabitTrackerVM({ userId });
+
+  return (
+    <div>
+      {vm.sections.map(section => (
+        <Section
+          key={section.category}
+          onToggle={() => vm.toggleSection(section.category)}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ✅ Simple local UI state is fine in components
+function HabitCell({ habit, date, onToggle }) {
+  const [isHovered, setIsHovered] = useState(false); // Local only
+  return <div onMouseEnter={() => setIsHovered(true)} ... />;
+}
+```
+
+#### Summary Table
+
+| Layer | React? | State? | Async? | Examples |
+|-------|--------|--------|--------|----------|
+| **Service** | No | No | Yes | `calculateHabitStatus()`, `getHabitsWithStatus()` |
+| **ViewModel** | Yes | Yes | Via services | `useHabitTrackerVM`, collapsed state, subscriptions |
+| **Component** | Yes | Local only | No | JSX, click handlers, hover state |
+
+### 3. Date Handling
 
 **Always use the standard helpers from `repositories/types.ts`:**
 
