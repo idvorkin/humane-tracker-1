@@ -1,0 +1,167 @@
+.affirmation-card {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 12px 16px;
+	margin-top: var(--space-md);
+	background: linear-gradient(135deg, var(--color-cream) 0%, #f5f0e8 100%);
+	border: 1px solid var(--color-amber-glow);
+	border-radius: var(--radius-md);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.affirmation-main {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 6px;
+}
+
+.affirmation-refresh {
+	margin-left: auto;
+	background: none;
+	border: none;
+	font-size: 1.1rem;
+	color: var(--color-charcoal);
+	opacity: 0.5;
+	cursor: pointer;
+	padding: 0 4px;
+	transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.affirmation-refresh:hover {
+	opacity: 0.8;
+}
+
+.affirmation-refresh:active {
+	transform: rotate(180deg);
+}
+
+.affirmation-card-title {
+	font-family: var(--font-display);
+	font-weight: 600;
+	font-size: 0.95rem;
+	color: var(--color-charcoal);
+}
+
+.affirmation-card-subtitle {
+	font-family: var(--font-body);
+	font-size: 0.9rem;
+	color: var(--color-charcoal);
+	opacity: 0.75;
+	font-style: italic;
+}
+
+.affirmation-actions {
+	display: flex;
+	gap: 8px;
+}
+
+.affirmation-action {
+	flex: 1;
+	padding: 6px 12px;
+	font-size: 0.85rem;
+	font-family: var(--font-body);
+	background: rgba(255, 255, 255, 0.6);
+	border: 1px solid rgba(0, 0, 0, 0.1);
+	border-radius: var(--radius-sm);
+	cursor: pointer;
+	transition: background 0.15s ease;
+}
+
+.affirmation-action:hover {
+	background: rgba(255, 255, 255, 0.9);
+}
+
+.affirmation-note-input {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.affirmation-note-input input {
+	flex: 1;
+	padding: 8px 12px;
+	font-size: 0.9rem;
+	font-family: var(--font-body);
+	border: 1px solid var(--color-amber-glow);
+	border-radius: var(--radius-sm);
+	background: white;
+}
+
+.affirmation-note-input input:focus {
+	outline: none;
+	border-color: var(--color-sky);
+	box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+}
+
+.affirmation-save {
+	padding: 8px 14px;
+	font-size: 0.85rem;
+	font-family: var(--font-body);
+	font-weight: 500;
+	background: var(--color-sage);
+	color: white;
+	border: none;
+	border-radius: var(--radius-sm);
+	cursor: pointer;
+	transition: background 0.15s ease;
+}
+
+.affirmation-save:hover {
+	background: #3d6a0a;
+}
+
+.affirmation-cancel {
+	padding: 8px;
+	font-size: 0.9rem;
+	background: none;
+	border: none;
+	color: var(--color-charcoal);
+	opacity: 0.5;
+	cursor: pointer;
+}
+
+.affirmation-cancel:hover {
+	opacity: 0.8;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+	.affirmation-card {
+		background: linear-gradient(135deg, var(--color-espresso) 0%, #1f1d1a 100%);
+		border-color: #78350f;
+	}
+
+	.affirmation-card-title {
+		color: var(--color-cream);
+	}
+
+	.affirmation-card-subtitle {
+		color: var(--color-cream);
+	}
+
+	.affirmation-refresh {
+		color: var(--color-cream);
+	}
+
+	.affirmation-action {
+		background: rgba(0, 0, 0, 0.3);
+		border-color: rgba(255, 255, 255, 0.1);
+		color: var(--color-cream);
+	}
+
+	.affirmation-action:hover {
+		background: rgba(0, 0, 0, 0.5);
+	}
+
+	.affirmation-note-input input {
+		background: #1f1d1a;
+		border-color: #78350f;
+		color: var(--color-cream);
+	}
+
+	.affirmation-cancel {
+		color: var(--color-cream);
+	}
+}
