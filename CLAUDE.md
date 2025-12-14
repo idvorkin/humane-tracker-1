@@ -71,6 +71,23 @@ This repo supports multiple AI agents working in parallel via full clones.
 3. **Create PRs to origin/main** - Agents can merge these directly
 4. **PRs to upstream require human approval** - Use `gh pr create --repo idvorkin/humane-tracker-1`
 
+### After PR is Merged to Upstream (IMPORTANT)
+
+After a PR is merged to upstream, **always sync local main** before starting new work:
+
+```bash
+git fetch upstream
+git reset --hard upstream/main
+git push --force-with-lease origin main
+```
+
+**Why?** GitHub merge creates new commit SHAs. Without reset, local main diverges and you'll need painful rebases later.
+
+**Git config** (set once per clone):
+```bash
+git config pull.rebase true  # Always rebase on pull, never merge
+```
+
 ### Git Hooks
 
 Located in `.githooks/` (activated via `just setup` or `git config core.hooksPath .githooks`):

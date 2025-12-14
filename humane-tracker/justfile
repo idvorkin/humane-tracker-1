@@ -12,6 +12,10 @@ setup:
     cd .. && git config core.hooksPath .githooks
     echo "✓ Git hooks configured (.githooks)"
 
+    # Configure git to rebase on pull (avoids merge commits and history divergence)
+    cd .. && git config pull.rebase true
+    echo "✓ Git pull configured to rebase (avoids merge commits)"
+
     # Install npm dependencies
     npm install
     echo "✓ npm dependencies installed"
