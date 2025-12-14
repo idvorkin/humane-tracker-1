@@ -32,7 +32,7 @@ export const affirmationLogRepository = {
 		log: Omit<AffirmationLog, "id" | "createdAt">,
 	): Promise<string> {
 		const now = new Date();
-		const id = `afl${crypto.randomUUID().replace(/-/g, "")}`;
+		const id = `aff${crypto.randomUUID().replace(/-/g, "")}`;
 		const record: AffirmationLogRecord = {
 			id,
 			userId: log.userId,
