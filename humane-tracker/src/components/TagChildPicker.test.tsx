@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { Habit, HabitWithStatus } from "../types/habit";
+import type { HabitWithStatus } from "../types/habit";
 import { TagChildPicker } from "./TagChildPicker";
 
 // Helper to create a mock tag
@@ -24,8 +24,8 @@ function createMockTag(
 	};
 }
 
-// Helper to create mock child habits
-function createMockChildHabits(): Habit[] {
+// Helper to create mock child habits with status
+function createMockChildHabits(): HabitWithStatus[] {
 	return [
 		{
 			id: "child-1",
@@ -37,6 +37,9 @@ function createMockChildHabits(): Habit[] {
 			updatedAt: new Date(),
 			habitType: "raw",
 			parentIds: ["tag-1"],
+			status: "pending",
+			currentWeekCount: 0,
+			entries: [],
 		},
 		{
 			id: "child-2",
@@ -48,6 +51,9 @@ function createMockChildHabits(): Habit[] {
 			updatedAt: new Date(),
 			habitType: "raw",
 			parentIds: ["tag-1"],
+			status: "pending",
+			currentWeekCount: 0,
+			entries: [],
 		},
 		{
 			id: "child-3",
@@ -59,6 +65,9 @@ function createMockChildHabits(): Habit[] {
 			updatedAt: new Date(),
 			habitType: "raw",
 			parentIds: ["tag-1"],
+			status: "pending",
+			currentWeekCount: 0,
+			entries: [],
 		},
 	];
 }

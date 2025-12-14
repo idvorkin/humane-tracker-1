@@ -257,7 +257,9 @@ export function isTagCompletedForDay(
 	const targetDay = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
 
 	return entries.some((e) => {
-		const entryDay = `${e.date.getFullYear()}-${e.date.getMonth()}-${e.date.getDate()}`;
+		// Handle both Date objects and ISO strings from IndexedDB
+		const entryDate = e.date instanceof Date ? e.date : new Date(e.date);
+		const entryDay = `${entryDate.getFullYear()}-${entryDate.getMonth()}-${entryDate.getDate()}`;
 		return entryDay === targetDay;
 	});
 }
@@ -284,11 +286,13 @@ export function getTagWeeklyCount(
 	// Filter by date range if provided
 	if (startDate || endDate) {
 		entries = entries.filter((e) => {
-			const entryDate = e.date.getTime();
-			if (startDate && entryDate < startDate.getTime()) {
+			// Handle both Date objects and ISO strings from IndexedDB
+			const entryDate = e.date instanceof Date ? e.date : new Date(e.date);
+			const entryTime = entryDate.getTime();
+			if (startDate && entryTime < startDate.getTime()) {
 				return false;
 			}
-			if (endDate && entryDate > endDate.getTime()) {
+			if (endDate && entryTime > endDate.getTime()) {
 				return false;
 			}
 			return true;
@@ -298,7 +302,8 @@ export function getTagWeeklyCount(
 	// Count unique days
 	const uniqueDays = new Set(
 		entries.map((e) => {
-			const d = e.date;
+			// Handle both Date objects and ISO strings from IndexedDB
+			const d = e.date instanceof Date ? e.date : new Date(e.date);
 			return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 		}),
 	);
