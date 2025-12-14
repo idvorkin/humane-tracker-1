@@ -158,9 +158,19 @@ export function getTrailingWeekDates(): Date[] {
 
 /**
  * Calculate the next entry value when cycling through click states.
- * Cycle: empty → 1 → 2 → 3 → 4 → 5 → 0.5 → empty
+ * For raw habits: empty → 1 → 2 → 3 → 4 → 5 → 0.5 → empty
+ * For tags: empty → 1 → empty (binary toggle)
  */
-export function getNextEntryValue(currentValue: number | null): number | null {
+export function getNextEntryValue(
+	currentValue: number | null,
+	isTag = false,
+): number | null {
+	// Tags are binary - just toggle on/off
+	if (isTag) {
+		return currentValue === null || currentValue === 0 ? 1 : null;
+	}
+
+	// Raw habits cycle through values
 	if (currentValue === null) return 1;
 	if (currentValue >= 1 && currentValue < 5) return currentValue + 1;
 	if (currentValue >= 5) return 0.5;
@@ -426,7 +436,8 @@ export function useHabitTrackerVM({
 			);
 
 			const currentValue = existingEntry?.value ?? null;
-			const nextValue = getNextEntryValue(currentValue);
+			const isTag = habit.habitType === "tag";
+			const nextValue = getNextEntryValue(currentValue, isTag);
 
 			// Just write to DB - liveQuery will notify us and trigger a refresh
 			try {

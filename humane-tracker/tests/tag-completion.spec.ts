@@ -79,14 +79,17 @@ test.describe("Tag Completion (Single-Complete Model)", () => {
 		await expandButton.click();
 		await page.waitForTimeout(500);
 
+		// Expand the tag to show its children (click the arrow)
+		const tagRow = page.locator('tr.section-row:has-text("Shoulder Accessory")');
+		const tagArrow = tagRow.locator('.tag-arrow');
+		await tagArrow.click();
+		await page.waitForTimeout(300);
+
 		// Find the Shoulder W row (child habit)
 		const shoulderWRow = page.locator('tr.section-row:has-text("Shoulder W")');
 		await expect(shoulderWRow).toBeVisible();
 
-		// Find the Shoulder Accessory row (parent tag)
-		const tagRow = page.locator(
-			'tr.section-row:has-text("Shoulder Accessory")'
-		);
+		// Tag row already located above
 		await expect(tagRow).toBeVisible();
 
 		// Get initial state
@@ -129,14 +132,17 @@ test.describe("Tag Completion (Single-Complete Model)", () => {
 		await expandButton.click();
 		await page.waitForTimeout(500);
 
-		// Find Swimmers row (another child)
-		const swimmersRow = page.locator('tr.section-row:has-text("Swimmers")');
-		await expect(swimmersRow).toBeVisible();
-
-		// Find tag row
+		// Find tag row and expand it to show children
 		const tagRow = page.locator(
 			'tr.section-row:has-text("Shoulder Accessory")'
 		);
+		const tagArrow = tagRow.locator('.tag-arrow');
+		await tagArrow.click();
+		await page.waitForTimeout(300);
+
+		// Find Swimmers row (another child)
+		const swimmersRow = page.locator('tr.section-row:has-text("Swimmers")');
+		await expect(swimmersRow).toBeVisible();
 
 		const initialEntryCount = await getDBEntryCount(page);
 
@@ -203,6 +209,11 @@ test.describe("Tag Completion (Single-Complete Model)", () => {
 
 		// Should show 0/3 initially
 		expect(initialTotal).toContain("0/3");
+
+		// Expand the tag to show children
+		const tagArrow = tagRow.locator('.tag-arrow');
+		await tagArrow.click();
+		await page.waitForTimeout(300);
 
 		// Complete a child
 		const shoulderYRow = page.locator('tr.section-row:has-text("Shoulder Y")');

@@ -219,7 +219,7 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 							if (!vm.hasNoHabits) {
 								if (
 									!window.confirm(
-										"You already have habits. Loading defaults will add any missing default habits (existing ones won't be duplicated). Continue?"
+										"This will DELETE all your current habits and entries, then load the default habits. This cannot be undone. Continue?"
 									)
 								) {
 									return;

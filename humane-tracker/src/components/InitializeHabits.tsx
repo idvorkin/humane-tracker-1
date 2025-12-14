@@ -26,20 +26,13 @@ export const InitializeHabits: React.FC<InitializeHabitsProps> = ({
 		setProgress(0);
 
 		try {
-			// Get existing habits to avoid duplicates
+			// Delete all existing habits first (wipe and replace)
 			const existingHabits = await habitService.getUserHabits(userId);
-			const existingNames = new Set(existingHabits.map((h) => h.name));
-
-			// Filter to only habits that don't already exist
-			const habitsToAdd = DEFAULT_HABITS.filter(
-				(habit) => !existingNames.has(habit.name),
-			);
-
-			if (habitsToAdd.length === 0) {
-				onComplete();
-				return;
+			if (existingHabits.length > 0) {
+				await habitService.bulkDeleteHabits(existingHabits.map((h) => h.id));
 			}
 
+			const habitsToAdd = DEFAULT_HABITS;
 			const total = habitsToAdd.length;
 
 			// First pass: create all raw habits (children must exist before tags)
