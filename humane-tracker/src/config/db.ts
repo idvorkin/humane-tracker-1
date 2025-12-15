@@ -546,10 +546,9 @@ if (
 	db.cloud.configure({
 		databaseUrl: dexieCloudUrl,
 		requireAuth: false, // Allow local writes without authentication
-		// Disabled: Workbox PWA service worker doesn't have Dexie Cloud integrated.
-		// Sync runs in main thread instead, which is fine for a habit tracker.
-		// To enable, would need to integrate dexie-cloud into the Workbox SW.
-		tryUseServiceWorker: false,
+		// Enable service worker sync - our custom sw.ts integrates both
+		// Workbox (asset caching) and Dexie Cloud (background data sync)
+		tryUseServiceWorker: true,
 	});
 
 	// Set up comprehensive sync monitoring and logging
@@ -561,7 +560,7 @@ if (
 		document.addEventListener("visibilitychange", () => {
 			if (document.visibilityState === "visible") {
 				console.log("[Dexie Cloud] App became visible, triggering sync...");
-				db.cloud.sync({ purpose: "push" }).catch((err) => {
+				db.cloud.sync({ wait: false, purpose: "push" }).catch((err) => {
 					console.warn("[Dexie Cloud] Visibility sync failed:", err);
 				});
 			}

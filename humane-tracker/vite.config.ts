@@ -67,8 +67,15 @@ export default defineConfig({
 		react(),
 		...(useSsl ? [basicSsl(), tailscaleUrlPlugin()] : []),
 		VitePWA({
+			strategies: "injectManifest",
+			srcDir: "src",
+			filename: "sw.ts",
 			registerType: "autoUpdate",
 			includeAssets: ["favicon.ico"],
+			injectManifest: {
+				// Ensure dexie and rxjs are bundled into the service worker
+				globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+			},
 			manifest: {
 				name: "Humane Tracker",
 				short_name: "HumaneTrack",
@@ -95,9 +102,6 @@ export default defineConfig({
 						purpose: "any maskable",
 					},
 				],
-			},
-			workbox: {
-				globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
 			},
 		}),
 	],
