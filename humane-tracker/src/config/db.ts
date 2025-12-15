@@ -546,11 +546,27 @@ if (
 	db.cloud.configure({
 		databaseUrl: dexieCloudUrl,
 		requireAuth: false, // Allow local writes without authentication
-		tryUseServiceWorker: true,
+		// Disabled: Workbox PWA service worker doesn't have Dexie Cloud integrated.
+		// Sync runs in main thread instead, which is fine for a habit tracker.
+		// To enable, would need to integrate dexie-cloud into the Workbox SW.
+		tryUseServiceWorker: false,
 	});
 
 	// Set up comprehensive sync monitoring and logging
 	console.log("[Dexie Cloud] Configuring sync with URL:", dexieCloudUrl);
+
+	// Trigger sync when app becomes visible (e.g., switching back to tab/app)
+	// This helps keep auth tokens fresh and catches any changes made on other devices
+	if (typeof document !== "undefined") {
+		document.addEventListener("visibilitychange", () => {
+			if (document.visibilityState === "visible") {
+				console.log("[Dexie Cloud] App became visible, triggering sync...");
+				db.cloud.sync({ purpose: "push" }).catch((err) => {
+					console.warn("[Dexie Cloud] Visibility sync failed:", err);
+				});
+			}
+		});
+	}
 
 	// ============================================================
 	// STALE AUTH TOKEN DETECTION
