@@ -73,7 +73,7 @@ export default defineConfig({
 			registerType: "autoUpdate",
 			includeAssets: ["favicon.ico"],
 			injectManifest: {
-				// Ensure dexie and rxjs are bundled into the service worker
+				// Precache built assets for offline access
 				globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
 			},
 			manifest: {

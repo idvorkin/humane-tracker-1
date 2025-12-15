@@ -556,35 +556,64 @@ if (
 
 	// Log whether service worker is being used for sync
 	// This helps verify the Workbox + Dexie Cloud integration is working
-	setTimeout(() => {
-		const usingSW = db.cloud.usingServiceWorker;
-		if (usingSW) {
-			console.log("[Dexie Cloud] ✓ Service worker is handling sync (background sync enabled)");
-			syncLogService.addLog(
-				"syncState",
-				"success",
-				"Service worker is handling sync (background sync enabled)",
-				{ usingServiceWorker: true },
-			);
-		} else {
-			console.log("[Dexie Cloud] ⚠ Sync running in main thread (no background sync)");
-			syncLogService.addLog(
-				"syncState",
-				"warning",
-				"Sync running in main thread (no background sync)",
-				{ usingServiceWorker: false },
-			);
-		}
-	}, 2000); // Check after 2s to allow SW registration
+	if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+		navigator.serviceWorker.ready
+			.then(() => {
+				// Give Dexie Cloud a moment to detect the SW after registration
+				setTimeout(() => {
+					const usingSW = db.cloud.usingServiceWorker;
+					if (usingSW) {
+						console.log(
+							"[Dexie Cloud] ✓ Service worker is handling sync (background sync enabled)",
+						);
+						syncLogService.addLog(
+							"syncState",
+							"success",
+							"Service worker is handling sync (background sync enabled)",
+							{ usingServiceWorker: true },
+						);
+					} else {
+						console.log(
+							"[Dexie Cloud] ⚠ Sync running in main thread (no background sync)",
+						);
+						syncLogService.addLog(
+							"syncState",
+							"warning",
+							"Sync running in main thread (no background sync)",
+							{ usingServiceWorker: false },
+						);
+					}
+				}, 500);
+			})
+			.catch((err) => {
+				console.warn(
+					"[Dexie Cloud] Service worker registration check failed:",
+					err,
+				);
+			});
+	}
+
+	// Throttle visibility sync to prevent excessive calls when rapidly switching tabs
+	let lastVisibilitySync = 0;
+	const VISIBILITY_SYNC_THROTTLE_MS = 5000;
 
 	// Trigger sync when app becomes visible (e.g., switching back to tab/app)
 	// This helps keep auth tokens fresh and catches any changes made on other devices
 	if (typeof document !== "undefined") {
 		document.addEventListener("visibilitychange", () => {
 			if (document.visibilityState === "visible") {
+				const now = Date.now();
+				if (now - lastVisibilitySync < VISIBILITY_SYNC_THROTTLE_MS) {
+					return; // Skip if synced recently
+				}
+				lastVisibilitySync = now;
+
 				console.log("[Dexie Cloud] App became visible, triggering sync...");
 				db.cloud.sync({ wait: false, purpose: "push" }).catch((err) => {
 					console.warn("[Dexie Cloud] Visibility sync failed:", err);
+					syncLogService.addLog("syncState", "warning", "Visibility sync failed", {
+						error: err?.message || String(err),
+					});
 				});
 			}
 		});
