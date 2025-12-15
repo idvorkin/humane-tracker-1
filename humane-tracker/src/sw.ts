@@ -14,6 +14,9 @@ declare const self: ServiceWorkerGlobalScope & {
 
 // Enable Dexie Cloud background sync
 // This allows sync to happen even when the app is closed
+// Note: ES module import is correct here because vite-plugin-pwa bundles
+// the SW with Vite. The UMD/importScripts approach is for vanilla SWs.
+// See: https://github.com/dexie/Dexie.js/tree/master/samples/dexie-cloud-todo-app
 import "dexie-cloud-addon/service-worker";
 
 // Workbox precaching for offline asset support
