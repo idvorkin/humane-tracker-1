@@ -554,6 +554,11 @@ if (
 	// Set up comprehensive sync monitoring and logging
 	console.log("[Dexie Cloud] Configuring sync with URL:", dexieCloudUrl);
 
+	// Timing constants for sync behavior
+	const SW_DETECTION_DELAY_MS = 500;
+	const VISIBILITY_SYNC_THROTTLE_MS = 5000;
+	let lastVisibilitySync = 0;
+
 	// Log whether service worker is being used for sync
 	// This helps verify the Workbox + Dexie Cloud integration is working
 	if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
@@ -583,7 +588,7 @@ if (
 							{ usingServiceWorker: false },
 						);
 					}
-				}, 500);
+				}, SW_DETECTION_DELAY_MS);
 			})
 			.catch((err) => {
 				console.warn(
@@ -593,12 +598,9 @@ if (
 			});
 	}
 
-	// Throttle visibility sync to prevent excessive calls when rapidly switching tabs
-	let lastVisibilitySync = 0;
-	const VISIBILITY_SYNC_THROTTLE_MS = 5000;
-
 	// Trigger sync when app becomes visible (e.g., switching back to tab/app)
-	// This helps keep auth tokens fresh and catches any changes made on other devices
+	// This pushes local changes and refreshes auth tokens. Incoming changes
+	// are handled by the WebSocket connection which reconnects automatically.
 	if (typeof document !== "undefined") {
 		document.addEventListener("visibilitychange", () => {
 			if (document.visibilityState === "visible") {
