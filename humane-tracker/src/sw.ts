@@ -1,5 +1,7 @@
 /// <reference lib="webworker" />
-declare const self: ServiceWorkerGlobalScope;
+declare const self: ServiceWorkerGlobalScope & {
+	__WB_MANIFEST: Array<{ url: string; revision: string | null }>;
+};
 
 /**
  * Service Worker combining:
