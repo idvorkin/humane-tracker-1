@@ -554,6 +554,29 @@ if (
 	// Set up comprehensive sync monitoring and logging
 	console.log("[Dexie Cloud] Configuring sync with URL:", dexieCloudUrl);
 
+	// Log whether service worker is being used for sync
+	// This helps verify the Workbox + Dexie Cloud integration is working
+	setTimeout(() => {
+		const usingSW = db.cloud.usingServiceWorker;
+		if (usingSW) {
+			console.log("[Dexie Cloud] ✓ Service worker is handling sync (background sync enabled)");
+			syncLogService.addLog(
+				"syncState",
+				"success",
+				"Service worker is handling sync (background sync enabled)",
+				{ usingServiceWorker: true },
+			);
+		} else {
+			console.log("[Dexie Cloud] ⚠ Sync running in main thread (no background sync)");
+			syncLogService.addLog(
+				"syncState",
+				"warning",
+				"Sync running in main thread (no background sync)",
+				{ usingServiceWorker: false },
+			);
+		}
+	}, 2000); // Check after 2s to allow SW registration
+
 	// Trigger sync when app becomes visible (e.g., switching back to tab/app)
 	// This helps keep auth tokens fresh and catches any changes made on other devices
 	if (typeof document !== "undefined") {
