@@ -47,6 +47,7 @@ export const HabitManager: React.FC<HabitManagerProps> = ({
 			onClose();
 		} catch (error) {
 			console.error("Error creating habit:", error);
+			setError("Failed to create habit. Please try again.");
 		} finally {
 			setLoading(false);
 		}

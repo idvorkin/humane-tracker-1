@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
 	fromDateString,
 	fromTimestamp,
+	isValidEntryValue,
 	normalizeDate,
 	normalizeDateString,
 	toDateString,
 	toTimestamp,
+	validateEntryValue,
 } from "./types";
 
 describe("toDateString", () => {
@@ -299,5 +301,88 @@ describe("Round-trip conversions", () => {
 
 		expect(normalizeDateString(date)).toBe("2024-01-15");
 		expect(normalizeDateString(dateStr)).toBe("2024-01-15");
+	});
+});
+
+describe("validateEntryValue", () => {
+	it("accepts 0 (not done)", () => {
+		expect(validateEntryValue(0)).toBe(0);
+	});
+
+	it("accepts 0.5 (partial)", () => {
+		expect(validateEntryValue(0.5)).toBe(0.5);
+	});
+
+	it("accepts 1 (complete)", () => {
+		expect(validateEntryValue(1)).toBe(1);
+	});
+
+	it("accepts positive integers (set counts)", () => {
+		expect(validateEntryValue(2)).toBe(2);
+		expect(validateEntryValue(5)).toBe(5);
+		expect(validateEntryValue(100)).toBe(100);
+	});
+
+	it("throws Error for negative values", () => {
+		expect(() => validateEntryValue(-1)).toThrow(Error);
+		expect(() => validateEntryValue(-1)).toThrow(/cannot be negative/);
+		expect(() => validateEntryValue(-0.5)).toThrow(/cannot be negative/);
+	});
+
+	it("throws Error for invalid decimals (not 0.5)", () => {
+		expect(() => validateEntryValue(0.3)).toThrow(Error);
+		expect(() => validateEntryValue(0.3)).toThrow(/must be 0, 0.5, or a non-negative integer/);
+		expect(() => validateEntryValue(1.7)).toThrow(/must be 0, 0.5, or a non-negative integer/);
+		expect(() => validateEntryValue(2.5)).toThrow(/must be 0, 0.5, or a non-negative integer/);
+	});
+
+	it("throws Error for NaN", () => {
+		expect(() => validateEntryValue(Number.NaN)).toThrow(Error);
+		expect(() => validateEntryValue(Number.NaN)).toThrow(/cannot be NaN/);
+	});
+
+	it("throws Error for Infinity", () => {
+		expect(() => validateEntryValue(Number.POSITIVE_INFINITY)).toThrow(Error);
+		expect(() => validateEntryValue(Number.POSITIVE_INFINITY)).toThrow(/must be finite/);
+		expect(() => validateEntryValue(Number.NEGATIVE_INFINITY)).toThrow(/must be finite/);
+	});
+
+	it("throws TypeError for non-number input", () => {
+		expect(() => validateEntryValue("1" as unknown as number)).toThrow(TypeError);
+		expect(() => validateEntryValue("1" as unknown as number)).toThrow(/Expected number/);
+	});
+});
+
+describe("isValidEntryValue", () => {
+	it("returns true for valid values", () => {
+		expect(isValidEntryValue(0)).toBe(true);
+		expect(isValidEntryValue(0.5)).toBe(true);
+		expect(isValidEntryValue(1)).toBe(true);
+		expect(isValidEntryValue(5)).toBe(true);
+	});
+
+	it("returns false for negative values", () => {
+		expect(isValidEntryValue(-1)).toBe(false);
+		expect(isValidEntryValue(-0.5)).toBe(false);
+	});
+
+	it("returns false for invalid decimals", () => {
+		expect(isValidEntryValue(0.3)).toBe(false);
+		expect(isValidEntryValue(1.7)).toBe(false);
+	});
+
+	it("returns false for NaN", () => {
+		expect(isValidEntryValue(Number.NaN)).toBe(false);
+	});
+
+	it("returns false for Infinity", () => {
+		expect(isValidEntryValue(Number.POSITIVE_INFINITY)).toBe(false);
+	});
+
+	it("returns false for non-number types", () => {
+		expect(isValidEntryValue("1")).toBe(false);
+		expect(isValidEntryValue(null)).toBe(false);
+		expect(isValidEntryValue(undefined)).toBe(false);
+		expect(isValidEntryValue({})).toBe(false);
 	});
 });

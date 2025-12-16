@@ -57,7 +57,13 @@ export function BugReportDialog({
 	const shortcutKey = getModifierKey();
 
 	return (
-		<div className="bug-report-overlay" onClick={handleOverlayClick}>
+		<div
+			className="bug-report-overlay"
+			onClick={handleOverlayClick}
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="bug-report-title"
+		>
 			<div className="bug-report-dialog">
 				<div className="bug-report-header">
 					<div className="bug-report-header-content">
@@ -76,7 +82,7 @@ export function BugReportDialog({
 								<circle cx="13" cy="5" r="1" />
 							</svg>
 						</div>
-						<h2>Report a Bug</h2>
+						<h2 id="bug-report-title">Report a Bug</h2>
 					</div>
 					<button
 						className="bug-report-close"

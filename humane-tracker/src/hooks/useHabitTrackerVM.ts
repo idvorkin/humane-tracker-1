@@ -501,7 +501,7 @@ export function useHabitTrackerVM({
 
 		// Tag tree support
 		habitTree,
-		expandedTags: expandedTagsRef.current,
+		expandedTags: new Set(expandedTagsRef.current) as ReadonlySet<string>,
 
 		// Computed helpers
 		getCategorySummary,

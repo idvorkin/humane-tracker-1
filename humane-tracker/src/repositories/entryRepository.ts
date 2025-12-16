@@ -7,13 +7,15 @@ import {
 	normalizeDateString,
 	toDateString,
 	toTimestamp,
+	validateEntryValue,
 } from "./types";
 
 /**
  * Convert a database record to a domain object.
  * During migration period, date fields may be Date objects or ISO strings.
+ * Exported for testing.
  */
-function toEntry(record: EntryRecord): HabitEntry {
+export function toEntry(record: EntryRecord): HabitEntry {
 	return {
 		id: record.id,
 		habitId: record.habitId,
@@ -30,8 +32,9 @@ function toEntry(record: EntryRecord): HabitEntry {
 
 /**
  * Convert a domain object to a database record.
+ * Exported for testing.
  */
-function toRecord(
+export function toRecord(
 	entry: Omit<HabitEntry, "id" | "createdAt"> & { createdAt?: Date },
 ): Omit<EntryRecord, "id"> {
 	return {
@@ -215,6 +218,9 @@ export const entryRepository = {
 		sets?: HabitEntry["sets"];
 		parsed?: boolean;
 	}): Promise<string> {
+		// Validate entry value before storing
+		validateEntryValue(entry.value);
+
 		try {
 			const record = toRecord({
 				...entry,
@@ -240,8 +246,14 @@ export const entryRepository = {
 	},
 
 	async updateValue(entryId: string, value: number): Promise<void> {
+		// Validate entry value before updating
+		validateEntryValue(value);
+
 		try {
-			await db.entries.update(entryId, { value });
+			const updatedCount = await db.entries.update(entryId, { value });
+			if (updatedCount === 0) {
+				throw new Error(`Entry not found: ${entryId}`);
+			}
 		} catch (error) {
 			console.error(`[EntryRepository] Failed to update entry ${entryId}:`, {
 				value,

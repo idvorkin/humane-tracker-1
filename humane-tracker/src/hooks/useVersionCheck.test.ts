@@ -22,6 +22,7 @@ function createMockDeviceService(
 		getStorageItem: vi.fn((key: string) => storage[key] ?? null),
 		setStorageItem: vi.fn((key: string, value: string) => {
 			storage[key] = value;
+			return true;
 		}),
 	};
 }

@@ -164,6 +164,10 @@ export function useBugReporter(
 
 			ctx.drawImage(video, 0, 0);
 
+			// Clean up video element
+			video.pause();
+			video.srcObject = null;
+
 			// Stop all tracks immediately
 			for (const track of stream.getTracks()) {
 				track.stop();

@@ -88,20 +88,30 @@ export class SyncLogService {
 	}
 
 	/**
-	 * Enforce the maximum log limit by deleting oldest entries
+	 * Enforce the maximum log limit by deleting oldest entries.
+	 * Uses a transaction to prevent race conditions when multiple addLog()
+	 * calls happen concurrently.
 	 */
 	private async enforceLimit(): Promise<void> {
-		const count = await this.syncLogsTable.count();
-		if (count > MAX_LOGS) {
-			const toDelete = count - MAX_LOGS;
-			// Get oldest logs to delete
-			const oldestLogs = await this.syncLogsTable
-				.orderBy("timestamp")
-				.limit(toDelete)
-				.toArray();
-			// Delete them
-			await this.syncLogsTable.bulkDelete(oldestLogs.map((log) => log.id));
-		}
+		// Wrap in transaction for atomicity - prevents race conditions
+		// where multiple concurrent calls could delete more logs than intended
+		await this.syncLogsTable.db.transaction(
+			"rw",
+			this.syncLogsTable,
+			async () => {
+				const count = await this.syncLogsTable.count();
+				if (count > MAX_LOGS) {
+					const toDelete = count - MAX_LOGS;
+					// Get oldest logs to delete
+					const oldestLogs = await this.syncLogsTable
+						.orderBy("timestamp")
+						.limit(toDelete)
+						.toArray();
+					// Delete them
+					await this.syncLogsTable.bulkDelete(oldestLogs.map((log) => log.id));
+				}
+			},
+		);
 	}
 
 	/**

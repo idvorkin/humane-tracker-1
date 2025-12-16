@@ -11,11 +11,16 @@ export const DeviceService = {
 		}
 	},
 
-	setStorageItem(key: string, value: string): void {
+	setStorageItem(key: string, value: string): boolean {
 		try {
 			localStorage.setItem(key, value);
+			return true;
 		} catch {
 			// localStorage unavailable (private browsing, quota)
+			console.warn(
+				`[DeviceService] Failed to save to localStorage (key: ${key}). Storage may be unavailable.`,
+			);
+			return false;
 		}
 	},
 };

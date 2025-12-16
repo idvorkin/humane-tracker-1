@@ -93,6 +93,9 @@ export const CleanupDuplicates: React.FC<CleanupDuplicatesProps> = ({
 
 	return (
 		<div
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="cleanup-duplicates-title"
 			style={{
 				position: "fixed",
 				top: 0,
@@ -116,7 +119,10 @@ export const CleanupDuplicates: React.FC<CleanupDuplicatesProps> = ({
 					width: "90%",
 				}}
 			>
-				<h2 style={{ color: "#60a5fa", marginBottom: "20px" }}>
+				<h2
+					id="cleanup-duplicates-title"
+					style={{ color: "#60a5fa", marginBottom: "20px" }}
+				>
 					Clean Up Duplicate Habits
 				</h2>
 

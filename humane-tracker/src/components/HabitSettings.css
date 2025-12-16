@@ -954,3 +954,41 @@
 		padding: var(--space-md);
 	}
 }
+
+/* Error States */
+.error-state {
+	text-align: center;
+	padding: var(--space-xl);
+	color: var(--color-stone);
+}
+
+.error-state p {
+	margin-bottom: var(--space-md);
+	color: var(--color-error, #ff6b6b);
+}
+
+.btn-retry {
+	background: var(--color-warm-accent);
+	color: var(--color-cream);
+	border: none;
+	padding: var(--space-sm) var(--space-md);
+	border-radius: var(--radius-md);
+	cursor: pointer;
+	font-size: var(--font-sm);
+	transition: opacity 0.2s;
+}
+
+.btn-retry:hover {
+	opacity: 0.9;
+}
+
+.save-error {
+	margin: 0 var(--space-lg);
+	padding: var(--space-sm) var(--space-md);
+	background: rgba(255, 107, 107, 0.15);
+	border: 1px solid rgba(255, 107, 107, 0.3);
+	border-radius: var(--radius-md);
+	color: #ff6b6b;
+	font-size: var(--font-sm);
+	text-align: center;
+}

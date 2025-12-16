@@ -5,6 +5,7 @@ import {
 	runImportTransaction,
 } from "../repositories";
 import type { AffirmationLog } from "../repositories/affirmationLogRepository";
+import { normalizeDate } from "../repositories/types";
 import type { Habit, HabitEntry } from "../types/habit";
 import { repairTagRelationships } from "../utils/tagUtils";
 
@@ -40,10 +41,11 @@ export async function importAllData(
 }> {
 	// Convert date strings back to Date objects for domain types
 	// The repository will convert them back to ISO strings for storage
+	// Use normalizeDate for proper validation (throws on invalid dates)
 	const rawHabits: Habit[] = data.habits.map((h) => ({
 		...h,
-		createdAt: new Date(h.createdAt),
-		updatedAt: new Date(h.updatedAt),
+		createdAt: normalizeDate(h.createdAt as unknown as string),
+		updatedAt: normalizeDate(h.updatedAt as unknown as string),
 	}));
 
 	// Repair any inconsistencies between childIds and parentIds
@@ -58,16 +60,16 @@ export async function importAllData(
 
 	const entries: HabitEntry[] = data.entries.map((e) => ({
 		...e,
-		date: new Date(e.date),
-		createdAt: new Date(e.createdAt),
+		date: normalizeDate(e.date as unknown as string),
+		createdAt: normalizeDate(e.createdAt as unknown as string),
 	}));
 
 	// Handle affirmation logs (optional for backwards compatibility with v1 exports)
 	const affirmationLogs: AffirmationLog[] = (data.affirmationLogs ?? []).map(
 		(a) => ({
 			...a,
-			date: new Date(a.date),
-			createdAt: new Date(a.createdAt),
+			date: normalizeDate(a.date as unknown as string),
+			createdAt: normalizeDate(a.createdAt as unknown as string),
 		}),
 	);
 

@@ -232,6 +232,7 @@ export function SyncSection({ isLocalMode }: SyncSectionProps) {
 			await db.cloud.sync();
 		} catch (err) {
 			console.error("Manual sync failed:", err);
+			alert(`Sync failed: ${err instanceof Error ? err.message : "Unknown error"}`);
 		}
 	};
 
@@ -250,6 +251,7 @@ export function SyncSection({ isLocalMode }: SyncSectionProps) {
 			URL.revokeObjectURL(url);
 		} catch (err) {
 			console.error("Failed to download logs:", err);
+			alert(`Failed to download logs: ${err instanceof Error ? err.message : "Unknown error"}`);
 		}
 	};
 
@@ -261,6 +263,7 @@ export function SyncSection({ isLocalMode }: SyncSectionProps) {
 			setTimeout(() => setCopySuccess(false), 2000);
 		} catch (err) {
 			console.error("Failed to copy logs:", err);
+			alert(`Failed to copy logs: ${err instanceof Error ? err.message : "Unknown error"}`);
 		}
 	};
 
@@ -270,6 +273,7 @@ export function SyncSection({ isLocalMode }: SyncSectionProps) {
 				await syncLogService.clearAll();
 			} catch (err) {
 				console.error("Failed to clear logs:", err);
+				alert(`Failed to clear logs: ${err instanceof Error ? err.message : "Unknown error"}`);
 			}
 		}
 	};

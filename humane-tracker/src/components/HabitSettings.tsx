@@ -1,5 +1,5 @@
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useHabitService } from "../hooks/useHabitService";
 import {
 	type ExportData,
@@ -38,6 +38,8 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 }) => {
 	const [habits, setHabits] = useState<Habit[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
+	const [loadError, setLoadError] = useState<string | null>(null);
+	const [saveError, setSaveError] = useState<string | null>(null);
 	const [changes, setChanges] = useState<Record<string, Partial<Habit>>>({});
 	const [deletingHabits, setDeletingHabits] = useState<Set<string>>(new Set());
 	const [showAddNew, setShowAddNew] = useState(false);
@@ -87,22 +89,10 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 		{} as Record<string, Habit[]>,
 	);
 
-	useEffect(() => {
-		loadHabits();
-	}, [userId]);
-
-	// Start with all categories collapsed on initial load only
-	useEffect(() => {
-		if (habits.length > 0 && !hasInitializedCollapse.current) {
-			hasInitializedCollapse.current = true;
-			const allCategories = extractCategories(habits);
-			setCollapsedCategories(new Set(allCategories));
-		}
-	}, [habits.length]);
-
-	const loadHabits = async () => {
+	const loadHabits = useCallback(async () => {
 		try {
 			setIsLoading(true);
+			setLoadError(null);
 			const userHabits = await habitService.getHabits(userId);
 			// Sort by category then by name
 			userHabits.sort((a, b) => {
@@ -114,10 +104,24 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 			setHabits(userHabits);
 		} catch (err) {
 			console.error("Error loading habits:", err);
+			setLoadError("Failed to load habits. Please try again.");
 		} finally {
 			setIsLoading(false);
 		}
-	};
+	}, [userId, habitService]);
+
+	useEffect(() => {
+		loadHabits();
+	}, [loadHabits]);
+
+	// Start with all categories collapsed on initial load only
+	useEffect(() => {
+		if (habits.length > 0 && !hasInitializedCollapse.current) {
+			hasInitializedCollapse.current = true;
+			const allCategories = extractCategories(habits);
+			setCollapsedCategories(new Set(allCategories));
+		}
+	}, [habits.length]);
 
 	const handleFieldChange = (habitId: string, field: string, value: any) => {
 		setChanges((prev) => ({
@@ -205,6 +209,7 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 
 	const handleSaveAll = async () => {
 		try {
+			setSaveError(null);
 			// Save changes
 			for (const [habitId, habitChanges] of Object.entries(changes)) {
 				if (Object.keys(habitChanges).length > 0) {
@@ -228,6 +233,7 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 			onClose();
 		} catch (err) {
 			console.error("Error saving changes:", err);
+			setSaveError("Failed to save changes. Please try again.");
 		}
 	};
 
@@ -384,6 +390,29 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 					</div>
 					<div className="modal-body">
 						<div className="loading">Loading habits...</div>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	if (loadError) {
+		return (
+			<div className="habit-settings-overlay">
+				<div className="habit-settings-modal">
+					<div className="modal-header">
+						<h2>Manage Habits</h2>
+						<button className="close-btn" onClick={onClose}>
+							✕
+						</button>
+					</div>
+					<div className="modal-body">
+						<div className="error-state">
+							<p>{loadError}</p>
+							<button className="btn-retry" onClick={loadHabits}>
+								Retry
+							</button>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -689,7 +718,7 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 											onChange={(e) =>
 												setNewHabit({
 													...newHabit,
-													trackingType: e.target.value as any,
+													trackingType: e.target.value as "binary" | "sets" | "hybrid",
 												})
 											}
 											className="type-select"
@@ -915,6 +944,12 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 						)}
 					</div>
 				</div>
+
+				{saveError && (
+					<div className="save-error">
+						{saveError}
+					</div>
+				)}
 
 				<div className="modal-footer">
 					<button className="btn-cancel" onClick={onClose}>

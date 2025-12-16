@@ -6,11 +6,17 @@
 
 export type HabitType = "raw" | "tag";
 
+/**
+ * Valid values for targetPerWeek: 1-7 days per week.
+ * Runtime-validated via validateTargetPerWeek() in habitRepository.ts.
+ */
+export type TargetPerWeek = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
 export interface HabitRecord {
 	id: string;
 	name: string;
 	category: string;
-	targetPerWeek: number;
+	targetPerWeek: TargetPerWeek;
 	trackingType?: "binary" | "sets" | "hybrid";
 	userId: string;
 	createdAt: string; // ISO string
@@ -32,12 +38,68 @@ export interface SetDataRecord {
 	duration?: number; // in seconds
 }
 
+/**
+ * Valid entry values:
+ * - 0: Not done / zeroed out
+ * - 0.5: Partial completion (binary habits only)
+ * - 1: Complete (binary habits)
+ * - 2+: Count of sets (sets/hybrid habits)
+ *
+ * Runtime-validated via validateEntryValue().
+ */
+export type EntryValue = number;
+
+/**
+ * Validates that a value is a valid entry value.
+ * Valid values: 0, 0.5, or any non-negative integer.
+ * @throws Error if value is invalid (negative, invalid decimal, NaN, Infinity)
+ */
+export function validateEntryValue(value: number): EntryValue {
+	if (typeof value !== "number") {
+		throw new TypeError(
+			`validateEntryValue: Expected number, got ${typeof value}: ${value}`,
+		);
+	}
+	if (Number.isNaN(value)) {
+		throw new Error("validateEntryValue: Value cannot be NaN");
+	}
+	if (!Number.isFinite(value)) {
+		throw new Error(
+			`validateEntryValue: Value must be finite, got ${value}`,
+		);
+	}
+	if (value < 0) {
+		throw new Error(
+			`validateEntryValue: Value cannot be negative, got ${value}`,
+		);
+	}
+	// Allow 0, 0.5, or any non-negative integer
+	if (value !== 0 && value !== 0.5 && !Number.isInteger(value)) {
+		throw new Error(
+			`validateEntryValue: Value must be 0, 0.5, or a non-negative integer, got ${value}`,
+		);
+	}
+	return value;
+}
+
+/**
+ * Checks if a value is a valid entry value without throwing.
+ */
+export function isValidEntryValue(value: unknown): value is EntryValue {
+	if (typeof value !== "number") return false;
+	if (Number.isNaN(value)) return false;
+	if (!Number.isFinite(value)) return false;
+	if (value < 0) return false;
+	if (value !== 0 && value !== 0.5 && !Number.isInteger(value)) return false;
+	return true;
+}
+
 export interface EntryRecord {
 	id: string;
 	habitId: string;
 	userId: string;
 	date: string; // ISO string (date portion only: YYYY-MM-DD)
-	value: number;
+	value: EntryValue;
 	notes?: string; // Freeform notes (write loose)
 	createdAt: string; // ISO string
 

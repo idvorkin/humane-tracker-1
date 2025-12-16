@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+// Default shake detection parameters
+/** Acceleration threshold in m/s² to trigger shake detection */
+const DEFAULT_SHAKE_THRESHOLD = 25;
+/** Cooldown in ms between shake detections to prevent rapid triggering */
+const DEFAULT_SHAKE_COOLDOWN_MS = 2000;
+
 interface UseShakeDetectorOptions {
 	/** Threshold in m/s² to trigger shake detection (default: 25) */
 	threshold?: number;
@@ -27,8 +33,8 @@ interface UseShakeDetectorReturn {
  * Uses DeviceMotion API with acceleration data
  */
 export function useShakeDetector({
-	threshold = 25,
-	cooldownMs = 2000,
+	threshold = DEFAULT_SHAKE_THRESHOLD,
+	cooldownMs = DEFAULT_SHAKE_COOLDOWN_MS,
 	enabled = false,
 	onShake,
 }: UseShakeDetectorOptions = {}): UseShakeDetectorReturn {

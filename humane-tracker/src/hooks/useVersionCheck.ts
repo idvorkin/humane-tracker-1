@@ -10,6 +10,7 @@ const LAST_UPDATE_CHECK_KEY = "humane-tracker-last-update-check";
 export function useVersionCheck(service: DeviceServiceType = DeviceService) {
 	const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
 	const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+	const isCheckingRef = useRef(false);
 	const [isChecking, setIsChecking] = useState(false);
 	const [lastCheckTime, setLastCheckTime] = useState<Date | null>(() => {
 		const stored = service.getStorageItem(LAST_UPDATE_CHECK_KEY);
@@ -59,8 +60,10 @@ export function useVersionCheck(service: DeviceServiceType = DeviceService) {
 	};
 
 	const checkForUpdate = useCallback(async () => {
-		if (isChecking) return;
+		// Use ref for guard to avoid stale closure issues with rapid calls
+		if (isCheckingRef.current) return;
 
+		isCheckingRef.current = true;
 		setIsChecking(true);
 		try {
 			if (registrationRef.current) {
@@ -73,9 +76,10 @@ export function useVersionCheck(service: DeviceServiceType = DeviceService) {
 		} catch (error) {
 			console.error("Failed to check for updates:", error);
 		} finally {
+			isCheckingRef.current = false;
 			setIsChecking(false);
 		}
-	}, [isChecking, service]);
+	}, [service]);
 
 	return {
 		updateAvailable: needRefresh,

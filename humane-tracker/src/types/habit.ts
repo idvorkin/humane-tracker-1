@@ -1,10 +1,12 @@
+import type { TargetPerWeek } from "../repositories/types";
+
 export type HabitType = "raw" | "tag";
 
 export interface Habit {
 	id: string;
 	name: string;
 	category: string;
-	targetPerWeek: number;
+	targetPerWeek: TargetPerWeek;
 	trackingType?: "binary" | "sets" | "hybrid";
 	userId: string;
 	createdAt: Date;
@@ -26,12 +28,18 @@ export interface SetData {
 	duration?: number; // in seconds
 }
 
+/**
+ * Re-export EntryValue type for convenience.
+ * Valid values: 0, 0.5, or any non-negative integer (for set counts).
+ */
+export type { EntryValue } from "../repositories/types";
+
 export interface HabitEntry {
 	id: string;
 	habitId: string;
 	userId: string;
 	date: Date;
-	value: number; // Can be 1 for done, 0.5 for partial, or actual count
+	value: number; // 0 (not done), 0.5 (partial), 1 (done), or count for sets
 	notes?: string; // Freeform notes (write loose)
 	createdAt: Date;
 

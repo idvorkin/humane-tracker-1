@@ -18,11 +18,11 @@ export interface ValidationResult {
 export function validateHabitForm(data: HabitFormData): ValidationResult {
 	const errors: ValidationResult["errors"] = {};
 
-	if (!data.name.trim()) {
+	if (!data.name || !data.name.trim()) {
 		errors.name = "Habit name is required";
 	}
 
-	if (!data.category.trim()) {
+	if (!data.category || !data.category.trim()) {
 		errors.category = "Category is required";
 	}
 

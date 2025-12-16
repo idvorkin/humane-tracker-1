@@ -1,4 +1,4 @@
-import { toDateString } from "../repositories/types";
+import { normalizeDate, toDateString } from "../repositories/types";
 import type { Habit, HabitEntry } from "../types/habit";
 
 /**
@@ -259,7 +259,7 @@ export function isTagCompletedForDay(
 
 	return entries.some((e) => {
 		// Handle both Date objects and ISO strings from IndexedDB
-		const entryDate = e.date instanceof Date ? e.date : new Date(e.date);
+		const entryDate = normalizeDate(e.date as Date | string);
 		const entryDay = toDateString(entryDate);
 		return entryDay === targetDay;
 	});
@@ -288,7 +288,7 @@ export function getTagWeeklyCount(
 	if (startDate || endDate) {
 		entries = entries.filter((e) => {
 			// Handle both Date objects and ISO strings from IndexedDB
-			const entryDate = e.date instanceof Date ? e.date : new Date(e.date);
+			const entryDate = normalizeDate(e.date as Date | string);
 			const entryTime = entryDate.getTime();
 			if (startDate && entryTime < startDate.getTime()) {
 				return false;
@@ -304,7 +304,7 @@ export function getTagWeeklyCount(
 	const uniqueDays = new Set(
 		entries.map((e) => {
 			// Handle both Date objects and ISO strings from IndexedDB
-			const d = e.date instanceof Date ? e.date : new Date(e.date);
+			const d = normalizeDate(e.date as Date | string);
 			return toDateString(d);
 		}),
 	);

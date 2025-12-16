@@ -41,10 +41,46 @@ function toRecord(log: AffirmationLog): AffirmationLogRecord {
 	};
 }
 
+const VALID_LOG_TYPES: readonly ("opportunity" | "didit")[] = [
+	"opportunity",
+	"didit",
+];
+
+/**
+ * Validate affirmation log input fields.
+ * @throws Error if any field is invalid
+ */
+function validateAffirmationLog(
+	log: Omit<AffirmationLog, "id" | "createdAt">,
+): void {
+	if (!log.userId || typeof log.userId !== "string" || !log.userId.trim()) {
+		throw new Error(
+			"validateAffirmationLog: userId cannot be empty",
+		);
+	}
+	if (
+		!log.affirmationTitle ||
+		typeof log.affirmationTitle !== "string" ||
+		!log.affirmationTitle.trim()
+	) {
+		throw new Error(
+			"validateAffirmationLog: affirmationTitle cannot be empty",
+		);
+	}
+	if (!VALID_LOG_TYPES.includes(log.logType)) {
+		throw new Error(
+			`validateAffirmationLog: logType must be "opportunity" or "didit", got "${log.logType}"`,
+		);
+	}
+}
+
 export const affirmationLogRepository = {
 	async create(
 		log: Omit<AffirmationLog, "id" | "createdAt">,
 	): Promise<string> {
+		// Validate input before creating
+		validateAffirmationLog(log);
+
 		try {
 			const now = new Date();
 			const id = `aff${crypto.randomUUID().replace(/-/g, "")}`;
