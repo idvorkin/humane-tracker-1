@@ -28,7 +28,7 @@ setup:
 
 # Run the development server (generates version first)
 dev: generate-version
-    npm run dev
+    npm run dev-called-from-just
 
 # Generate version info from git
 generate-version:
@@ -51,11 +51,11 @@ generate-version:
 
 # Build the project (generates version info first)
 build: generate-version
-    npm run build
+    npm run build-called-from-just
 
-# Run unit tests (generates version info first)
-test: generate-version
-    npm run test
+# Run unit tests (depends on build)
+test: build
+    npm run test-called-from-just
 
 # Run E2E tests (mobile only - fast default)
 e2e:
