@@ -108,6 +108,11 @@
 	box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
 }
 
+/* When recording is active, let it fill the space */
+.affirmation-input-row.recording-active {
+	justify-content: stretch;
+}
+
 .affirmation-note-actions {
 	display: flex;
 	gap: 8px;

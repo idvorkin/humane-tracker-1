@@ -404,7 +404,14 @@ export function useHabitTrackerVM({
 	}, []);
 
 	const zoomOut = useCallback(() => {
-		setZoomedSection(null);
+		// Collapse the section we're zooming out of
+		setZoomedSection((current) => {
+			if (current) {
+				collapsedSectionsRef.current.add(current);
+				setCollapsedVersion((v) => v + 1);
+			}
+			return null;
+		});
 	}, []);
 
 	const selectDate = useCallback((date: Date | null) => {

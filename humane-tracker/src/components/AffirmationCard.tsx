@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { DEFAULT_AFFIRMATIONS } from "../constants/affirmations";
 import { affirmationLogRepository } from "../repositories/affirmationLogRepository";
 import { audioRecordingRepository } from "../repositories/audioRecordingRepository";
@@ -26,6 +26,8 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 	const [noteText, setNoteText] = useState("");
 	const [saveError, setSaveError] = useState(false);
 	const [recordingSaved, setRecordingSaved] = useState(false);
+	const [isRecording, setIsRecording] = useState(false);
+	const stopRecordingRef = useRef<(() => Promise<void>) | null>(null);
 	const affirmation = DEFAULT_AFFIRMATIONS[index];
 
 	const handleRefresh = useCallback(() => {
@@ -51,9 +53,10 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 					date: new Date(),
 					transcriptionStatus: "pending",
 				});
-				setRecordingSaved(true);
-				// Clear after 2 seconds
-				setTimeout(() => setRecordingSaved(false), 2000);
+				// Auto-close dialog after saving recording
+				setNoteMode(null);
+				setNoteText("");
+				setRecordingSaved(false);
 			} catch (error) {
 				console.error("Failed to save audio recording:", error);
 				setSaveError(true);
@@ -63,11 +66,19 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 	);
 
 	const handleSaveNote = useCallback(async () => {
+		setSaveError(false);
+
+		// If recording, stop and save it
+		if (isRecording && stopRecordingRef.current) {
+			await stopRecordingRef.current();
+			return; // handleRecordingComplete will close the dialog
+		}
+
+		// Save text note if there is one
 		if (!noteText.trim() || !noteMode) {
 			setNoteMode(null);
 			return;
 		}
-		setSaveError(false);
 		try {
 			await affirmationLogRepository.create({
 				userId,
@@ -83,7 +94,7 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 			setSaveError(true);
 			// Keep form open so user can retry
 		}
-	}, [noteMode, noteText, affirmation.title, userId]);
+	}, [noteMode, noteText, affirmation.title, userId, isRecording]);
 
 	const handleKeyDown = useCallback(
 		(e: React.KeyboardEvent) => {
@@ -136,23 +147,29 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 				</div>
 			) : (
 				<div className="affirmation-note-input">
-					<div className="affirmation-input-row">
-						<textarea
-							placeholder={
-								noteMode === "opportunity"
-									? "How will you apply this today?"
-									: "How did you apply this?"
-							}
-							value={noteText}
-							onChange={(e) => {
-								setNoteText(e.target.value);
-								setSaveError(false);
-							}}
-							onKeyDown={handleKeyDown}
-							autoFocus
-						/>
+					<div
+						className={`affirmation-input-row ${isRecording ? "recording-active" : ""}`}
+					>
+						{!isRecording && (
+							<textarea
+								placeholder={
+									noteMode === "opportunity"
+										? "How will you apply this today?"
+										: "How did you apply this?"
+								}
+								value={noteText}
+								onChange={(e) => {
+									setNoteText(e.target.value);
+									setSaveError(false);
+								}}
+								onKeyDown={handleKeyDown}
+								autoFocus
+							/>
+						)}
 						<AudioRecorderButton
 							onRecordingComplete={handleRecordingComplete}
+							onRecordingStateChange={setIsRecording}
+							stopRecordingRef={stopRecordingRef}
 							onError={(err) => {
 								console.error("Recording error:", err);
 								setSaveError(true);

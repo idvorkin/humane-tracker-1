@@ -480,15 +480,6 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 				</tbody>
 			</table>
 
-			<div className="legend-strip">
-				<div className="legend-item">● = done</div>
-				<div className="legend-item">✓ = met target</div>
-				<div className="legend-item">⏰ = due today</div>
-				<div className="legend-item">→ = tomorrow</div>
-				<div className="legend-item">! = overdue</div>
-				<div className="legend-item">½ = partial</div>
-			</div>
-
 			<div className="summary-bar">
 				<div className="summary-item">
 					<span className="summary-label">Due Today:</span>

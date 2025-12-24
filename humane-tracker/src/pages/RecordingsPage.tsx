@@ -124,36 +124,14 @@ export function RecordingsPage({ userId }: RecordingsPageProps) {
 								<ul className="recordings-list">
 									{dateRecordings.map((recording) => (
 										<li key={recording.id} className="recordings-item">
-											<div className="recordings-item-header">
+											<div className="recordings-item-row">
 												<span className="recordings-item-affirmation">
 													{recording.affirmationTitle}
 												</span>
-												<span
-													className={`recordings-item-context ${recording.recordingContext}`}
-												>
-													{recording.recordingContext === "opportunity"
-														? "Opportunity"
-														: "Did it"}
-												</span>
-											</div>
-											<div className="recordings-item-meta">
-												<span className="recordings-item-time">
-													{formatTime(recording.createdAt)}
-												</span>
-												<span className="recordings-item-duration">
+												<span className="recordings-item-meta">
+													{formatTime(recording.createdAt)} ·{" "}
 													{formatDuration(recording.durationMs)}
 												</span>
-												{recording.transcriptionStatus !== "pending" && (
-													<span
-														className={`recordings-item-transcription ${recording.transcriptionStatus}`}
-													>
-														{recording.transcriptionStatus === "completed"
-															? "Transcribed"
-															: recording.transcriptionStatus === "processing"
-																? "Processing..."
-																: "Failed"}
-													</span>
-												)}
 											</div>
 											<AudioPlayer
 												blob={recording.audioBlob}

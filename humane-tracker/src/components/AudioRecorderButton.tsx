@@ -1,11 +1,13 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useAudioRecorder } from "../hooks/useAudioRecorder";
 import "./AudioRecorderButton.css";
 
 interface AudioRecorderButtonProps {
 	onRecordingComplete: (blob: Blob, durationMs: number) => void;
+	onRecordingStateChange?: (isRecording: boolean) => void;
 	onError?: (error: string) => void;
 	disabled?: boolean;
+	stopRecordingRef?: React.MutableRefObject<(() => Promise<void>) | null>;
 }
 
 function formatDuration(ms: number): string {
@@ -17,8 +19,10 @@ function formatDuration(ms: number): string {
 
 export function AudioRecorderButton({
 	onRecordingComplete,
+	onRecordingStateChange,
 	onError,
 	disabled = false,
+	stopRecordingRef,
 }: AudioRecorderButtonProps) {
 	const {
 		isRecording,
@@ -34,6 +38,11 @@ export function AudioRecorderButton({
 		cancelRecording,
 	} = useAudioRecorder();
 
+	// Notify parent of recording state changes
+	useEffect(() => {
+		onRecordingStateChange?.(isRecording);
+	}, [isRecording, onRecordingStateChange]);
+
 	const handleStartStop = useCallback(async () => {
 		if (isRecording) {
 			const result = await stopRecording();
@@ -44,6 +53,20 @@ export function AudioRecorderButton({
 			await startRecording();
 		}
 	}, [isRecording, startRecording, stopRecording, onRecordingComplete]);
+
+	// Expose stop function to parent via ref
+	useEffect(() => {
+		if (stopRecordingRef) {
+			stopRecordingRef.current = isRecording
+				? async () => {
+						const result = await stopRecording();
+						if (result) {
+							onRecordingComplete(result.blob, result.durationMs);
+						}
+					}
+				: null;
+		}
+	}, [isRecording, stopRecording, onRecordingComplete, stopRecordingRef]);
 
 	const handleCancel = useCallback(() => {
 		cancelRecording();
@@ -108,7 +131,7 @@ export function AudioRecorderButton({
 						onClick={handleStartStop}
 						title="Stop and save"
 					>
-						\u25A0
+						{"\u25A0"}
 					</button>
 					<button
 						type="button"
@@ -116,7 +139,7 @@ export function AudioRecorderButton({
 						onClick={handleCancel}
 						title="Cancel"
 					>
-						\u2715
+						{"\u2715"}
 					</button>
 				</div>
 			</div>

@@ -91,61 +91,41 @@
 	padding: 0;
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: 8px;
 }
 
 .recordings-item {
 	background: white;
 	border-radius: 8px;
-	padding: 12px;
+	padding: 10px 12px;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
 }
 
-.recordings-item-header {
+.recordings-item-row {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	margin-bottom: 8px;
+	gap: 12px;
 }
 
 .recordings-item-affirmation {
 	font-weight: 500;
+	font-size: 0.9rem;
 	color: var(--color-charcoal, #333);
-}
-
-.recordings-item-context {
-	font-size: 0.75rem;
-	padding: 2px 8px;
-	border-radius: 12px;
-	text-transform: uppercase;
-	font-weight: 500;
-}
-
-.recordings-item-context.opportunity {
-	background: #fef3c7;
-	color: #92400e;
-}
-
-.recordings-item-context.didit {
-	background: #d1fae5;
-	color: #065f46;
+	flex: 1;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .recordings-item-meta {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	margin-bottom: 12px;
 	font-size: 0.8rem;
 	color: var(--color-text-muted, #666);
-}
-
-.recordings-item-time {
 	font-variant-numeric: tabular-nums;
-}
-
-.recordings-item-duration {
-	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
 }
 
 .recordings-item-transcription {
