@@ -11,6 +11,7 @@ import type { Habit, HabitWithStatus } from "../types/habit";
 import { buildCategoryInfo } from "../utils/categoryUtils";
 import { AffirmationCard } from "./AffirmationCard";
 import { CleanupDuplicates } from "./CleanupDuplicates";
+import { GratefulCard } from "./GratefulCard";
 import { HabitSettings } from "./HabitSettings";
 import { InitializeHabits } from "./InitializeHabits";
 import { TagChildPicker } from "./TagChildPicker";
@@ -508,6 +509,7 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 			</div>
 
 			<AffirmationCard userId={userId} />
+			<GratefulCard userId={userId} />
 
 			{showInitializer && (
 				<InitializeHabits

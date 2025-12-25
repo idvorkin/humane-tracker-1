@@ -3,6 +3,7 @@ import {
 	type AudioRecordingRecord,
 	fromDateString,
 	normalizeDate,
+	type RecordingContext,
 	type TranscriptionStatus,
 	toDateString,
 	toTimestamp,
@@ -15,7 +16,7 @@ export interface AudioRecording {
 	mimeType: string;
 	durationMs: number;
 	affirmationTitle: string;
-	recordingContext: "opportunity" | "didit";
+	recordingContext: RecordingContext;
 	date: Date;
 	createdAt: Date;
 	transcriptionStatus: TranscriptionStatus;
@@ -40,9 +41,10 @@ function toAudioRecording(record: AudioRecordingRecord): AudioRecording {
 	};
 }
 
-const VALID_RECORDING_CONTEXTS: readonly ("opportunity" | "didit")[] = [
+const VALID_RECORDING_CONTEXTS: readonly RecordingContext[] = [
 	"opportunity",
 	"didit",
+	"grateful",
 ];
 
 const VALID_TRANSCRIPTION_STATUSES: readonly TranscriptionStatus[] = [
@@ -76,7 +78,7 @@ export function validateAudioRecording(
 	}
 	if (!VALID_RECORDING_CONTEXTS.includes(recording.recordingContext)) {
 		throw new Error(
-			`validateAudioRecording: recordingContext must be "opportunity" or "didit", got "${recording.recordingContext}"`,
+			`validateAudioRecording: recordingContext must be one of ${VALID_RECORDING_CONTEXTS.join(", ")}, got "${recording.recordingContext}"`,
 		);
 	}
 	if (!(recording.audioBlob instanceof Blob)) {

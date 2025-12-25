@@ -125,6 +125,8 @@ export type TranscriptionStatus =
 	| "completed"
 	| "failed";
 
+export type RecordingContext = "opportunity" | "didit" | "grateful";
+
 export interface AudioRecordingRecord {
 	id: string; // "aud..." prefix, local-only (no @ prefix = no cloud sync)
 	userId: string;
@@ -132,7 +134,7 @@ export interface AudioRecordingRecord {
 	mimeType: string; // e.g., "audio/webm;codecs=opus"
 	durationMs: number; // Recording duration in milliseconds
 	affirmationTitle: string; // Which affirmation this relates to
-	recordingContext: "opportunity" | "didit"; // Same as AffirmationLogRecord.logType
+	recordingContext: RecordingContext; // Context for the recording
 	date: string; // ISO string (date portion only: YYYY-MM-DD)
 	createdAt: string; // ISO string
 	transcriptionStatus: TranscriptionStatus;
