@@ -689,3 +689,72 @@ Trace viewer requires HTTPS or localhost (service worker requirement). Two optio
 Run weekly (or when user says "retro"). See [chop-conventions/dev-inner-loop/retros.md](https://github.com/idvorkin/chop-conventions/blob/main/dev-inner-loop/retros.md) for process.
 
 Storage: `retros/`
+
+## CHOP Logs (AI Session Transcripts)
+
+This repository uses [specstory](https://github.com/specstory/specstory) to track AI-assisted development sessions.
+
+### Directory Structure
+
+- `.specstory/` - All AI session transcripts (gitignored, not committed)
+- `zz-chop-logs/` - Curated/interesting transcripts (committed to git for team learning)
+
+### Using the chop CLI
+
+The `chop` command helps manage session transcripts:
+
+```bash
+chop git-latest   # Get the latest session and add to git
+chop git-pick     # Select a session from history to add to git
+chop view-latest  # View the latest session in your editor
+chop diff         # Compare the two most recent sessions
+```
+
+**When to save sessions:**
+
+- After implementing complex features
+- When solving tricky bugs
+- For documenting architectural decisions
+- To share learning moments with the team
+
+## Pull Request Workflow
+
+**IMPORTANT: Always use pull requests for code changes. Never commit directly to main.**
+
+### Basic Workflow
+
+1. **Create a feature branch**
+
+   ```bash
+   git checkout -b feature/brief-description
+   ```
+
+2. **Make changes and commit**
+
+   - Follow clean-commits.md guidelines
+   - Run `git status` before committing
+   - Keep commits atomic and logical
+   - Use descriptive commit messages
+
+3. **Push and create PR**
+
+   ```bash
+   git push -u origin feature/brief-description
+   gh pr create --title "Brief description" --body "..."
+   ```
+
+4. **After PR is approved and merged**
+   ```bash
+   git checkout main
+   git pull origin main
+   ```
+
+### PR Guidelines
+
+- Include a test plan in the PR description
+- Ensure all tests pass before requesting review
+- Address review comments promptly
+- Keep PRs focused - one logical change per PR
+- Link to related issues using `Fixes #NUMBER`
+
+**Container workflow:** When working in a container, ALWAYS use PRs - never commit directly to main. This ensures proper code review and CI validation.

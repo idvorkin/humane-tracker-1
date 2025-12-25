@@ -22,3 +22,6 @@ dexie-cloud.json
 # Python
 __pycache__/
 *.pyc
+
+# Specstory (CHOP logs)
+.specstory/**
