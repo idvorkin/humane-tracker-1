@@ -69,6 +69,23 @@ describe("audioRecordingRepository", () => {
 			const record = await db.audioRecordings.get(id);
 			expect(record?.recordingContext).toBe("didit");
 		});
+
+		it("creates recordings with grateful context", async () => {
+			const id = await audioRecordingRepository.create({
+				userId: testUserId,
+				audioBlob: createTestBlob(),
+				mimeType: "audio/webm",
+				durationMs: 4000,
+				affirmationTitle: "Grateful",
+				recordingContext: "grateful",
+				date: new Date(),
+				transcriptionStatus: "pending",
+			});
+
+			const record = await db.audioRecordings.get(id);
+			expect(record?.recordingContext).toBe("grateful");
+			expect(record?.affirmationTitle).toBe("Grateful");
+		});
 	});
 
 	describe("getById", () => {
@@ -343,7 +360,7 @@ describe("audioRecordingRepository", () => {
 					...validRecording,
 					recordingContext: "invalid" as "opportunity",
 				}),
-			).toThrow('recordingContext must be "opportunity" or "didit"');
+			).toThrow(/recordingContext must be one of/);
 		});
 
 		it("throws on empty blob", () => {
@@ -399,19 +416,15 @@ describe("audioRecordingRepository", () => {
 			}
 		});
 
-		it("accepts both recording contexts", () => {
-			expect(() =>
-				validateAudioRecording({
-					...validRecording,
-					recordingContext: "opportunity",
-				}),
-			).not.toThrow();
-			expect(() =>
-				validateAudioRecording({
-					...validRecording,
-					recordingContext: "didit",
-				}),
-			).not.toThrow();
+		it("accepts all valid recording contexts", () => {
+			for (const context of ["opportunity", "didit", "grateful"] as const) {
+				expect(() =>
+					validateAudioRecording({
+						...validRecording,
+						recordingContext: context,
+					}),
+				).not.toThrow();
+			}
 		});
 	});
 });
