@@ -15,7 +15,8 @@
 }
 
 @keyframes sparkle {
-	0%, 100% {
+	0%,
+	100% {
 		opacity: 0.7;
 		transform: scale(1);
 	}

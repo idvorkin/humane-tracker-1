@@ -1,7 +1,9 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { DEFAULT_AFFIRMATIONS } from "../constants/affirmations";
 import { affirmationLogRepository } from "../repositories/affirmationLogRepository";
+import { audioRecordingRepository } from "../repositories/audioRecordingRepository";
 import "./AffirmationCard.css";
+import { AudioRecorderButton } from "./AudioRecorderButton";
 
 function getRandomIndex(currentIndex?: number): number {
 	if (DEFAULT_AFFIRMATIONS.length <= 1) return 0;
@@ -23,6 +25,8 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 	const [noteMode, setNoteMode] = useState<NoteMode>(null);
 	const [noteText, setNoteText] = useState("");
 	const [saveError, setSaveError] = useState(false);
+	const [isRecording, setIsRecording] = useState(false);
+	const stopRecordingRef = useRef<(() => Promise<void>) | null>(null);
 	const affirmation = DEFAULT_AFFIRMATIONS[index];
 
 	const handleRefresh = useCallback(() => {
@@ -32,12 +36,46 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 		setSaveError(false);
 	}, []);
 
+	const handleRecordingComplete = useCallback(
+		async (blob: Blob, durationMs: number) => {
+			if (!noteMode) return;
+
+			try {
+				await audioRecordingRepository.create({
+					userId,
+					audioBlob: blob,
+					mimeType: blob.type || "audio/webm",
+					durationMs,
+					affirmationTitle: affirmation.title,
+					recordingContext: noteMode,
+					date: new Date(),
+					transcriptionStatus: "pending",
+				});
+				// Auto-close dialog after saving recording
+				setNoteMode(null);
+				setNoteText("");
+			} catch (error) {
+				console.error("Failed to save audio recording:", error);
+				setSaveError(true);
+			}
+		},
+		[noteMode, userId, affirmation.title],
+	);
+
 	const handleSaveNote = useCallback(async () => {
+		setSaveError(false);
+
+		// If recording, stop and save it
+		if (isRecording && stopRecordingRef.current) {
+			await stopRecordingRef.current();
+			return; // handleRecordingComplete will close the dialog
+		}
+
+		// Save text note if there is one
 		if (!noteText.trim() || !noteMode) {
 			setNoteMode(null);
 			return;
 		}
-		setSaveError(false);
 		try {
 			await affirmationLogRepository.create({
 				userId,
@@ -53,7 +91,7 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 			setSaveError(true);
 			// Keep form open so user can retry
 		}
-	}, [noteMode, noteText, affirmation.title, userId]);
+	}, [noteMode, noteText, affirmation.title, userId, isRecording]);
 
 	const handleKeyDown = useCallback(
 		(e: React.KeyboardEvent) => {
@@ -82,7 +120,9 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 				</button>
 			</div>
 			<div className="affirmation-subtitle-row">
-				<span className="affirmation-card-subtitle">{affirmation.subtitle}</span>
+				<span className="affirmation-card-subtitle">
+					{affirmation.subtitle}
+				</span>
 			</div>
 
 			{noteMode === null ? (
@@ -104,38 +144,55 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 				</div>
 			) : (
 				<div className="affirmation-note-input">
-					<textarea
-						placeholder={
-							noteMode === "opportunity"
-								? "How will you apply this today?"
-								: "How did you apply this?"
-						}
-						value={noteText}
-						onChange={(e) => {
-							setNoteText(e.target.value);
-							setSaveError(false);
-						}}
-						onKeyDown={handleKeyDown}
-						autoFocus
-					/>
-					<button
-						type="button"
-						className="affirmation-save"
-						onClick={handleSaveNote}
+					<div
+						className={`affirmation-input-row ${isRecording ? "recording-active" : ""}`}
 					>
-						Save
-					</button>
-					<button
-						type="button"
-						className="affirmation-cancel"
-						onClick={() => {
-							setNoteMode(null);
-							setNoteText("");
-							setSaveError(false);
-						}}
-					>
-						✕
-					</button>
+						{!isRecording && (
+							<textarea
+								placeholder={
+									noteMode === "opportunity"
+										? "How will you apply this today?"
+										: "How did you apply this?"
+								}
+								value={noteText}
+								onChange={(e) => {
+									setNoteText(e.target.value);
+									setSaveError(false);
+								}}
+								onKeyDown={handleKeyDown}
+								autoFocus
+							/>
+						)}
+						<AudioRecorderButton
+							onRecordingComplete={handleRecordingComplete}
+							onRecordingStateChange={setIsRecording}
+							stopRecordingRef={stopRecordingRef}
+							onError={(err) => {
+								console.error("Recording error:", err);
+								setSaveError(true);
+							}}
+						/>
+					</div>
+					<div className="affirmation-note-actions">
+						<button
+							type="button"
+							className="affirmation-save"
+							onClick={handleSaveNote}
+						>
+							Save
+						</button>
+						<button
+							type="button"
+							className="affirmation-cancel"
+							onClick={() => {
+								setNoteMode(null);
+								setNoteText("");
+								setSaveError(false);
+							}}
+						>
+							{"\u2715"}
+						</button>
+					</div>
 					{saveError && (
 						<span className="affirmation-error">Failed to save</span>
 					)}

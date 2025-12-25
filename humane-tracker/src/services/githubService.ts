@@ -73,7 +73,11 @@ function getPlatformString(): string {
  */
 export function isMacPlatform(): boolean {
 	const platform = getPlatformString().toUpperCase();
-	return platform.includes("MAC") || platform.includes("IPHONE") || platform.includes("IPAD");
+	return (
+		platform.includes("MAC") ||
+		platform.includes("IPHONE") ||
+		platform.includes("IPAD")
+	);
 }
 
 /**

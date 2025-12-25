@@ -60,11 +60,15 @@ describe("AffirmationCard", () => {
 		render(<AffirmationCard userId="test-user" />);
 
 		fireEvent.click(screen.getByText(/Opportunity/));
-		expect(screen.getByPlaceholderText("How will you apply this today?")).toBeInTheDocument();
+		expect(
+			screen.getByPlaceholderText("How will you apply this today?"),
+		).toBeInTheDocument();
 
 		fireEvent.click(screen.getByText("✕"));
 
-		expect(screen.queryByPlaceholderText("How will you apply this today?")).not.toBeInTheDocument();
+		expect(
+			screen.queryByPlaceholderText("How will you apply this today?"),
+		).not.toBeInTheDocument();
 		expect(screen.getByText(/Opportunity/)).toBeInTheDocument();
 	});
 
@@ -72,11 +76,15 @@ describe("AffirmationCard", () => {
 		render(<AffirmationCard userId="test-user" />);
 
 		fireEvent.click(screen.getByText(/Opportunity/));
-		const textarea = screen.getByPlaceholderText("How will you apply this today?");
+		const textarea = screen.getByPlaceholderText(
+			"How will you apply this today?",
+		);
 
 		fireEvent.keyDown(textarea, { key: "Escape" });
 
-		expect(screen.queryByPlaceholderText("How will you apply this today?")).not.toBeInTheDocument();
+		expect(
+			screen.queryByPlaceholderText("How will you apply this today?"),
+		).not.toBeInTheDocument();
 	});
 
 	it("changes affirmation when refresh button is clicked", () => {
@@ -112,7 +120,9 @@ describe("AffirmationCard", () => {
 		render(<AffirmationCard userId="test-user" />);
 
 		fireEvent.click(screen.getByText(/Opportunity/));
-		const textarea = screen.getByPlaceholderText("How will you apply this today?");
+		const textarea = screen.getByPlaceholderText(
+			"How will you apply this today?",
+		);
 		fireEvent.change(textarea, { target: { value: "Test note" } });
 		fireEvent.click(screen.getByText("Save"));
 

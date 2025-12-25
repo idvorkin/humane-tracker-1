@@ -1,5 +1,6 @@
 import { useObservable } from "dexie-react-hooks";
 import { useCallback, useEffect, useState } from "react";
+import { Route, Routes } from "react-router-dom";
 import { AffirmationBanner } from "./components/AffirmationBanner";
 import { AnonymousWarning } from "./components/AnonymousWarning";
 import { HabitTracker } from "./components/HabitTracker";
@@ -9,6 +10,7 @@ import { StaleAuthNotification } from "./components/StaleAuthNotification";
 import { UserMenu } from "./components/UserMenu";
 import { VersionNotification } from "./components/VersionNotification";
 import { db } from "./config/db";
+import { RecordingsPage } from "./pages/RecordingsPage";
 import {
 	handleSignIn,
 	type LocalDataSummary,
@@ -109,35 +111,46 @@ function App() {
 		}
 
 		return (
-			<div className="App">
-				{signOutError && (
-					<div className="error-banner" role="alert">
-						{signOutError}
-						<button
-							type="button"
-							onClick={() => setSignOutError(null)}
-							aria-label="Dismiss error"
-						>
-							×
-						</button>
-					</div>
-				)}
-				<HabitTracker
-					userId={localUserId}
-					userMenu={(menuProps) => (
-						<UserMenu
-							userName="Local User"
-							avatarLetter="L"
-							isLocalMode={true}
-							onSignOut={handleSignOut}
-							onManageHabits={menuProps.onManageHabits}
-							onLoadDefaults={menuProps.onLoadDefaults}
-							showLoadDefaults={menuProps.showLoadDefaults}
-						/>
-					)}
+			<Routes>
+				<Route
+					path="/recordings"
+					element={<RecordingsPage userId={localUserId} />}
 				/>
-				<VersionNotification />
-			</div>
+				<Route
+					path="*"
+					element={
+						<div className="App">
+							{signOutError && (
+								<div className="error-banner" role="alert">
+									{signOutError}
+									<button
+										type="button"
+										onClick={() => setSignOutError(null)}
+										aria-label="Dismiss error"
+									>
+										×
+									</button>
+								</div>
+							)}
+							<HabitTracker
+								userId={localUserId}
+								userMenu={(menuProps) => (
+									<UserMenu
+										userName="Local User"
+										avatarLetter="L"
+										isLocalMode={true}
+										onSignOut={handleSignOut}
+										onManageHabits={menuProps.onManageHabits}
+										onLoadDefaults={menuProps.onLoadDefaults}
+										showLoadDefaults={menuProps.showLoadDefaults}
+									/>
+								)}
+							/>
+							<VersionNotification />
+						</div>
+					}
+				/>
+			</Routes>
 		);
 	}
 
@@ -148,29 +161,40 @@ function App() {
 
 	if (isLoggedOut) {
 		return (
-			<div className="App">
-				<AnonymousWarning onSignIn={handleSignInWithPrompt} />
-				<HabitTracker
-					userId="anonymous"
-					userMenu={(menuProps) => (
-						<UserMenu
-							userName="Guest"
-							avatarLetter="G"
-							onSignIn={handleSignInWithPrompt}
-							onManageHabits={menuProps.onManageHabits}
-							onLoadDefaults={menuProps.onLoadDefaults}
-							showLoadDefaults={menuProps.showLoadDefaults}
-						/>
-					)}
+			<Routes>
+				<Route
+					path="/recordings"
+					element={<RecordingsPage userId="anonymous" />}
 				/>
-				<VersionNotification />
-				{signInDialogData && (
-					<SignInDialog
-						summary={signInDialogData.summary}
-						onChoice={handleSignInChoice}
-					/>
-				)}
-			</div>
+				<Route
+					path="*"
+					element={
+						<div className="App">
+							<AnonymousWarning onSignIn={handleSignInWithPrompt} />
+							<HabitTracker
+								userId="anonymous"
+								userMenu={(menuProps) => (
+									<UserMenu
+										userName="Guest"
+										avatarLetter="G"
+										onSignIn={handleSignInWithPrompt}
+										onManageHabits={menuProps.onManageHabits}
+										onLoadDefaults={menuProps.onLoadDefaults}
+										showLoadDefaults={menuProps.showLoadDefaults}
+									/>
+								)}
+							/>
+							<VersionNotification />
+							{signInDialogData && (
+								<SignInDialog
+									summary={signInDialogData.summary}
+									onChoice={handleSignInChoice}
+								/>
+							)}
+						</div>
+					}
+				/>
+			</Routes>
 		);
 	}
 
@@ -182,36 +206,44 @@ function App() {
 		(currentUser.name || currentUser.email || "?")[0]?.toUpperCase() ?? "?";
 
 	return (
-		<div className="App">
-			{signOutError && (
-				<div className="error-banner" role="alert">
-					{signOutError}
-					<button
-						type="button"
-						onClick={() => setSignOutError(null)}
-						aria-label="Dismiss error"
-					>
-						×
-					</button>
-				</div>
-			)}
-			<HabitTracker
-				userId={userId}
-				userMenu={(menuProps) => (
-					<UserMenu
-						userName={displayName}
-						avatarLetter={avatarLetter}
-						isLocalMode={false}
-						onSignOut={handleSignOut}
-						onManageHabits={menuProps.onManageHabits}
-						onLoadDefaults={menuProps.onLoadDefaults}
-						showLoadDefaults={menuProps.showLoadDefaults}
-					/>
-				)}
+		<Routes>
+			<Route path="/recordings" element={<RecordingsPage userId={userId} />} />
+			<Route
+				path="*"
+				element={
+					<div className="App">
+						{signOutError && (
+							<div className="error-banner" role="alert">
+								{signOutError}
+								<button
+									type="button"
+									onClick={() => setSignOutError(null)}
+									aria-label="Dismiss error"
+								>
+									×
+								</button>
+							</div>
+						)}
+						<HabitTracker
+							userId={userId}
+							userMenu={(menuProps) => (
+								<UserMenu
+									userName={displayName}
+									avatarLetter={avatarLetter}
+									isLocalMode={false}
+									onSignOut={handleSignOut}
+									onManageHabits={menuProps.onManageHabits}
+									onLoadDefaults={menuProps.onLoadDefaults}
+									showLoadDefaults={menuProps.showLoadDefaults}
+								/>
+							)}
+						/>
+						<VersionNotification />
+						<StaleAuthNotification />
+					</div>
+				}
 			/>
-			<VersionNotification />
-			<StaleAuthNotification />
-		</div>
+		</Routes>
 	);
 }
 

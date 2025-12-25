@@ -180,3 +180,17 @@ export const WarningIcon: IconComponent = ({ size = 18 }) => (
 		<path d="M8.13 2.5a1 1 0 011.74 0l6.4 11.2a1 1 0 01-.87 1.5H2.6a1 1 0 01-.87-1.5l6.4-11.2z" />
 	</svg>
 );
+
+export const MicrophoneIcon: IconComponent = ({ size = 16 }) => (
+	<svg
+		width={size}
+		height={size}
+		viewBox="0 0 16 16"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.5"
+	>
+		<rect x="5" y="1" width="6" height="9" rx="3" />
+		<path d="M3 7v1a5 5 0 0010 0V7M8 13v2" />
+	</svg>
+);

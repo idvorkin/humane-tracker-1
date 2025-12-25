@@ -61,8 +61,8 @@ export function repairTagRelationships(habits: Habit[]): RepairResult {
 	// Repair each habit
 	const repairedHabits = habits.map((h) => {
 		let needsUpdate = false;
-		let newParentIds = h.parentIds ? [...h.parentIds] : [];
-		let newChildIds = h.childIds ? [...h.childIds] : [];
+		const newParentIds = h.parentIds ? [...h.parentIds] : [];
+		const newChildIds = h.childIds ? [...h.childIds] : [];
 
 		// Fix parentIds: merge in any parents derived from childIds
 		const shouldHaveParents = derivedParentIds.get(h.id);

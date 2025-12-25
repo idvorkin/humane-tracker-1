@@ -173,7 +173,11 @@ export const HabitEditor: React.FC<HabitEditorProps> = ({
 										name="trackingType"
 										value={type.value}
 										checked={trackingType === type.value}
-										onChange={(e) => setTrackingType(e.target.value as "binary" | "sets" | "hybrid")}
+										onChange={(e) =>
+											setTrackingType(
+												e.target.value as "binary" | "sets" | "hybrid",
+											)
+										}
 									/>
 									<div className="tracking-type-info">
 										<strong>{type.label}</strong>

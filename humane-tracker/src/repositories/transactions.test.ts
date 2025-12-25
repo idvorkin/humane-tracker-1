@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { runImportTransaction } from "./transactions";
 import type { Habit, HabitEntry } from "../types/habit";
 import type { AffirmationLog } from "./affirmationLogRepository";
+import { runImportTransaction } from "./transactions";
 
 // Mock dependencies
 vi.mock("../config/db", () => ({
@@ -36,9 +36,9 @@ vi.mock("./affirmationLogRepository", () => ({
 
 // Import mocked modules
 import { db } from "../config/db";
-import { habitRepository } from "./habitRepository";
-import { entryRepository } from "./entryRepository";
 import { affirmationLogRepository } from "./affirmationLogRepository";
+import { entryRepository } from "./entryRepository";
+import { habitRepository } from "./habitRepository";
 
 // Helper to create mock data
 function createMockHabit(id: string, name: string): Habit {

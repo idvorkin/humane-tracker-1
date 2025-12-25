@@ -2,6 +2,7 @@ import Dexie, { type Table } from "dexie";
 import dexieCloud from "dexie-cloud-addon";
 import type {
 	AffirmationLogRecord,
+	AudioRecordingRecord,
 	EntryRecord,
 	HabitRecord,
 } from "../repositories/types";
@@ -11,10 +12,7 @@ import {
 	toTimestamp,
 } from "../repositories/types";
 import { SyncLogService } from "../services/syncLogService";
-import {
-	didEnterStuckState,
-	didExitStuckState,
-} from "../utils/staleAuthUtils";
+import { didEnterStuckState, didExitStuckState } from "../utils/staleAuthUtils";
 import { syncLogDB } from "./syncLogDB";
 
 // Extend Dexie with cloud addon
@@ -24,6 +22,8 @@ export class HumaneTrackerDB extends Dexie {
 	habits!: Table<HabitRecord, string>;
 	entries!: Table<EntryRecord, string>;
 	affirmationLogs!: Table<AffirmationLogRecord, string>;
+	// Local-only table (no cloud sync) for audio recordings
+	audioRecordings!: Table<AudioRecordingRecord, string>;
 
 	constructor() {
 		super("HumaneTrackerDB", { addons: [dexieCloud] });
@@ -510,6 +510,18 @@ export class HumaneTrackerDB extends Dexie {
 			affirmationLogs:
 				"@id, userId, [userId+date], affirmationTitle, logType, createdAt",
 		});
+
+		// Version 11: Add audioRecordings table for offline-first voice recordings
+		// Uses "id" (not "@id") to keep blobs local-only - no cloud sync for large audio files
+		this.version(11).stores({
+			habits:
+				"@id, userId, name, category, targetPerWeek, createdAt, updatedAt",
+			entries: "@id, habitId, userId, date, value, createdAt",
+			affirmationLogs:
+				"@id, userId, [userId+date], affirmationTitle, logType, createdAt",
+			audioRecordings:
+				"id, userId, [userId+date], affirmationTitle, createdAt, transcriptionStatus",
+		});
 	}
 }
 
@@ -613,9 +625,14 @@ if (
 				console.log("[Dexie Cloud] App became visible, triggering sync...");
 				db.cloud.sync({ wait: false, purpose: "push" }).catch((err) => {
 					console.warn("[Dexie Cloud] Visibility sync failed:", err);
-					syncLogService.addLog("syncState", "warning", "Visibility sync failed", {
-						error: err?.message || String(err),
-					});
+					syncLogService.addLog(
+						"syncState",
+						"warning",
+						"Visibility sync failed",
+						{
+							error: err?.message || String(err),
+						},
+					);
 				});
 			}
 		});
@@ -791,10 +808,10 @@ if (
 					checkForStaleAuth,
 					STALE_AUTH_DETECTION_DELAY_MS,
 				);
-				console.log(
-					"[Dexie Cloud] Started stale auth detection timer (30s)",
-				);
-			} else if (didExitStuckState(currentState, stuckInInitialSince !== null)) {
+				console.log("[Dexie Cloud] Started stale auth detection timer (30s)");
+			} else if (
+				didExitStuckState(currentState, stuckInInitialSince !== null)
+			) {
 				// Exited stuck state - cancel timer and reset
 				if (staleAuthCheckTimer) {
 					clearTimeout(staleAuthCheckTimer);
@@ -802,7 +819,9 @@ if (
 				}
 				stuckInInitialSince = null;
 				hasAttemptedSyncRecovery = false;
-				console.log("[Dexie Cloud] Cleared stale auth detection timer - sync progressing");
+				console.log(
+					"[Dexie Cloud] Cleared stale auth detection timer - sync progressing",
+				);
 			}
 
 			lastSyncPhase = syncState.phase;

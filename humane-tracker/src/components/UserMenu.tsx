@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useBugReporter } from "../hooks/useBugReporter";
 import { BugReportDialog } from "./BugReportDialog";
 import {
 	ChevronIcon,
 	DownloadIcon,
 	ManageHabitsIcon,
+	MicrophoneIcon,
 	SettingsIcon,
 	SignInIcon,
 	SignOutIcon,
@@ -121,6 +123,16 @@ export function UserMenu({
 							)}
 						</div>
 					)}
+
+					<Link to="/recordings" className="user-menu-link" onClick={closeMenu}>
+						<MenuItem
+							icon={<MicrophoneIcon />}
+							label="Recordings"
+							onClick={() => {
+								/* Link handles navigation */
+							}}
+						/>
+					</Link>
 
 					<div className="user-menu-divider" />
 

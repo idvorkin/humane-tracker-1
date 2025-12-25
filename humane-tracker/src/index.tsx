@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { ErrorBoundary } from "react-error-boundary";
+import { BrowserRouter } from "react-router-dom";
 import "./index.css";
 import App from "./App";
 import { CrashFallback } from "./components/CrashFallback";
@@ -23,7 +24,9 @@ const AppComponent = isE2ELoginMode ? TestLoginApp : App;
 root.render(
 	<ErrorBoundary FallbackComponent={CrashFallback}>
 		<React.StrictMode>
-			<AppComponent />
+			<BrowserRouter>
+				<AppComponent />
+			</BrowserRouter>
 		</React.StrictMode>
 	</ErrorBoundary>,
 );

@@ -1,5 +1,5 @@
-import type { Habit, HabitEntry, HabitWithStatus } from "../types/habit";
 import { toDateString } from "../repositories/types";
+import type { Habit, HabitEntry, HabitWithStatus } from "../types/habit";
 import { getTagEntries } from "./tagUtils";
 
 /**

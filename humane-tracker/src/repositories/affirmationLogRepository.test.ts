@@ -144,9 +144,9 @@ describe("affirmationLogRepository", () => {
 		});
 
 		it("throws on empty userId", () => {
-			expect(() =>
-				validateAffirmationLog({ ...validLog, userId: "" }),
-			).toThrow("userId cannot be empty");
+			expect(() => validateAffirmationLog({ ...validLog, userId: "" })).toThrow(
+				"userId cannot be empty",
+			);
 		});
 
 		it("throws on whitespace-only userId", () => {

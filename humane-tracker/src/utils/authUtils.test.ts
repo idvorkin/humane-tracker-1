@@ -49,7 +49,13 @@ describe("getLocalAnonymousDataSummary", () => {
 			{ id: "1", name: "Exercise", category: "health" },
 			{ id: "2", name: "Read", category: "learning" },
 		];
-		vi.mocked(habitRepository.getByUserId).mockResolvedValue(mockHabits as ReturnType<typeof habitRepository.getByUserId> extends Promise<infer T> ? T : never);
+		vi.mocked(habitRepository.getByUserId).mockResolvedValue(
+			mockHabits as ReturnType<
+				typeof habitRepository.getByUserId
+			> extends Promise<infer T>
+				? T
+				: never,
+		);
 		vi.mocked(entryRepository.countByUserId).mockResolvedValue(10);
 
 		const result = await getLocalAnonymousDataSummary();
@@ -73,7 +79,13 @@ describe("getLocalAnonymousDataSummary", () => {
 			{ id: "6", name: "Habit6" },
 			{ id: "7", name: "Habit7" },
 		];
-		vi.mocked(habitRepository.getByUserId).mockResolvedValue(mockHabits as ReturnType<typeof habitRepository.getByUserId> extends Promise<infer T> ? T : never);
+		vi.mocked(habitRepository.getByUserId).mockResolvedValue(
+			mockHabits as ReturnType<
+				typeof habitRepository.getByUserId
+			> extends Promise<infer T>
+				? T
+				: never,
+		);
 		vi.mocked(entryRepository.countByUserId).mockResolvedValue(20);
 
 		const result = await getLocalAnonymousDataSummary();
@@ -125,7 +137,13 @@ describe("handleSignIn", () => {
 
 	it("logs in directly when no prompt callback provided", async () => {
 		const mockHabits = [{ id: "1", name: "Exercise" }];
-		vi.mocked(habitRepository.getByUserId).mockResolvedValue(mockHabits as ReturnType<typeof habitRepository.getByUserId> extends Promise<infer T> ? T : never);
+		vi.mocked(habitRepository.getByUserId).mockResolvedValue(
+			mockHabits as ReturnType<
+				typeof habitRepository.getByUserId
+			> extends Promise<infer T>
+				? T
+				: never,
+		);
 		vi.mocked(entryRepository.countByUserId).mockResolvedValue(5);
 		vi.mocked(db.cloud.login).mockResolvedValue(undefined);
 
@@ -140,7 +158,13 @@ describe("handleSignIn", () => {
 
 	it("returns success without login when user cancels", async () => {
 		const mockHabits = [{ id: "1", name: "Exercise" }];
-		vi.mocked(habitRepository.getByUserId).mockResolvedValue(mockHabits as ReturnType<typeof habitRepository.getByUserId> extends Promise<infer T> ? T : never);
+		vi.mocked(habitRepository.getByUserId).mockResolvedValue(
+			mockHabits as ReturnType<
+				typeof habitRepository.getByUserId
+			> extends Promise<infer T>
+				? T
+				: never,
+		);
 		vi.mocked(entryRepository.countByUserId).mockResolvedValue(5);
 
 		const promptCallback = vi.fn().mockResolvedValue("cancel" as SignInChoice);
@@ -158,15 +182,19 @@ describe("handleSignIn", () => {
 
 	it("clears anonymous data then logs in when user chooses abandon", async () => {
 		const mockHabits = [{ id: "1", name: "Exercise" }];
-		vi.mocked(habitRepository.getByUserId).mockResolvedValue(mockHabits as ReturnType<typeof habitRepository.getByUserId> extends Promise<infer T> ? T : never);
+		vi.mocked(habitRepository.getByUserId).mockResolvedValue(
+			mockHabits as ReturnType<
+				typeof habitRepository.getByUserId
+			> extends Promise<infer T>
+				? T
+				: never,
+		);
 		vi.mocked(entryRepository.countByUserId).mockResolvedValue(5);
 		vi.mocked(habitRepository.deleteByUserId).mockResolvedValue(1);
 		vi.mocked(entryRepository.deleteByUserId).mockResolvedValue(5);
 		vi.mocked(db.cloud.login).mockResolvedValue(undefined);
 
-		const consoleLogSpy = vi
-			.spyOn(console, "log")
-			.mockImplementation(() => {});
+		const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 		const promptCallback = vi.fn().mockResolvedValue("abandon" as SignInChoice);
 
 		const result = await handleSignIn(promptCallback);
@@ -183,7 +211,13 @@ describe("handleSignIn", () => {
 
 	it("logs in without clearing data when user chooses merge", async () => {
 		const mockHabits = [{ id: "1", name: "Exercise" }];
-		vi.mocked(habitRepository.getByUserId).mockResolvedValue(mockHabits as ReturnType<typeof habitRepository.getByUserId> extends Promise<infer T> ? T : never);
+		vi.mocked(habitRepository.getByUserId).mockResolvedValue(
+			mockHabits as ReturnType<
+				typeof habitRepository.getByUserId
+			> extends Promise<infer T>
+				? T
+				: never,
+		);
 		vi.mocked(entryRepository.countByUserId).mockResolvedValue(5);
 		vi.mocked(db.cloud.login).mockResolvedValue(undefined);
 
@@ -238,7 +272,13 @@ describe("handleSignIn", () => {
 
 	it("propagates error when clearing data fails during abandon", async () => {
 		const mockHabits = [{ id: "1", name: "Exercise" }];
-		vi.mocked(habitRepository.getByUserId).mockResolvedValue(mockHabits as ReturnType<typeof habitRepository.getByUserId> extends Promise<infer T> ? T : never);
+		vi.mocked(habitRepository.getByUserId).mockResolvedValue(
+			mockHabits as ReturnType<
+				typeof habitRepository.getByUserId
+			> extends Promise<infer T>
+				? T
+				: never,
+		);
 		vi.mocked(entryRepository.countByUserId).mockResolvedValue(5);
 		vi.mocked(entryRepository.deleteByUserId).mockRejectedValue(
 			new Error("Delete failed"),

@@ -718,7 +718,10 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 											onChange={(e) =>
 												setNewHabit({
 													...newHabit,
-													trackingType: e.target.value as "binary" | "sets" | "hybrid",
+													trackingType: e.target.value as
+														| "binary"
+														| "sets"
+														| "hybrid",
 												})
 											}
 											className="type-select"
@@ -945,11 +948,7 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 					</div>
 				</div>
 
-				{saveError && (
-					<div className="save-error">
-						{saveError}
-					</div>
-				)}
+				{saveError && <div className="save-error">{saveError}</div>}
 
 				<div className="modal-footer">
 					<button className="btn-cancel" onClick={onClose}>

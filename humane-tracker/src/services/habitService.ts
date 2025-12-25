@@ -145,7 +145,8 @@ export function computeTagStatus(
 	// Group by unique day - one synthetic entry per day
 	const uniqueDays = new Map<string, Date>();
 	for (const entry of allRelevantEntries) {
-		const entryDate = entry.date instanceof Date ? entry.date : new Date(entry.date);
+		const entryDate =
+			entry.date instanceof Date ? entry.date : new Date(entry.date);
 		const dayKey = toDateString(entryDate);
 		if (!uniqueDays.has(dayKey)) {
 			uniqueDays.set(dayKey, entryDate);

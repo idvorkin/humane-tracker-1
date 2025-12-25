@@ -67,9 +67,7 @@ export function validateEntryValue(value: number): EntryValue {
 		throw new Error("validateEntryValue: Value cannot be NaN");
 	}
 	if (!Number.isFinite(value)) {
-		throw new Error(
-			`validateEntryValue: Value must be finite, got ${value}`,
-		);
+		throw new Error(`validateEntryValue: Value must be finite, got ${value}`);
 	}
 	if (value < 0) {
 		throw new Error(
@@ -119,6 +117,27 @@ export interface AffirmationLogRecord {
 	note: string;
 	date: string; // ISO string (date portion only: YYYY-MM-DD)
 	createdAt: string; // ISO string
+}
+
+export type TranscriptionStatus =
+	| "pending"
+	| "processing"
+	| "completed"
+	| "failed";
+
+export interface AudioRecordingRecord {
+	id: string; // "aud..." prefix, local-only (no @ prefix = no cloud sync)
+	userId: string;
+	audioBlob: Blob; // The actual audio data
+	mimeType: string; // e.g., "audio/webm;codecs=opus"
+	durationMs: number; // Recording duration in milliseconds
+	affirmationTitle: string; // Which affirmation this relates to
+	recordingContext: "opportunity" | "didit"; // Same as AffirmationLogRecord.logType
+	date: string; // ISO string (date portion only: YYYY-MM-DD)
+	createdAt: string; // ISO string
+	transcriptionStatus: TranscriptionStatus;
+	transcriptionText?: string; // Filled in after transcription
+	transcriptionError?: string; // Error message if failed
 }
 
 /**

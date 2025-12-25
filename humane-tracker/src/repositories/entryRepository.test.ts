@@ -360,8 +360,8 @@ describe("entryRepository.updateValue", () => {
 		const nonExistentId = "non-existent-entry-id";
 
 		// Error is wrapped: "Failed to update entry: Entry not found: <id>"
-		await expect(
-			entryRepository.updateValue(nonExistentId, 1),
-		).rejects.toThrow(/Entry not found/);
+		await expect(entryRepository.updateValue(nonExistentId, 1)).rejects.toThrow(
+			/Entry not found/,
+		);
 	});
 });

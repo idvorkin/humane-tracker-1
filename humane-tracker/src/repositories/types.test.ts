@@ -331,9 +331,15 @@ describe("validateEntryValue", () => {
 
 	it("throws Error for invalid decimals (not 0.5)", () => {
 		expect(() => validateEntryValue(0.3)).toThrow(Error);
-		expect(() => validateEntryValue(0.3)).toThrow(/must be 0, 0.5, or a non-negative integer/);
-		expect(() => validateEntryValue(1.7)).toThrow(/must be 0, 0.5, or a non-negative integer/);
-		expect(() => validateEntryValue(2.5)).toThrow(/must be 0, 0.5, or a non-negative integer/);
+		expect(() => validateEntryValue(0.3)).toThrow(
+			/must be 0, 0.5, or a non-negative integer/,
+		);
+		expect(() => validateEntryValue(1.7)).toThrow(
+			/must be 0, 0.5, or a non-negative integer/,
+		);
+		expect(() => validateEntryValue(2.5)).toThrow(
+			/must be 0, 0.5, or a non-negative integer/,
+		);
 	});
 
 	it("throws Error for NaN", () => {
@@ -343,13 +349,21 @@ describe("validateEntryValue", () => {
 
 	it("throws Error for Infinity", () => {
 		expect(() => validateEntryValue(Number.POSITIVE_INFINITY)).toThrow(Error);
-		expect(() => validateEntryValue(Number.POSITIVE_INFINITY)).toThrow(/must be finite/);
-		expect(() => validateEntryValue(Number.NEGATIVE_INFINITY)).toThrow(/must be finite/);
+		expect(() => validateEntryValue(Number.POSITIVE_INFINITY)).toThrow(
+			/must be finite/,
+		);
+		expect(() => validateEntryValue(Number.NEGATIVE_INFINITY)).toThrow(
+			/must be finite/,
+		);
 	});
 
 	it("throws TypeError for non-number input", () => {
-		expect(() => validateEntryValue("1" as unknown as number)).toThrow(TypeError);
-		expect(() => validateEntryValue("1" as unknown as number)).toThrow(/Expected number/);
+		expect(() => validateEntryValue("1" as unknown as number)).toThrow(
+			TypeError,
+		);
+		expect(() => validateEntryValue("1" as unknown as number)).toThrow(
+			/Expected number/,
+		);
 	});
 });
 

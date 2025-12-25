@@ -230,7 +230,10 @@ describe("flattenTree", () => {
 			createHabit("750words", "750 words", "raw"),
 			createHabit("box-breathing", "Box Breathing", "raw", undefined, []), // No parentIds!
 			createHabit("cult-meditate", "Cult Meditate", "raw", undefined, []), // No parentIds!
-			createHabit("meditate", "Meditate", "tag", ["box-breathing", "cult-meditate"]),
+			createHabit("meditate", "Meditate", "tag", [
+				"box-breathing",
+				"cult-meditate",
+			]),
 			createHabit("read-devotional", "Read devotional", "raw"),
 		];
 
@@ -260,7 +263,10 @@ describe("flattenTree", () => {
 			createHabit("750words", "750 words", "raw"),
 			createHabit("box-breathing", "Box Breathing", "raw", undefined, []),
 			createHabit("cult-meditate", "Cult Meditate", "raw", undefined, []),
-			createHabit("meditate", "Meditate", "tag", ["box-breathing", "cult-meditate"]),
+			createHabit("meditate", "Meditate", "tag", [
+				"box-breathing",
+				"cult-meditate",
+			]),
 			createHabit("read-devotional", "Read devotional", "raw"),
 		];
 

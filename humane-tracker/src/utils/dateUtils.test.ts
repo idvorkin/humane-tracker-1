@@ -1,5 +1,63 @@
 import { describe, expect, it } from "vitest";
-import { getTrailingWeekDateRange } from "./dateUtils";
+import {
+	formatDurationMs,
+	formatDurationSec,
+	getTrailingWeekDateRange,
+} from "./dateUtils";
+
+describe("formatDurationMs", () => {
+	it("formats 0 ms as 0:00", () => {
+		expect(formatDurationMs(0)).toBe("0:00");
+	});
+
+	it("formats seconds correctly with padding", () => {
+		expect(formatDurationMs(5000)).toBe("0:05");
+		expect(formatDurationMs(30000)).toBe("0:30");
+	});
+
+	it("formats minutes and seconds", () => {
+		expect(formatDurationMs(65000)).toBe("1:05");
+		expect(formatDurationMs(90000)).toBe("1:30");
+		expect(formatDurationMs(125000)).toBe("2:05");
+	});
+
+	it("handles multi-minute durations", () => {
+		expect(formatDurationMs(300000)).toBe("5:00");
+		expect(formatDurationMs(305000)).toBe("5:05");
+	});
+
+	it("truncates milliseconds (floors to seconds)", () => {
+		expect(formatDurationMs(1999)).toBe("0:01");
+		expect(formatDurationMs(65999)).toBe("1:05");
+	});
+});
+
+describe("formatDurationSec", () => {
+	it("formats 0 seconds as 0:00", () => {
+		expect(formatDurationSec(0)).toBe("0:00");
+	});
+
+	it("formats seconds correctly with padding", () => {
+		expect(formatDurationSec(5)).toBe("0:05");
+		expect(formatDurationSec(30)).toBe("0:30");
+	});
+
+	it("formats minutes and seconds", () => {
+		expect(formatDurationSec(65)).toBe("1:05");
+		expect(formatDurationSec(90)).toBe("1:30");
+		expect(formatDurationSec(125)).toBe("2:05");
+	});
+
+	it("handles multi-minute durations", () => {
+		expect(formatDurationSec(300)).toBe("5:00");
+		expect(formatDurationSec(305)).toBe("5:05");
+	});
+
+	it("floors fractional seconds", () => {
+		expect(formatDurationSec(1.9)).toBe("0:01");
+		expect(formatDurationSec(65.9)).toBe("1:05");
+	});
+});
 
 describe("getTrailingWeekDateRange", () => {
 	it("returns a 7-day range ending today", () => {

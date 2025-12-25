@@ -57,10 +57,6 @@ test.describe('Habit Tracker App', () => {
     // Check table structure
     await expect(page.locator('table')).toBeVisible();
     await expect(page.locator('th.col-habit')).toContainText('Habit');
-
-    // Check legend
-    await expect(page.locator('.legend-strip')).toBeVisible();
-    await expect(page.locator('.legend-item').first()).toContainText('done');
   });
 
   test('should expand and collapse sections', async ({ page }) => {
@@ -353,17 +349,4 @@ test.describe('Habit Tracking Functions', () => {
     expect(maxValue).toBe('7');
   });
 
-  test('should display status indicators correctly', async ({ page }) => {
-    await page.waitForSelector('table', { timeout: 15000 });
-
-    // Check for status icons in the legend
-    const legendItems = page.locator('.legend-item');
-    
-    await expect(legendItems.filter({ hasText: '● = done' })).toBeVisible();
-    await expect(legendItems.filter({ hasText: '✓ = met target' })).toBeVisible();
-    await expect(legendItems.filter({ hasText: '⏰ = due today' })).toBeVisible();
-    await expect(legendItems.filter({ hasText: '→ = tomorrow' })).toBeVisible();
-    await expect(legendItems.filter({ hasText: '! = overdue' })).toBeVisible();
-    await expect(legendItems.filter({ hasText: '½ = partial' })).toBeVisible();
-  });
 });

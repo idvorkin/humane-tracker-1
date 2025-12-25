@@ -30,7 +30,7 @@ cd humane-tracker && npx tsc --noEmit || exit 1
 
 # 4. Run unit tests
 echo "🧪 Running unit tests..."
-npm test -- --run --reporter=dot || exit 1
+npm run test-called-from-just -- --run --reporter=dot || exit 1
 cd ..
 
 echo "✅ All pre-commit checks passed!"

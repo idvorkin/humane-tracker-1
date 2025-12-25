@@ -1,5 +1,11 @@
 import { format, isSameDay, isToday } from "date-fns";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { useHabitTrackerVM } from "../hooks/useHabitTrackerVM";
 import type { Habit, HabitWithStatus } from "../types/habit";
 import { buildCategoryInfo } from "../utils/categoryUtils";
@@ -246,7 +252,7 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 							if (!vm.hasNoHabits) {
 								if (
 									!window.confirm(
-										"This will DELETE all your current habits and entries, then load the default habits. This cannot be undone. Continue?"
+										"This will DELETE all your current habits and entries, then load the default habits. This cannot be undone. Continue?",
 									)
 								) {
 									return;
@@ -380,102 +386,99 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 												const isExpanded = treeNode.isExpanded;
 												const hasChildren = treeNode.hasChildren;
 
-											return (
-												<tr key={habit.id} className="section-row">
-													<td className="col-habit">
-														<div
-															className="habit-name"
-															style={{ paddingLeft: `${depth * 16}px` }}
-														>
-															{isTag && hasChildren && (
-																<span
-																	className={`tag-arrow ${isExpanded ? "" : "collapsed"}`}
-																	onClick={(e) => {
-																		e.stopPropagation();
-																		vm.toggleTagExpanded(habit.id);
-																	}}
-																	style={{ cursor: "pointer", marginRight: 4 }}
-																>
-																	▼
-																</span>
-															)}
-															{habit.name}
-															<span className="habit-target">
-																({habit.targetPerWeek}/w)
-															</span>
-														</div>
-													</td>
-													<td>
-														<span className={`status status-${habit.status}`}>
-															{vm.getStatusIcon(habit.status)}
-														</span>
-													</td>
-													{vm.weekDates.map((date) => {
-														const cellDisplay = vm.getCellDisplay(habit, date);
-														const isTodayDate = isToday(date);
-														const isSelected = Boolean(
-															vm.selectedDate &&
-																isSameDay(date, vm.selectedDate),
-														);
-														const cellClass = [
-															cellDisplay.className,
-															getDateColumnClass(
-																"cell",
-																isTodayDate,
-																isSelected,
-															),
-															isTag ? "tag-cell" : "",
-														]
-															.filter(Boolean)
-															.join(" ");
-														return (
-															<td
-																key={date.toISOString()}
-																className={cellClass}
-																onClick={() => handleCellClick(habit, date)}
-																onMouseDown={(e) =>
-																	handleCellPressStart(habit, date, e)
-																}
-																onMouseUp={handleCellPressEnd}
-																onMouseLeave={handleCellPressEnd}
-																onTouchStart={(e) =>
-																	handleCellPressStart(habit, date, e)
-																}
-																onTouchEnd={handleCellPressEnd}
-																style={{ cursor: "pointer" }}
+												return (
+													<tr key={habit.id} className="section-row">
+														<td className="col-habit">
+															<div
+																className="habit-name"
+																style={{ paddingLeft: `${depth * 16}px` }}
 															>
-																{cellDisplay.content}
-															</td>
-														);
-													})}
-													<td
-														className={`total total-${
-															habit.currentWeekCount >= habit.targetPerWeek
-																? "good"
-																: habit.currentWeekCount > 0
-																	? "warn"
-																	: "bad"
-														}`}
-													>
-														{habit.currentWeekCount}/{habit.targetPerWeek}
-													</td>
-												</tr>
-											);
-										})}
+																{isTag && hasChildren && (
+																	<span
+																		className={`tag-arrow ${isExpanded ? "" : "collapsed"}`}
+																		onClick={(e) => {
+																			e.stopPropagation();
+																			vm.toggleTagExpanded(habit.id);
+																		}}
+																		style={{
+																			cursor: "pointer",
+																			marginRight: 4,
+																		}}
+																	>
+																		▼
+																	</span>
+																)}
+																{habit.name}
+																<span className="habit-target">
+																	({habit.targetPerWeek}/w)
+																</span>
+															</div>
+														</td>
+														<td>
+															<span className={`status status-${habit.status}`}>
+																{vm.getStatusIcon(habit.status)}
+															</span>
+														</td>
+														{vm.weekDates.map((date) => {
+															const cellDisplay = vm.getCellDisplay(
+																habit,
+																date,
+															);
+															const isTodayDate = isToday(date);
+															const isSelected = Boolean(
+																vm.selectedDate &&
+																	isSameDay(date, vm.selectedDate),
+															);
+															const cellClass = [
+																cellDisplay.className,
+																getDateColumnClass(
+																	"cell",
+																	isTodayDate,
+																	isSelected,
+																),
+																isTag ? "tag-cell" : "",
+															]
+																.filter(Boolean)
+																.join(" ");
+															return (
+																<td
+																	key={date.toISOString()}
+																	className={cellClass}
+																	onClick={() => handleCellClick(habit, date)}
+																	onMouseDown={(e) =>
+																		handleCellPressStart(habit, date, e)
+																	}
+																	onMouseUp={handleCellPressEnd}
+																	onMouseLeave={handleCellPressEnd}
+																	onTouchStart={(e) =>
+																		handleCellPressStart(habit, date, e)
+																	}
+																	onTouchEnd={handleCellPressEnd}
+																	style={{ cursor: "pointer" }}
+																>
+																	{cellDisplay.content}
+																</td>
+															);
+														})}
+														<td
+															className={`total total-${
+																habit.currentWeekCount >= habit.targetPerWeek
+																	? "good"
+																	: habit.currentWeekCount > 0
+																		? "warn"
+																		: "bad"
+															}`}
+														>
+															{habit.currentWeekCount}/{habit.targetPerWeek}
+														</td>
+													</tr>
+												);
+											})}
 								</React.Fragment>
 							);
 						})}
 				</tbody>
 			</table>
-
-			<div className="legend-strip">
-				<div className="legend-item">● = done</div>
-				<div className="legend-item">✓ = met target</div>
-				<div className="legend-item">⏰ = due today</div>
-				<div className="legend-item">→ = tomorrow</div>
-				<div className="legend-item">! = overdue</div>
-				<div className="legend-item">½ = partial</div>
-			</div>
 
 			<div className="summary-bar">
 				<div className="summary-item">

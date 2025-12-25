@@ -173,6 +173,13 @@
 	color: var(--color-cream);
 }
 
+/* Link styling for router links in menu */
+.user-menu-link {
+	text-decoration: none;
+	color: inherit;
+	display: block;
+}
+
 .user-menu-danger {
 	color: var(--color-danger);
 }

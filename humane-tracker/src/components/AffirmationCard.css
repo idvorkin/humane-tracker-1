@@ -29,7 +29,9 @@
 	opacity: 0.5;
 	cursor: pointer;
 	padding: 0 4px;
-	transition: opacity 0.15s ease, transform 0.15s ease;
+	transition:
+		opacity 0.15s ease,
+		transform 0.15s ease;
 }
 
 .affirmation-refresh:hover {
@@ -78,11 +80,17 @@
 
 .affirmation-note-input {
 	display: flex;
+	flex-direction: column;
 	gap: 8px;
-	align-items: flex-end;
 }
 
-.affirmation-note-input textarea {
+.affirmation-input-row {
+	display: flex;
+	gap: 8px;
+	align-items: flex-start;
+}
+
+.affirmation-input-row textarea {
 	flex: 1;
 	padding: 10px 14px;
 	font-size: 0.95rem;
@@ -94,10 +102,21 @@
 	resize: vertical;
 }
 
-.affirmation-note-input textarea:focus {
+.affirmation-input-row textarea:focus {
 	outline: none;
 	border-color: var(--color-sky);
 	box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+}
+
+/* When recording is active, let it fill the space */
+.affirmation-input-row.recording-active {
+	justify-content: stretch;
+}
+
+.affirmation-note-actions {
+	display: flex;
+	gap: 8px;
+	align-items: center;
 }
 
 .affirmation-save {
@@ -137,6 +156,12 @@
 	padding: 4px 8px;
 }
 
+.affirmation-success {
+	font-size: 0.8rem;
+	color: #16a34a;
+	padding: 4px 8px;
+}
+
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
 	.affirmation-card {
@@ -166,7 +191,7 @@
 		background: rgba(0, 0, 0, 0.5);
 	}
 
-	.affirmation-note-input textarea {
+	.affirmation-input-row textarea {
 		background: #1f1d1a;
 		border-color: #78350f;
 		color: var(--color-cream);
@@ -174,5 +199,9 @@
 
 	.affirmation-cancel {
 		color: var(--color-cream);
+	}
+
+	.affirmation-success {
+		color: #4ade80;
 	}
 }

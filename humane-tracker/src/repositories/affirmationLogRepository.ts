@@ -55,18 +55,14 @@ export function validateAffirmationLog(
 	log: Omit<AffirmationLog, "id" | "createdAt">,
 ): void {
 	if (!log.userId || typeof log.userId !== "string" || !log.userId.trim()) {
-		throw new Error(
-			"validateAffirmationLog: userId cannot be empty",
-		);
+		throw new Error("validateAffirmationLog: userId cannot be empty");
 	}
 	if (
 		!log.affirmationTitle ||
 		typeof log.affirmationTitle !== "string" ||
 		!log.affirmationTitle.trim()
 	) {
-		throw new Error(
-			"validateAffirmationLog: affirmationTitle cannot be empty",
-		);
+		throw new Error("validateAffirmationLog: affirmationTitle cannot be empty");
 	}
 	if (!VALID_LOG_TYPES.includes(log.logType)) {
 		throw new Error(
@@ -76,9 +72,7 @@ export function validateAffirmationLog(
 }
 
 export const affirmationLogRepository = {
-	async create(
-		log: Omit<AffirmationLog, "id" | "createdAt">,
-	): Promise<string> {
+	async create(log: Omit<AffirmationLog, "id" | "createdAt">): Promise<string> {
 		// Validate input before creating
 		validateAffirmationLog(log);
 
