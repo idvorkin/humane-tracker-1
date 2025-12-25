@@ -1,9 +1,11 @@
-import { useCallback, useRef, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { DEFAULT_AFFIRMATIONS } from "../constants/affirmations";
 import { affirmationLogRepository } from "../repositories/affirmationLogRepository";
 import { audioRecordingRepository } from "../repositories/audioRecordingRepository";
 import "./AffirmationCard.css";
 import { AudioRecorderButton } from "./AudioRecorderButton";
+import { TallyMarks } from "./TallyMarks";
 
 function getRandomIndex(currentIndex?: number): number {
 	if (DEFAULT_AFFIRMATIONS.length <= 1) return 0;
@@ -28,6 +30,20 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 	const [isRecording, setIsRecording] = useState(false);
 	const stopRecordingRef = useRef<(() => Promise<void>) | null>(null);
 	const affirmation = DEFAULT_AFFIRMATIONS[index];
+
+	// Get today's affirmation log counts (reactive)
+	const todayLogs = useLiveQuery(
+		() => affirmationLogRepository.getByUserIdAndDate(userId, new Date()),
+		[userId],
+	);
+
+	const todayCounts = useMemo(() => {
+		if (!todayLogs) return { opportunity: 0, didit: 0 };
+		return {
+			opportunity: todayLogs.filter((l) => l.logType === "opportunity").length,
+			didit: todayLogs.filter((l) => l.logType === "didit").length,
+		};
+	}, [todayLogs]);
 
 	const handleRefresh = useCallback(() => {
 		setIndex((prev) => getRandomIndex(prev));
@@ -110,6 +126,7 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 		<div className="affirmation-card">
 			<div className="affirmation-header">
 				<span className="affirmation-card-title">{affirmation.title}</span>
+				<TallyMarks count={todayCounts.opportunity + todayCounts.didit} />
 				<button
 					type="button"
 					className="affirmation-refresh"

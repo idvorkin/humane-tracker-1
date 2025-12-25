@@ -1,7 +1,9 @@
-import { useCallback, useRef, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { audioRecordingRepository } from "../repositories/audioRecordingRepository";
 import "./GratefulCard.css";
 import { AudioRecorderButton } from "./AudioRecorderButton";
+import { TallyMarks } from "./TallyMarks";
 
 interface GratefulCardProps {
 	userId: string;
@@ -13,6 +15,18 @@ export function GratefulCard({ userId }: GratefulCardProps) {
 	const [saveError, setSaveError] = useState(false);
 	const [isRecording, setIsRecording] = useState(false);
 	const stopRecordingRef = useRef<(() => Promise<void>) | null>(null);
+
+	// Get today's grateful recording count (reactive)
+	const todayRecordings = useLiveQuery(
+		() => audioRecordingRepository.getByUserIdAndDate(userId, new Date()),
+		[userId],
+	);
+
+	const todayGratefulCount = useMemo(() => {
+		if (!todayRecordings) return 0;
+		return todayRecordings.filter((r) => r.recordingContext === "grateful")
+			.length;
+	}, [todayRecordings]);
 
 	const handleRecordingComplete = useCallback(
 		async (blob: Blob, durationMs: number) => {
@@ -82,6 +96,7 @@ export function GratefulCard({ userId }: GratefulCardProps) {
 		<div className="grateful-card">
 			<div className="grateful-header">
 				<span className="grateful-card-title">Grateful</span>
+				<TallyMarks count={todayGratefulCount} />
 			</div>
 			<div className="grateful-subtitle-row">
 				<span className="grateful-card-subtitle">

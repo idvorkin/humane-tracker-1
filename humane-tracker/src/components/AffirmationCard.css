@@ -13,7 +13,6 @@
 .affirmation-header {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
 	gap: 8px;
 }
 
@@ -47,6 +46,8 @@
 	font-weight: 600;
 	font-size: 0.95rem;
 	color: var(--color-charcoal);
+	white-space: nowrap;
+	flex: 1;
 }
 
 .affirmation-card-subtitle {
@@ -60,6 +61,32 @@
 .affirmation-actions {
 	display: flex;
 	gap: 8px;
+}
+
+.affirmation-header .tally-marks {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.affirmation-header .tally-group-svg {
+	display: block;
+}
+
+.affirmation-header .tally-mark-line {
+	stroke: var(--color-sage);
+	stroke-width: 2.5;
+}
+
+.affirmation-header .tally-strike-line {
+	stroke: var(--color-sage);
+	stroke-width: 2;
+}
+
+.affirmation-header .tally-placeholder {
+	font-size: 0.75rem;
+	color: var(--color-warm-gray);
+	opacity: 0.5;
 }
 
 .affirmation-action {

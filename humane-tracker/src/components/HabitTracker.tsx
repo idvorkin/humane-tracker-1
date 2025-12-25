@@ -7,7 +7,7 @@ import React, {
 	useState,
 } from "react";
 import { useHabitTrackerVM } from "../hooks/useHabitTrackerVM";
-import type { Habit, HabitWithStatus } from "../types/habit";
+import type { HabitWithStatus } from "../types/habit";
 import { buildCategoryInfo } from "../utils/categoryUtils";
 import { AffirmationCard } from "./AffirmationCard";
 import { CleanupDuplicates } from "./CleanupDuplicates";
