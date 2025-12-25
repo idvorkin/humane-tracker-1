@@ -77,6 +77,7 @@ tmux split-window -h -l 66% "nvim -c 'Git diff'"
 ```
 
 Use this when:
+
 - Showing changed files, diffs, or architecture docs for review
 - Igor wants to edit while Claude continues working
 - Comparing files side-by-side with the terminal
@@ -152,6 +153,7 @@ git push origin feature/your-branch --force-with-lease
 ```
 
 Rebase on upstream/main:
+
 - Before starting any major new task
 - Before merging to main
 - When conflicts arise
@@ -176,6 +178,7 @@ gh pr create --repo idvorkin/humane-tracker-1 --base main
 ```
 
 **Common mistakes to AVOID:**
+
 - ❌ Creating PR to origin (wrong - that's the fork, not upstream)
 - ❌ Creating PR without rebasing first (causes merge conflicts)
 - ❌ Losing track of which branch you're on
@@ -193,6 +196,7 @@ git push --force-with-lease origin main
 ```
 
 If you have in-progress feature branches, rebase them:
+
 ```bash
 git checkout feature/other-thing
 git rebase upstream/main
@@ -200,6 +204,7 @@ git push --force-with-lease
 ```
 
 **Git config** (set once per clone, or run `just setup`):
+
 ```bash
 git config pull.rebase true  # Always rebase on pull, never merge
 ```
@@ -284,10 +289,12 @@ done | sort -r
 ```
 
 **Delete criteria:**
+
 - Branches 100+ commits behind with 0 unique commits (already merged)
 - Branches 200+ commits behind (too stale to salvage)
 
 **Keep criteria:**
+
 - Active feature branches with recent work
 - Branches with open PRs
 - `main`, `beads-metadata`
@@ -357,7 +364,14 @@ This maintains an audit trail of how issues were discovered.
 
 ## Architecture
 
-React 18 + TypeScript + Vite application for tracking habits and behaviors with local-first storage.
+React 19 + TypeScript + Vite application for tracking habits and behaviors with local-first storage.
+
+### React 19 Conventions
+
+- **No forwardRef needed**: Pass `ref` directly as a prop to function components
+- **No propTypes/defaultProps**: Use TypeScript types and ES6 default parameters instead
+- **Avoid string refs**: Use callback refs or useRef hook
+- **Actions and useActionState**: Prefer React 19 form actions for form handling when appropriate
 
 ### Core Components
 
@@ -376,11 +390,13 @@ React 18 + TypeScript + Vite application for tracking habits and behaviors with 
 **Symptom: Sync stuck in "connecting" or not syncing**
 
 **First steps (in order):**
+
 1. Check auth state in Settings → Sync Diagnostics
 2. Log out and log back in (clears stale tokens)
 3. Search web: "Dexie Cloud sync stuck [error message]"
 
 **Known issues:**
+
 - **Stale auth tokens**: Dexie Cloud auth expires silently. App has auto-detection, but manual re-login often fixes issues.
 - **Network issues**: Check browser console for specific errors
 - **Pending mutations**: Check diagnostics for mutation count
@@ -456,21 +472,27 @@ This codebase has had repeated date-related bugs. Follow these rules strictly:
 **Always use the standard helpers from `src/repositories/types.ts`:**
 
 ```typescript
-import { toDateString, fromDateString, normalizeDate } from "../repositories/types";
+import {
+  toDateString,
+  fromDateString,
+  normalizeDate,
+} from "../repositories/types";
 
 // ✅ CORRECT - use toDateString for date-only comparison
-const dateStr = toDateString(date);  // Returns "YYYY-MM-DD"
+const dateStr = toDateString(date); // Returns "YYYY-MM-DD"
 
 // ❌ WRONG - custom date formatting (inconsistent, error-prone)
-const dateStr = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;  // Missing padding, month off by 1
+const dateStr = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; // Missing padding, month off by 1
 ```
 
 **Why this matters:**
+
 - `toDateString()` pads months/days with zeros (`"2024-01-05"` not `"2024-1-5"`)
 - `toDateString()` uses correct month values (JavaScript months are 0-indexed)
 - Custom formats cause subtle bugs when comparing dates across the codebase
 
 **Date comparison patterns:**
+
 ```typescript
 // Compare dates by converting to standard strings
 if (toDateString(date1) === toDateString(date2)) { ... }
@@ -531,6 +553,7 @@ Follow the `useHabitTrackerVM` + `HabitTracker` pattern:
 - Tests must comprehensively cover functionality
 - Never delete a failing test - fix the code or discuss
 - Test output must be clean - capture and validate expected errors
+- **Never hardcode ports in test mocks** - Use generic URLs like `blob:mock-audio` not `blob:http://localhost:3000/mock-audio`
 
 ### Test Strategy: When to Use Each Test Type
 
@@ -550,11 +573,13 @@ Is this testing PURE FUNCTIONS (helpers, utilities, calculations)?
 ```
 
 **Examples:**
+
 - ✅ E2E: "User logs in, creates habit, marks it complete"
 - ✅ Component: "HabitCard renders completion state correctly"
 - ✅ Unit: "toDateString() formats dates correctly"
 
 **NEVER:**
+
 - ❌ E2E test for component rendering logic (use component test)
 - ❌ Component test for database operations (use unit test or E2E)
 - ❌ Default to E2E when component tests would suffice
@@ -581,12 +606,14 @@ Key helper functions:
 Playwright provides a comprehensive HTML report with videos, screenshots, and traces:
 
 1. **Start report server**: `just e2e-report` (in a separate terminal) - runs on port 9323
+
    - Leave this running continuously - it updates automatically as tests complete
    - Access report:
      - Local: `http://localhost:9323`
      - Container with Tailscale: `http://<container-hostname>:9323` (e.g., `http://c-5003:9323`)
 
 2. **Run tests**: `just e2e` (runs both desktop and mobile)
+
    - Or `just e2e-desktop` for desktop only
    - Or `just e2e-mobile` for mobile only
 
@@ -605,6 +632,7 @@ The report includes:
 Trace viewer requires HTTPS or localhost (service worker requirement). Two options:
 
 1. **Recommended**: Use Playwright's online trace viewer
+
    - Download the `.zip` trace file from the report
    - Go to https://trace.playwright.dev/
    - Drag and drop the `.zip` file (loads entirely in browser, no data sent)
@@ -632,16 +660,19 @@ Trace viewer requires HTTPS or localhost (service worker requirement). Two optio
 **When you find a bug, STOP and answer these questions before fixing:**
 
 **Spec Questions:**
+
 1. Is this actually a bug, or is my understanding of the spec wrong?
 2. Is there a missing or unclear spec that led to this?
 3. **Ask Igor** if there's any ambiguity: "The behavior is X, but I expected Y. Which is correct?"
 
 **Test Coverage Questions:**
+
 1. Why did tests not catch this?
 2. What level of our test pyramid could have caught this earliest? (unit → component → E2E)
 3. Add the missing test BEFORE fixing the bug
 
 **Architecture Questions:**
+
 1. Is there an architectural problem that made this bug possible?
 2. If yes, create a beads issue: `bd create --title="Architecture: <problem>" --type=bug`
 3. **Ask Igor**: "I found an architectural issue: [description]. Type YES to address it now, or I'll just fix the immediate bug."

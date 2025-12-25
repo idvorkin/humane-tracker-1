@@ -230,6 +230,16 @@ describe("audioRecordingRepository", () => {
 				"Transcription service unavailable",
 			);
 		});
+
+		it("throws error when updating non-existent recording", async () => {
+			await expect(
+				audioRecordingRepository.updateTranscription(
+					"non-existent-id",
+					"completed",
+					"Some text",
+				),
+			).rejects.toThrow(/Audio recording not found/);
+		});
 	});
 
 	describe("delete", () => {

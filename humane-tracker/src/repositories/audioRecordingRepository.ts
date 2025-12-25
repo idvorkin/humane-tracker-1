@@ -215,7 +215,10 @@ export const audioRecordingRepository = {
 			if (error !== undefined) {
 				updates.transcriptionError = error;
 			}
-			await db.audioRecordings.update(id, updates);
+			const updated = await db.audioRecordings.update(id, updates);
+			if (updated === 0) {
+				throw new Error(`Audio recording not found: ${id}`);
+			}
 		} catch (error) {
 			console.error(
 				"[AudioRecordingRepository] Failed to update transcription:",

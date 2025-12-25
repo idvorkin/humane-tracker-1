@@ -105,7 +105,19 @@ export function RecordingsPage({ userId }: RecordingsPageProps) {
 
 				{error && <div className="recordings-error">{error}</div>}
 
-				{deleteError && <div className="recordings-error">{deleteError}</div>}
+				{deleteError && (
+					<div className="recordings-error">
+						{deleteError}
+						<button
+							type="button"
+							className="recordings-error-dismiss"
+							onClick={() => setDeleteError(null)}
+							aria-label="Dismiss error"
+						>
+							×
+						</button>
+					</div>
+				)}
 
 				{!loading && !error && recordings.length === 0 && (
 					<div className="recordings-empty">
