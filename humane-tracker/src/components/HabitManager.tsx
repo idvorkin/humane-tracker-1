@@ -54,11 +54,21 @@ export const HabitManager: React.FC<HabitManagerProps> = ({
 	};
 
 	return (
-		<div className="habit-manager-overlay">
+		<div
+			className="habit-manager-overlay"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="habit-manager-title"
+		>
 			<div className="habit-manager-modal">
 				<div className="modal-header">
-					<h2>Add New Habit</h2>
-					<button className="close-btn" onClick={onClose}>
+					<h2 id="habit-manager-title">Add New Habit</h2>
+					<button
+						type="button"
+						className="close-btn"
+						onClick={onClose}
+						aria-label="Close dialog"
+					>
 						x
 					</button>
 				</div>

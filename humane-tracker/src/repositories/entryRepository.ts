@@ -114,8 +114,10 @@ export const entryRepository = {
 
 	async deleteByUserId(userId: string): Promise<number> {
 		try {
-			const count = await db.entries.where("userId").equals(userId).count();
-			await db.entries.where("userId").equals(userId).delete();
+			// Use transaction to ensure atomic delete and accurate count
+			const count = await db.transaction("rw", db.entries, async () => {
+				return await db.entries.where("userId").equals(userId).delete();
+			});
 			console.log(
 				`[EntryRepository] Deleted ${count} entries for user ${userId}`,
 			);
@@ -267,6 +269,10 @@ export const entryRepository = {
 
 	async delete(entryId: string): Promise<void> {
 		try {
+			const existing = await db.entries.get(entryId);
+			if (!existing) {
+				throw new Error(`Entry not found: ${entryId}`);
+			}
 			await db.entries.delete(entryId);
 		} catch (error) {
 			console.error(

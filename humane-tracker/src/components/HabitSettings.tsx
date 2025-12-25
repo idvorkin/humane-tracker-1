@@ -380,11 +380,21 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 
 	if (isLoading) {
 		return (
-			<div className="habit-settings-overlay">
+			<div
+				className="habit-settings-overlay"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="habit-settings-loading-title"
+			>
 				<div className="habit-settings-modal">
 					<div className="modal-header">
-						<h2>Manage Habits</h2>
-						<button className="close-btn" onClick={onClose}>
+						<h2 id="habit-settings-loading-title">Manage Habits</h2>
+						<button
+							type="button"
+							className="close-btn"
+							onClick={onClose}
+							aria-label="Close dialog"
+						>
 							✕
 						</button>
 					</div>
@@ -398,18 +408,28 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 
 	if (loadError) {
 		return (
-			<div className="habit-settings-overlay">
+			<div
+				className="habit-settings-overlay"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="habit-settings-error-title"
+			>
 				<div className="habit-settings-modal">
 					<div className="modal-header">
-						<h2>Manage Habits</h2>
-						<button className="close-btn" onClick={onClose}>
+						<h2 id="habit-settings-error-title">Manage Habits</h2>
+						<button
+							type="button"
+							className="close-btn"
+							onClick={onClose}
+							aria-label="Close dialog"
+						>
 							✕
 						</button>
 					</div>
 					<div className="modal-body">
 						<div className="error-state">
 							<p>{loadError}</p>
-							<button className="btn-retry" onClick={loadHabits}>
+							<button type="button" className="btn-retry" onClick={loadHabits}>
 								Retry
 							</button>
 						</div>
@@ -526,6 +546,7 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 					</div>
 
 					<button
+						type="button"
 						className={`visibility-btn ${getHabitValue(habit, "hidden") ? "hidden" : ""}`}
 						onClick={() =>
 							handleFieldChange(
@@ -539,14 +560,25 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 								? "Show in tracker"
 								: "Hide from tracker"
 						}
+						aria-label={
+							getHabitValue(habit, "hidden")
+								? "Show in tracker"
+								: "Hide from tracker"
+						}
 					>
 						{getHabitValue(habit, "hidden") ? "👁️‍🗨️" : "👁️"}
 					</button>
 
 					<button
+						type="button"
 						className={`delete-btn ${deletingHabits.has(habit.id) ? "active" : ""}`}
 						onClick={() => handleDeleteToggle(habit.id)}
 						title={
+							deletingHabits.has(habit.id)
+								? "Click to cancel deletion"
+								: "Mark for deletion"
+						}
+						aria-label={
 							deletingHabits.has(habit.id)
 								? "Click to cancel deletion"
 								: "Mark for deletion"
@@ -602,7 +634,12 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 	};
 
 	return (
-		<div className="habit-settings-overlay">
+		<div
+			className="habit-settings-overlay"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="habit-settings-title"
+		>
 			{/* Import Confirm Dialog */}
 			{showImportConfirm && pendingImportData && (
 				<div className="import-confirm-overlay">
@@ -639,8 +676,13 @@ export const HabitSettings: React.FC<HabitSettingsProps> = ({
 
 			<div className="habit-settings-modal">
 				<div className="modal-header">
-					<h2>Manage Habits</h2>
-					<button className="close-btn" onClick={onClose}>
+					<h2 id="habit-settings-title">Manage Habits</h2>
+					<button
+						type="button"
+						className="close-btn"
+						onClick={onClose}
+						aria-label="Close dialog"
+					>
 						✕
 					</button>
 				</div>

@@ -120,13 +120,32 @@ describe("extractCategories", () => {
 		]);
 	});
 
-	it("handles habits with empty category", () => {
+	it("filters out habits with empty category", () => {
 		const habits = [
 			{ category: "" },
 			{ category: "Mobility" },
 			{ category: "" },
 		];
-		expect(extractCategories(habits)).toEqual(["", "Mobility"]);
+		expect(extractCategories(habits)).toEqual(["Mobility"]);
+	});
+
+	it("filters out habits with undefined or null category", () => {
+		const habits = [
+			{ category: undefined },
+			{ category: "Mobility" },
+			{ category: null },
+			{ category: "Health" },
+		];
+		expect(extractCategories(habits as Array<{ category?: string | null }>)).toEqual(["Mobility", "Health"]);
+	});
+
+	it("filters out habits with whitespace-only category", () => {
+		const habits = [
+			{ category: "   " },
+			{ category: "Mobility" },
+			{ category: "\t" },
+		];
+		expect(extractCategories(habits)).toEqual(["Mobility"]);
 	});
 
 	it("treats different case as different categories", () => {

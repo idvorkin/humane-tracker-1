@@ -222,11 +222,22 @@ export function SyncStatusDialog({ onClose }: SyncStatusDialogProps) {
 	const showError = phase === "error" || syncState?.status === "error";
 
 	return (
-		<div className="sync-status-overlay" onClick={handleOverlayClick}>
+		<div
+			className="sync-status-overlay"
+			onClick={handleOverlayClick}
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="sync-status-title"
+		>
 			<div className="sync-status-dialog">
 				<div className="sync-status-header">
-					<h2>Sync Status</h2>
-					<button className="sync-status-close" onClick={onClose}>
+					<h2 id="sync-status-title">Sync Status</h2>
+					<button
+						type="button"
+						className="sync-status-close"
+						onClick={onClose}
+						aria-label="Close dialog"
+					>
 						✕
 					</button>
 				</div>

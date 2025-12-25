@@ -174,8 +174,10 @@ export const habitRepository = {
 
 	async deleteByUserId(userId: string): Promise<number> {
 		try {
-			const count = await db.habits.where("userId").equals(userId).count();
-			await db.habits.where("userId").equals(userId).delete();
+			// Use transaction to ensure atomic delete and accurate count
+			const count = await db.transaction("rw", db.habits, async () => {
+				return await db.habits.where("userId").equals(userId).delete();
+			});
 			console.log(
 				`[HabitRepository] Deleted ${count} habits for user ${userId}`,
 			);
@@ -287,7 +289,10 @@ export const habitRepository = {
 				validatedUpdates.parentIds = updates.parentIds;
 			}
 
-			await db.habits.update(habitId, validatedUpdates);
+			const updatedCount = await db.habits.update(habitId, validatedUpdates);
+			if (updatedCount === 0) {
+				throw new Error(`Habit not found: ${habitId}`);
+			}
 		} catch (error) {
 			console.error(`[HabitRepository] Failed to update habit ${habitId}:`, {
 				updates,
@@ -301,6 +306,10 @@ export const habitRepository = {
 
 	async delete(habitId: string): Promise<void> {
 		try {
+			const existing = await db.habits.get(habitId);
+			if (!existing) {
+				throw new Error(`Habit not found: ${habitId}`);
+			}
 			await db.habits.delete(habitId);
 		} catch (error) {
 			console.error(

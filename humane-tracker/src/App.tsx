@@ -45,7 +45,9 @@ function App() {
 
 	// Handle sign-in with prompt for local data
 	const handleSignInWithPrompt = useCallback(() => {
-		handleSignIn(promptForSignInChoice);
+		handleSignIn(promptForSignInChoice).catch((error) => {
+			console.error("Sign-in failed:", error);
+		});
 	}, [promptForSignInChoice]);
 
 	// Handle user's choice in sign-in dialog

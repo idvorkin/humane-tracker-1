@@ -76,10 +76,32 @@ export function buildHabitTree(
 		return true;
 	});
 
-	// Build tree recursively
-	function buildNode(habit: HabitWithStatus, depth: number): HabitTreeNode {
+	// Build tree recursively with cycle detection
+	function buildNode(
+		habit: HabitWithStatus,
+		depth: number,
+		visited: Set<string> = new Set(),
+	): HabitTreeNode {
 		const isTag = habit.habitType === "tag";
 		const isExpanded = expandedTags.has(habit.id);
+
+		// Cycle detection: if we've already visited this habit, stop recursion
+		if (visited.has(habit.id)) {
+			console.warn(
+				`[buildHabitTree] Cycle detected at habit ${habit.id} (${habit.name}). Breaking cycle.`,
+			);
+			return {
+				habit,
+				depth,
+				isTag,
+				isExpanded,
+				childNodes: [],
+			};
+		}
+
+		// Mark as visited for this path
+		const pathVisited = new Set(visited);
+		pathVisited.add(habit.id);
 
 		// Get children if this is a tag
 		const childNodes: HabitTreeNode[] = [];
@@ -87,7 +109,7 @@ export function buildHabitTree(
 			for (const childId of habit.childIds) {
 				const child = habitMap.get(childId);
 				if (child) {
-					childNodes.push(buildNode(child, depth + 1));
+					childNodes.push(buildNode(child, depth + 1, pathVisited));
 				}
 			}
 		}

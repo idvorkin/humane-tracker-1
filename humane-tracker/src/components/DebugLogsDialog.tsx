@@ -134,11 +134,22 @@ export function DebugLogsDialog({ onClose }: DebugLogsDialogProps) {
 	};
 
 	return (
-		<div className="debug-logs-overlay" onClick={handleOverlayClick}>
+		<div
+			className="debug-logs-overlay"
+			onClick={handleOverlayClick}
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="debug-logs-title"
+		>
 			<div className="debug-logs-dialog">
 				<div className="debug-logs-header">
-					<h2>Debug Logs</h2>
-					<button className="debug-logs-close" onClick={onClose}>
+					<h2 id="debug-logs-title">Debug Logs</h2>
+					<button
+						type="button"
+						className="debug-logs-close"
+						onClick={onClose}
+						aria-label="Close dialog"
+					>
 						✕
 					</button>
 				</div>

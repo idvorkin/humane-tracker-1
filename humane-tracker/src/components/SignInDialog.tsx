@@ -15,9 +15,14 @@ export const SignInDialog: React.FC<SignInDialogProps> = ({
 	const moreHabits = habitCount > 5 ? habitCount - 5 : 0;
 
 	return (
-		<div className="signin-dialog-overlay">
+		<div
+			className="signin-dialog-overlay"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="signin-dialog-title"
+		>
 			<div className="signin-dialog">
-				<h2>You have local data</h2>
+				<h2 id="signin-dialog-title">You have local data</h2>
 				<p>
 					You've created habits while not signed in. What would you like to do
 					with this data when you sign in?

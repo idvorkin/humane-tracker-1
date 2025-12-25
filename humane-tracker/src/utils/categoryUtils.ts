@@ -58,15 +58,20 @@ export function migrateCategoryValue(oldValue: string): string {
 
 /**
  * Extract unique categories from habits array, preserving first-appearance order.
+ * Filters out undefined, null, or empty categories.
  */
 export function extractCategories(
-	habits: Array<{ category: string }>,
+	habits: Array<{ category?: string | null }>,
 ): string[] {
 	const seen = new Set<string>();
 	const categories: string[] = [];
 
 	for (const habit of habits) {
 		const category = habit.category;
+		// Skip undefined, null, or empty categories
+		if (!category || typeof category !== "string" || !category.trim()) {
+			continue;
+		}
 		if (!seen.has(category)) {
 			seen.add(category);
 			categories.push(category);

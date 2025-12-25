@@ -86,6 +86,7 @@ export const TagChildPicker: React.FC<TagChildPickerProps> = ({
 						className="tag-child-picker-close"
 						onClick={onClose}
 						type="button"
+						aria-label="Close"
 					>
 						×
 					</button>

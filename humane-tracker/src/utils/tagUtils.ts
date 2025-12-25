@@ -61,8 +61,26 @@ export function repairTagRelationships(habits: Habit[]): RepairResult {
 	// Repair each habit
 	const repairedHabits = habits.map((h) => {
 		let needsUpdate = false;
-		const newParentIds = h.parentIds ? [...h.parentIds] : [];
-		const newChildIds = h.childIds ? [...h.childIds] : [];
+		let newParentIds = h.parentIds ? [...h.parentIds] : [];
+		let newChildIds = h.childIds ? [...h.childIds] : [];
+
+		// Remove orphaned parentIds (references to non-existent habits)
+		const originalParentCount = newParentIds.length;
+		newParentIds = newParentIds.filter((pid) => habitMap.has(pid));
+		if (newParentIds.length < originalParentCount) {
+			needsUpdate = true;
+			parentIdsFixed += originalParentCount - newParentIds.length;
+		}
+
+		// Remove orphaned childIds (references to non-existent habits)
+		if (h.habitType === "tag") {
+			const originalChildCount = newChildIds.length;
+			newChildIds = newChildIds.filter((cid) => habitMap.has(cid));
+			if (newChildIds.length < originalChildCount) {
+				needsUpdate = true;
+				childIdsFixed += originalChildCount - newChildIds.length;
+			}
+		}
 
 		// Fix parentIds: merge in any parents derived from childIds
 		const shouldHaveParents = derivedParentIds.get(h.id);
@@ -284,16 +302,21 @@ export function getTagWeeklyCount(
 ): number {
 	let entries = getTagEntries(tag, allHabits, allEntries);
 
-	// Filter by date range if provided
-	if (startDate || endDate) {
+	// Convert date range to date strings for consistent comparison
+	// This ensures we compare dates only (YYYY-MM-DD) without time components
+	const startDateStr = startDate ? toDateString(startDate) : null;
+	const endDateStr = endDate ? toDateString(endDate) : null;
+
+	// Filter by date range if provided using date-string comparison
+	if (startDateStr || endDateStr) {
 		entries = entries.filter((e) => {
 			// Handle both Date objects and ISO strings from IndexedDB
 			const entryDate = normalizeDate(e.date as Date | string);
-			const entryTime = entryDate.getTime();
-			if (startDate && entryTime < startDate.getTime()) {
+			const entryDateStr = toDateString(entryDate);
+			if (startDateStr && entryDateStr < startDateStr) {
 				return false;
 			}
-			if (endDate && entryTime > endDate.getTime()) {
+			if (endDateStr && entryDateStr > endDateStr) {
 				return false;
 			}
 			return true;

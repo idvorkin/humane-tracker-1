@@ -51,11 +51,22 @@ export function SettingsDialog({
 	};
 
 	return (
-		<div className="settings-dialog-overlay" onClick={handleOverlayClick}>
+		<div
+			className="settings-dialog-overlay"
+			onClick={handleOverlayClick}
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="settings-dialog-title"
+		>
 			<div className="settings-dialog">
 				<div className="settings-dialog-header">
-					<h2>Settings</h2>
-					<button className="settings-dialog-close" onClick={onClose}>
+					<h2 id="settings-dialog-title">Settings</h2>
+					<button
+						type="button"
+						className="settings-dialog-close"
+						onClick={onClose}
+						aria-label="Close dialog"
+					>
 						<CloseIcon />
 					</button>
 				</div>
