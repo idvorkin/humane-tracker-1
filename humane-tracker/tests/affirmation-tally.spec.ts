@@ -38,7 +38,8 @@ test.describe("Affirmation Card Tally Marks", () => {
 			await page.locator(".affirmation-action", { hasText: "Did" }).click();
 			await page.locator(".affirmation-note-input textarea").fill(`Test entry ${i}`);
 			await page.locator(".affirmation-save").click();
-			await page.waitForTimeout(500);
+			// Wait for form to close (indicates save completed)
+			await expect(page.locator(".affirmation-note-input")).not.toBeVisible();
 		}
 
 		// Log 2 "Opportunity" entries
@@ -46,7 +47,8 @@ test.describe("Affirmation Card Tally Marks", () => {
 			await page.locator(".affirmation-action", { hasText: "Opp" }).click();
 			await page.locator(".affirmation-note-input textarea").fill(`Opportunity ${i}`);
 			await page.locator(".affirmation-save").click();
-			await page.waitForTimeout(500);
+			// Wait for form to close (indicates save completed)
+			await expect(page.locator(".affirmation-note-input")).not.toBeVisible();
 		}
 
 		// Screenshot after multiple saves (include project name in filename)

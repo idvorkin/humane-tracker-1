@@ -174,4 +174,45 @@ describe("GratefulCard", () => {
 		fireEvent.click(screen.getByText("🙏 Thanks"));
 		expect(screen.getByPlaceholderText("I'm grateful for...")).toHaveValue("");
 	});
+
+	it("saves text note when Save is clicked with text", async () => {
+		const { affirmationLogRepository } = await import(
+			"../repositories/affirmationLogRepository"
+		);
+
+		render(<GratefulCard userId="test-user" />);
+
+		fireEvent.click(screen.getByText("🙏 Thanks"));
+		fireEvent.change(screen.getByPlaceholderText("I'm grateful for..."), {
+			target: { value: "My health and family" },
+		});
+		fireEvent.click(screen.getByText("Save"));
+
+		await waitFor(() => {
+			expect(affirmationLogRepository.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId: "test-user",
+					affirmationTitle: "Grateful",
+					logType: "grateful",
+					note: "My health and family",
+				}),
+			);
+		});
+	});
+
+	it("closes input form after successful text save", async () => {
+		render(<GratefulCard userId="test-user" />);
+
+		fireEvent.click(screen.getByText("🙏 Thanks"));
+		fireEvent.change(screen.getByPlaceholderText("I'm grateful for..."), {
+			target: { value: "Something I'm grateful for" },
+		});
+		fireEvent.click(screen.getByText("Save"));
+
+		await waitFor(() => {
+			expect(
+				screen.queryByPlaceholderText("I'm grateful for..."),
+			).not.toBeInTheDocument();
+		});
+	});
 });

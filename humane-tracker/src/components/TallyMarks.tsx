@@ -4,12 +4,12 @@ interface TallyMarksProps {
 }
 
 // Scribbly variations for hand-drawn look
-const MARK_ROTATIONS = [-8, 3, -5, 7, -3];
-const MARK_HEIGHTS = [14, 13, 15, 13, 14];
+const MARK_ROTATIONS = [-8, 3, -5, 7, -3]; // degrees of rotation per mark
+const MARK_HEIGHTS = [14, 13, 15, 13, 14]; // pixel heights per mark
 
 /**
  * Small tally marks showing count - prison-wall style with hand-drawn look.
- * Shows vertical lines with a diagonal strike-through for every 5th mark.
+ * Shows up to 4 vertical lines per group, with a diagonal strike as the 5th mark.
  */
 export function TallyMarks({ count, maxVisible = 10 }: TallyMarksProps) {
 	// Show empty placeholder when count is 0

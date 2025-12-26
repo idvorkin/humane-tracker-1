@@ -187,5 +187,11 @@ describe("affirmationLogRepository", () => {
 				validateAffirmationLog({ ...validLog, logType: "didit" }),
 			).not.toThrow();
 		});
+
+		it("accepts grateful logType", () => {
+			expect(() =>
+				validateAffirmationLog({ ...validLog, logType: "grateful" }),
+			).not.toThrow();
+		});
 	});
 });
