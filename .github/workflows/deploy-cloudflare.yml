@@ -1,62 +1,38 @@
 name: Deploy to Cloudflare Pages
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Build and Test"]
+    types: [completed]
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+
+permissions:
+  contents: read
+  deployments: write
+  actions: read
 
 jobs:
-  build-and-deploy:
+  deploy:
+    # Only deploy successful builds of main branch
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
-    name: Build and Deploy to Cloudflare Pages
-    permissions:
-      contents: read
-      deployments: write
-      pull-requests: write
+    name: Deploy to Cloudflare Pages
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install just
-        uses: extractions/setup-just@v2
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
         with:
-          node-version: 20
-          cache: "npm"
-          cache-dependency-path: "humane-tracker/package-lock.json"
-
-      - name: Install dependencies
-        working-directory: ./humane-tracker
-        run: npm ci
-
-      - name: Build and test
-        working-directory: ./humane-tracker
-        run: just test
+          name: dist-main
+          path: dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Deploy to Cloudflare Pages
-        id: deploy
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: ./humane-tracker
-          command: pages deploy dist --project-name humane-tracker --branch ${{ github.head_ref || github.ref_name }}
-
-      - name: Comment deployment URL on PR
-        if: github.event_name == 'pull_request'
-        uses: thollander/actions-comment-pull-request@v3
-        with:
-          message: |
-            🚀 **Cloudflare Pages Preview**
-
-            | Environment | URL |
-            |-------------|-----|
-            | Preview | ${{ steps.deploy.outputs.deployment-url }} |
-            | Branch Alias | ${{ steps.deploy.outputs.pages-deployment-alias-url }} |
-          comment-tag: cloudflare-deploy
+          command: pages deploy dist --project-name humane-tracker --branch main

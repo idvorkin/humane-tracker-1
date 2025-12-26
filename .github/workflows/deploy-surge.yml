@@ -1,78 +1,80 @@
 name: Deploy to Surge
 
 on:
-  push:
-    branches:
-      - main # Deploy on push to main branch
+  workflow_run:
+    workflows: ["Build and Test"]
+    types: [completed]
   pull_request_target:
-    types: [opened, synchronize, reopened, closed]
+    types: [closed]
     branches:
-      - main # Preview on PRs from approved users
+      - main
 
 permissions:
   contents: read
   pull-requests: write
+  actions: read
 
 jobs:
-  build-and-deploy:
-    # Only run for:
-    # - Push to main (always)
-    # - PR from approved users (not on close)
-    #   Approved: idvorkin (collaborator) or idvorkin-ai-tools (bot account)
+  deploy:
+    # Only deploy for:
+    # - Push to main (trusted)
+    # - PRs from approved users: idvorkin, idvorkin-ai-tools
     if: |
-      github.event_name == 'push' ||
-      (github.event.action != 'closed' &&
-       (github.actor == 'idvorkin' || github.actor == 'idvorkin-ai-tools'))
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      (github.event.workflow_run.event == 'push' ||
+       github.event.workflow_run.actor.login == 'idvorkin' ||
+       github.event.workflow_run.actor.login == 'idvorkin-ai-tools')
     runs-on: ubuntu-latest
-    name: Build and Deploy to Surge
-    # Use environment to limit secret access to only SURGE_TOKEN and SURGE_DOMAIN
+    name: Deploy to Surge
     environment: surge-deploy
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          # For PRs, checkout the PR head commit
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20
-          cache: "npm"
-          cache-dependency-path: "humane-tracker/package-lock.json"
-
-      - name: Install just
-        uses: extractions/setup-just@v2
-
-      - name: Install dependencies
-        working-directory: ./humane-tracker
-        run: npm ci
-
-      - name: Run unit tests and build
-        working-directory: ./humane-tracker
-        run: just test
-
-      - name: Set deployment domain
-        id: domain
-        run: |
-          if [ "${{ github.event_name }}" == "pull_request_target" ]; then
-            echo "domain=pr-${{ github.event.pull_request.number }}-humane-tracker.surge.sh" >> $GITHUB_OUTPUT
-          else
-            echo "domain=${{ secrets.SURGE_DOMAIN }}" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Deploy to Surge
-        working-directory: ./humane-tracker
-        run: npx surge dist "${{ steps.domain.outputs.domain }}" --token "${{ secrets.SURGE_TOKEN }}"
-
-      - name: Comment PR with preview URL
-        if: github.event_name == 'pull_request_target'
+      - name: Get deployment info
+        id: info
         uses: actions/github-script@v7
         with:
           script: |
-            const domain = 'pr-${{ github.event.pull_request.number }}-humane-tracker.surge.sh';
-            const body = `## 🚀 Preview Deployment
+            const isMain = context.payload.workflow_run.event === 'push';
+            const pr = context.payload.workflow_run.pull_requests[0];
+
+            if (isMain) {
+              core.setOutput('artifact_name', 'dist-main');
+              core.setOutput('domain', '${{ secrets.SURGE_DOMAIN }}');
+              core.setOutput('is_pr', 'false');
+            } else if (pr) {
+              core.setOutput('artifact_name', `dist-pr-${pr.number}`);
+              core.setOutput('domain', `pr-${pr.number}-humane-tracker.surge.sh`);
+              core.setOutput('pr_number', pr.number);
+              core.setOutput('is_pr', 'true');
+            } else {
+              core.setFailed('Could not determine deployment target');
+            }
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.info.outputs.artifact_name }}
+          path: dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Deploy to Surge
+        run: npx surge ./dist "${{ steps.info.outputs.domain }}" --token "${{ secrets.SURGE_TOKEN }}"
+
+      - name: Comment PR with preview URL
+        if: steps.info.outputs.is_pr == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ steps.info.outputs.pr_number }};
+            const domain = '${{ steps.info.outputs.domain }}';
+            const body = `## 🚀 Surge Preview
 
             Your preview is ready!
 
@@ -80,14 +82,13 @@ jobs:
 
             This preview will be automatically deleted when the PR is closed.`;
 
-            // Check if we already have a comment
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.issue.number,
+              issue_number: prNumber,
             });
 
-            const botComment = comments.find(c => c.body.includes('Preview Deployment'));
+            const botComment = comments.find(c => c.body.includes('Surge Preview'));
 
             if (botComment) {
               await github.rest.issues.updateComment({
@@ -100,24 +101,22 @@ jobs:
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: context.issue.number,
+                issue_number: prNumber,
                 body: body
               });
             }
 
   teardown:
-    # Only run on PR close from approved users
     if: |
       github.event_name == 'pull_request_target' &&
-      github.event.action == 'closed' &&
-      (github.actor == 'idvorkin' || github.actor == 'idvorkin-ai-tools')
+      github.event.action == 'closed'
     runs-on: ubuntu-latest
     name: Teardown PR Preview
     environment: surge-deploy
 
     steps:
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
