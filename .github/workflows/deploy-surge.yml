@@ -16,9 +16,15 @@ permissions:
 
 jobs:
   deploy:
+    # Only deploy for:
+    # - Push to main (trusted)
+    # - PRs from approved users: idvorkin, idvorkin-ai-tools
     if: |
       github.event_name == 'workflow_run' &&
-      github.event.workflow_run.conclusion == 'success'
+      github.event.workflow_run.conclusion == 'success' &&
+      (github.event.workflow_run.event == 'push' ||
+       github.event.workflow_run.actor.login == 'idvorkin' ||
+       github.event.workflow_run.actor.login == 'idvorkin-ai-tools')
     runs-on: ubuntu-latest
     name: Deploy to Surge
     environment: surge-deploy
