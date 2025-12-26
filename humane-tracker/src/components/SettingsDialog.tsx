@@ -1,18 +1,9 @@
 import type React from "react";
-import { useEffect, useState } from "react";
-import { useVersionCheck } from "../hooks/useVersionCheck";
-import { audioRecordingRepository } from "../repositories/audioRecordingRepository";
 import { getModifierKey } from "../services/githubService";
 import { AboutSection } from "./AboutSection";
 import { CrashTestButton } from "./CrashTestButton";
-import {
-	BugIcon,
-	CloseIcon,
-	StorageIcon,
-	UpdateIcon,
-	WarningIcon,
-} from "./icons/MenuIcons";
-import { SyncSection } from "./SyncSection";
+import { SyncDebugSection } from "./SyncDebugSection";
+import { BugIcon, CloseIcon, WarningIcon } from "./icons/MenuIcons";
 import "./SettingsDialog.css";
 
 interface SettingsDialogProps {
@@ -27,28 +18,6 @@ interface SettingsDialogProps {
 	onRequestShakePermission?: () => Promise<boolean>;
 }
 
-function formatBytes(bytes: number): string {
-	if (bytes === 0) return "0 B";
-	const k = 1024;
-	const sizes = ["B", "KB", "MB", "GB"];
-	const i = Math.floor(Math.log(bytes) / Math.log(k));
-	return `${parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`;
-}
-
-function formatTimeAgo(date: Date | null): string {
-	if (!date) return "Never";
-	const now = new Date();
-	const diffMs = now.getTime() - date.getTime();
-	const diffSecs = Math.floor(diffMs / 1000);
-	if (diffSecs < 10) return "Just now";
-	if (diffSecs < 60) return `${diffSecs}s ago`;
-	const diffMins = Math.floor(diffSecs / 60);
-	if (diffMins < 60) return `${diffMins}m ago`;
-	const diffHours = Math.floor(diffMins / 60);
-	if (diffHours < 24) return `${diffHours}h ago`;
-	return date.toLocaleDateString();
-}
-
 export function SettingsDialog({
 	isLocalMode,
 	userId,
@@ -60,16 +29,6 @@ export function SettingsDialog({
 	shakeHasPermission = false,
 	onRequestShakePermission,
 }: SettingsDialogProps) {
-	const { checkForUpdate, isChecking, lastCheckTime } = useVersionCheck();
-	const [audioStorageSize, setAudioStorageSize] = useState<number | null>(null);
-
-	useEffect(() => {
-		audioRecordingRepository
-			.getTotalSizeForUser(userId)
-			.then(setAudioStorageSize)
-			.catch(() => setAudioStorageSize(null));
-	}, [userId]);
-
 	const handleOverlayClick = (e: React.MouseEvent) => {
 		if (e.target === e.currentTarget) {
 			onClose();
@@ -87,63 +46,8 @@ export function SettingsDialog({
 				</div>
 
 				<div className="settings-dialog-body">
-					{/* About Section */}
-					<AboutSection />
-
-					{/* Updates Section */}
-					<div className="settings-section">
-						<div className="settings-section-header">
-							<div className="settings-section-icon">
-								<UpdateIcon />
-							</div>
-							<span className="settings-section-title">App Updates</span>
-						</div>
-						<div className="settings-section-content">
-							<div className="settings-info-row">
-								<span className="settings-info-label">Last checked</span>
-								<span className="settings-info-value">
-									{formatTimeAgo(lastCheckTime)}
-								</span>
-							</div>
-							<button
-								className="settings-action-button"
-								onClick={checkForUpdate}
-								disabled={isChecking}
-							>
-								{isChecking ? (
-									<>
-										<span className="settings-button-spinner" />
-										Checking...
-									</>
-								) : (
-									"Check for Update"
-								)}
-							</button>
-						</div>
-					</div>
-
-					{/* Sync Section with expandable details and logs */}
-					<SyncSection isLocalMode={isLocalMode} />
-
-					{/* Storage Section */}
-					<div className="settings-section">
-						<div className="settings-section-header">
-							<div className="settings-section-icon">
-								<StorageIcon />
-							</div>
-							<span className="settings-section-title">Storage</span>
-						</div>
-						<div className="settings-section-content">
-							<div className="settings-info-row">
-								<span className="settings-info-label">Audio recordings</span>
-								<span className="settings-info-value">
-									{audioStorageSize !== null
-										? formatBytes(audioStorageSize)
-										: "—"}
-								</span>
-							</div>
-						</div>
-					</div>
+					{/* About Section - now includes app updates, sync status, storage */}
+					<AboutSection isLocalMode={isLocalMode} userId={userId} />
 
 					{/* Help & Feedback Section */}
 					<div className="settings-section">
@@ -201,27 +105,26 @@ export function SettingsDialog({
 							)}
 							<div className="settings-info-row">
 								<span className="settings-info-label">Keyboard shortcut</span>
-								<span className="settings-info-value">
-									{getModifierKey()}+I
-								</span>
+								<span className="settings-info-value">{getModifierKey()}+I</span>
 							</div>
 						</div>
 					</div>
 
-					{/* Developer Tools Section (dev mode only) */}
-					{import.meta.env.DEV && (
-						<div className="settings-section">
-							<div className="settings-section-header">
-								<div className="settings-section-icon settings-section-icon-warning">
-									<WarningIcon />
-								</div>
-								<span className="settings-section-title">Developer Tools</span>
+					{/* Developer Tools Section - now always visible */}
+					<div className="settings-section">
+						<div className="settings-section-header">
+							<div className="settings-section-icon settings-section-icon-warning">
+								<WarningIcon />
 							</div>
-							<div className="settings-section-content">
-								<CrashTestButton className="settings-action-button settings-action-danger" />
-							</div>
+							<span className="settings-section-title">Developer Tools</span>
 						</div>
-					)}
+						<div className="settings-section-content">
+							{import.meta.env.DEV && (
+								<CrashTestButton className="settings-action-button settings-action-danger" />
+							)}
+							<SyncDebugSection isLocalMode={isLocalMode} />
+						</div>
+					</div>
 				</div>
 
 				<div className="settings-dialog-footer">

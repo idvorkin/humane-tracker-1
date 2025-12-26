@@ -212,18 +212,78 @@
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	padding: 0 2px;
+	padding: 4px 2px;
+	gap: 8px;
 }
 
 .settings-info-label {
 	font-size: 0.85rem;
 	color: var(--color-warm-gray);
+	flex-shrink: 0;
+}
+
+.settings-info-label-with-icon {
+	display: flex;
+	align-items: center;
+	gap: 6px;
 }
 
 .settings-info-value {
 	font-size: 0.85rem;
 	font-weight: 500;
 	color: var(--color-cream);
+	flex: 1;
+	text-align: right;
+	min-width: 0;
+}
+
+.about-build-info {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 0.8rem;
+}
+
+.about-url-value {
+	font-size: 0.75rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Inline Row Action Buttons */
+.settings-row-action {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 6px;
+	color: var(--color-warm-gray);
+	cursor: pointer;
+	transition: all 0.15s ease;
+	flex-shrink: 0;
+	text-decoration: none;
+}
+
+.settings-row-action:hover {
+	background: rgba(255, 255, 255, 0.1);
+	border-color: rgba(217, 119, 6, 0.3);
+	color: var(--color-amber);
+}
+
+.settings-row-action:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.settings-row-action.spinning {
+	animation: settingsSpin 0.8s linear infinite;
+}
+
+/* Sync Debug Section wrapper */
+.sync-debug-section {
+	margin-top: 8px;
 }
 
 /* Status Badge */

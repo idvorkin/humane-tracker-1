@@ -15,27 +15,63 @@ vi.mock("../services/githubService", () => ({
 	}),
 }));
 
+// Mock the version check hook
+vi.mock("../hooks/useVersionCheck", () => ({
+	useVersionCheck: () => ({
+		checkForUpdate: vi.fn(),
+		isChecking: false,
+		lastCheckTime: new Date("2024-12-26T12:00:00Z"),
+	}),
+}));
+
+// Mock the audio recording repository
+vi.mock("../repositories/audioRecordingRepository", () => ({
+	audioRecordingRepository: {
+		getTotalSizeForUser: vi.fn().mockResolvedValue(1024 * 1024), // 1MB
+	},
+}));
+
+// Mock dexie-react-hooks
+vi.mock("dexie-react-hooks", () => ({
+	useObservable: () => null,
+}));
+
+// Mock db
+vi.mock("../config/db", () => ({
+	db: {
+		cloud: {
+			syncState: { subscribe: vi.fn() },
+			webSocketStatus: { subscribe: vi.fn() },
+			sync: vi.fn(),
+		},
+	},
+}));
+
+const defaultProps = {
+	isLocalMode: false,
+	userId: "test-user-123",
+};
+
 describe("AboutSection", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
 
 	it("renders build info", () => {
-		render(<AboutSection />);
+		render(<AboutSection {...defaultProps} />);
 
-		expect(screen.getByText("abc1234")).toBeInTheDocument();
-		expect(screen.getByText("main")).toBeInTheDocument();
+		expect(screen.getByText(/abc1234/)).toBeInTheDocument();
+		expect(screen.getByText(/main/)).toBeInTheDocument();
 	});
 
 	it("renders current URL", () => {
-		render(<AboutSection />);
+		render(<AboutSection {...defaultProps} />);
 
 		// window.location.origin in test environment
-		const urlButton = screen.getByRole("button", { name: /http/i });
-		expect(urlButton).toBeInTheDocument();
+		expect(screen.getByText(/http/i)).toBeInTheDocument();
 	});
 
-	it("copies URL to clipboard when share is not available", async () => {
+	it("copies URL to clipboard when copy button is clicked", async () => {
 		// Mock clipboard API
 		const writeText = vi.fn().mockResolvedValue(undefined);
 		Object.assign(navigator, {
@@ -46,10 +82,10 @@ describe("AboutSection", () => {
 		// Mock alert
 		const alertMock = vi.spyOn(window, "alert").mockImplementation(() => {});
 
-		render(<AboutSection />);
+		render(<AboutSection {...defaultProps} />);
 
-		const urlButton = screen.getByRole("button", { name: /http/i });
-		fireEvent.click(urlButton);
+		const copyButton = screen.getByTitle("Copy URL");
+		fireEvent.click(copyButton);
 
 		await waitFor(() => {
 			expect(writeText).toHaveBeenCalledWith(window.location.origin);
@@ -67,10 +103,10 @@ describe("AboutSection", () => {
 			share: shareMock,
 		});
 
-		render(<AboutSection />);
+		render(<AboutSection {...defaultProps} />);
 
-		const urlButton = screen.getByRole("button", { name: /http/i });
-		fireEvent.click(urlButton);
+		const copyButton = screen.getByTitle("Copy URL");
+		fireEvent.click(copyButton);
 
 		await waitFor(() => {
 			expect(shareMock).toHaveBeenCalledWith({
@@ -81,12 +117,26 @@ describe("AboutSection", () => {
 	});
 
 	it("renders GitHub link", () => {
-		render(<AboutSection />);
+		render(<AboutSection {...defaultProps} />);
 
-		const githubLink = screen.getByRole("link", { name: /github/i });
+		const githubLink = screen.getByTitle("View on GitHub");
 		expect(githubLink).toHaveAttribute(
 			"href",
-			"https://github.com/test/repo",
+			"https://github.com/test/repo/commit/abc1234",
 		);
+	});
+
+	it("shows sync status in local mode", () => {
+		render(<AboutSection {...defaultProps} isLocalMode={true} />);
+
+		expect(screen.getByText("Local Only")).toBeInTheDocument();
+	});
+
+	it("shows storage size", async () => {
+		render(<AboutSection {...defaultProps} />);
+
+		await waitFor(() => {
+			expect(screen.getByText("1 MB")).toBeInTheDocument();
+		});
 	});
 });
