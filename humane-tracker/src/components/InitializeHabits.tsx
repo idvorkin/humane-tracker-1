@@ -2,8 +2,52 @@ import type React from "react";
 import { useState } from "react";
 import { DEFAULT_HABITS } from "../data/defaultHabits";
 import { useHabitService } from "../hooks/useHabitService";
+import { entryRepository } from "../repositories/entryRepository";
 import { buildCategoryInfo, extractCategories } from "../utils/categoryUtils";
 import "./InitializeHabits.css";
+
+/**
+ * Generate random completions for habits with a realistic pattern:
+ * - Skip ~25% of habits entirely
+ * - Recent days have higher completion probability
+ * - Covers past 14 days
+ */
+async function generateRandomCompletions(
+	habitIds: string[],
+	userId: string,
+): Promise<void> {
+	const today = new Date();
+	const DAYS_TO_FILL = 14;
+
+	for (const habitId of habitIds) {
+		// Skip ~25% of habits entirely
+		if (Math.random() < 0.25) continue;
+
+		for (let daysAgo = 0; daysAgo < DAYS_TO_FILL; daysAgo++) {
+			// Completion probability decreases with age
+			let probability: number;
+			if (daysAgo <= 2) {
+				probability = 0.6; // Recent: 60%
+			} else if (daysAgo <= 6) {
+				probability = 0.45; // Mid: 45%
+			} else {
+				probability = 0.25; // Older: 25%
+			}
+
+			if (Math.random() < probability) {
+				const date = new Date(today);
+				date.setDate(date.getDate() - daysAgo);
+
+				await entryRepository.add({
+					habitId,
+					userId,
+					date,
+					value: 1,
+				});
+			}
+		}
+	}
+}
 
 interface InitializeHabitsProps {
 	userId: string;
@@ -91,6 +135,10 @@ export const InitializeHabits: React.FC<InitializeHabitsProps> = ({
 
 				setProgress(Math.round(((rawHabits.length + i + 1) / total) * 100));
 			}
+
+			// Generate random completions for raw habits only (tags aggregate from children)
+			const rawHabitIds = Array.from(nameToId.values());
+			await generateRandomCompletions(rawHabitIds, userId);
 
 			onComplete();
 		} catch (error) {
