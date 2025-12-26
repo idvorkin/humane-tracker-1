@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_AFFIRMATIONS } from "../constants/affirmations";
 import { AffirmationCard } from "./AffirmationCard";
@@ -18,9 +18,33 @@ vi.mock("../repositories/audioRecordingRepository", () => ({
 	},
 }));
 
+// Track refs passed to AudioRecorderButton for testing cancel behavior
+let capturedCancelRef: React.MutableRefObject<(() => void) | null> | undefined;
+let capturedOnRecordingStateChange:
+	| ((isRecording: boolean) => void)
+	| undefined;
+
+vi.mock("./AudioRecorderButton", () => ({
+	AudioRecorderButton: ({
+		onRecordingStateChange,
+		cancelRecordingRef,
+	}: {
+		onRecordingComplete: (blob: Blob, durationMs: number) => void;
+		onRecordingStateChange?: (isRecording: boolean) => void;
+		cancelRecordingRef?: React.MutableRefObject<(() => void) | null>;
+	}) => {
+		// Capture these for test verification
+		capturedCancelRef = cancelRecordingRef;
+		capturedOnRecordingStateChange = onRecordingStateChange;
+		return <div data-testid="mock-audio-recorder">Mock Audio Recorder</div>;
+	},
+}));
+
 describe("AffirmationCard", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		capturedCancelRef = undefined;
+		capturedOnRecordingStateChange = undefined;
 	});
 
 	it("renders an affirmation title and subtitle", () => {
@@ -177,5 +201,37 @@ describe("AffirmationCard", () => {
 
 		// Send button should be disabled when text is empty
 		expect(sendBtn).toBeDisabled();
+	});
+
+	it("calls cancelRecording when cancel is clicked during active recording", () => {
+		render(<AffirmationCard userId="test-user" />);
+
+		// Open note input (triggers voice mode component to mount)
+		fireEvent.click(screen.getByText(/Opp/));
+
+		// Switch to voice mode to get AudioRecorderButton rendered
+		const modeSwitch = screen.getByLabelText("Switch to voice");
+		fireEvent.click(modeSwitch);
+
+		// Verify AudioRecorderButton is now rendered
+		expect(screen.getByTestId("mock-audio-recorder")).toBeInTheDocument();
+
+		// Simulate that a recording is in progress by setting up the cancel ref
+		// (In real component, this happens when useAudioRecorder starts recording)
+		const mockCancelFn = vi.fn();
+		if (capturedCancelRef) {
+			capturedCancelRef.current = mockCancelFn;
+		}
+
+		// Notify parent that recording is active (wrapped in act for state update)
+		act(() => {
+			capturedOnRecordingStateChange?.(true);
+		});
+
+		// Click cancel button
+		fireEvent.click(screen.getByLabelText("Cancel"));
+
+		// Verify cancelRecording was called (not just set to null)
+		expect(mockCancelFn).toHaveBeenCalledTimes(1);
 	});
 });
