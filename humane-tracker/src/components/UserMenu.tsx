@@ -5,8 +5,8 @@ import { BugReportDialog } from "./BugReportDialog";
 import {
 	ChevronIcon,
 	DownloadIcon,
+	JournalIcon,
 	ManageHabitsIcon,
-	MicrophoneIcon,
 	SettingsIcon,
 	SignInIcon,
 	SignOutIcon,
@@ -126,10 +126,10 @@ export function UserMenu({
 						</div>
 					)}
 
-					<Link to="/recordings" className="user-menu-link" onClick={closeMenu}>
+					<Link to="/journal" className="user-menu-link" onClick={closeMenu}>
 						<MenuItem
-							icon={<MicrophoneIcon />}
-							label="Recordings"
+							icon={<JournalIcon />}
+							label="Journal"
 							onClick={() => {
 								/* Link handles navigation */
 							}}

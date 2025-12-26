@@ -10,7 +10,7 @@ import { StaleAuthNotification } from "./components/StaleAuthNotification";
 import { UserMenu } from "./components/UserMenu";
 import { VersionNotification } from "./components/VersionNotification";
 import { db } from "./config/db";
-import { RecordingsPage } from "./pages/RecordingsPage";
+import { JournalPage } from "./pages/JournalPage";
 import {
 	handleSignIn,
 	type LocalDataSummary,
@@ -112,10 +112,7 @@ function App() {
 
 		return (
 			<Routes>
-				<Route
-					path="/recordings"
-					element={<RecordingsPage userId={localUserId} />}
-				/>
+				<Route path="/journal" element={<JournalPage userId={localUserId} />} />
 				<Route
 					path="*"
 					element={
@@ -163,10 +160,7 @@ function App() {
 	if (isLoggedOut) {
 		return (
 			<Routes>
-				<Route
-					path="/recordings"
-					element={<RecordingsPage userId="anonymous" />}
-				/>
+				<Route path="/journal" element={<JournalPage userId="anonymous" />} />
 				<Route
 					path="*"
 					element={
@@ -209,7 +203,7 @@ function App() {
 
 	return (
 		<Routes>
-			<Route path="/recordings" element={<RecordingsPage userId={userId} />} />
+			<Route path="/journal" element={<JournalPage userId={userId} />} />
 			<Route
 				path="*"
 				element={

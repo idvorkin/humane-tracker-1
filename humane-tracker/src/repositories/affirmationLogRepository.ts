@@ -189,4 +189,18 @@ export const affirmationLogRepository = {
 			);
 		}
 	},
+
+	async delete(id: string): Promise<void> {
+		try {
+			await db.affirmationLogs.delete(id);
+		} catch (error) {
+			console.error(
+				"[AffirmationLogRepository] Failed to delete affirmation log:",
+				{ id, error },
+			);
+			throw new Error(
+				`Failed to delete affirmation log: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
+	},
 };

@@ -210,3 +210,17 @@ export const StorageIcon: IconComponent = ({ size = 18 }) => (
 		<circle cx="5" cy="13" r="1" fill="currentColor" />
 	</svg>
 );
+
+export const JournalIcon: IconComponent = ({ size = 16 }) => (
+	<svg
+		width={size}
+		height={size}
+		viewBox="0 0 16 16"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.5"
+	>
+		<rect x="2" y="1" width="12" height="14" rx="1" />
+		<path d="M5 1v14M8 5h4M8 8h4M8 11h2" />
+	</svg>
+);
