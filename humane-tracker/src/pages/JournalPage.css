@@ -190,6 +190,14 @@
 	gap: 8px;
 }
 
+/* Voice recordings grouped on one line */
+.journal-voice-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+}
+
 /* Voice entry - just wraps the AudioPlayer */
 .journal-entry-voice {
 	display: inline-flex;

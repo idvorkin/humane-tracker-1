@@ -336,29 +336,51 @@ export function JournalPage({ userId }: JournalPageProps) {
 																				</button>
 																				{!isTitleCollapsed && (
 																					<div className="journal-item-entries">
-																						{titleEntries.map((entry) =>
-																							entry.type === "voice" ? (
-																								<div
-																									key={entry.data.id}
-																									className="journal-entry journal-entry-voice"
-																								>
-																									<AudioPlayer
-																										blob={entry.data.audioBlob}
-																										mimeType={
-																											entry.data.mimeType
-																										}
-																										onDelete={() =>
-																											handleDeleteRecording(
-																												entry.data.id,
-																											)
-																										}
-																										compact
-																										compactLabel={formatDurationMs(
-																											entry.data.durationMs,
-																										)}
-																									/>
-																								</div>
-																							) : (
+																						{/* Voice recordings grouped on one line */}
+																						{titleEntries.some(
+																							(e) => e.type === "voice",
+																						) && (
+																							<div className="journal-voice-row">
+																								{titleEntries
+																									.filter(
+																										(e) => e.type === "voice",
+																									)
+																									.map((entry) => (
+																										<div
+																											key={entry.data.id}
+																											className="journal-entry journal-entry-voice"
+																										>
+																											<AudioPlayer
+																												blob={
+																													(
+																														entry.data as AudioRecording
+																													).audioBlob
+																												}
+																												mimeType={
+																													(
+																														entry.data as AudioRecording
+																													).mimeType
+																												}
+																												onDelete={() =>
+																													handleDeleteRecording(
+																														entry.data.id,
+																													)
+																												}
+																												compact
+																												compactLabel={formatDurationMs(
+																													(
+																														entry.data as AudioRecording
+																													).durationMs,
+																												)}
+																											/>
+																										</div>
+																									))}
+																							</div>
+																						)}
+																						{/* Text notes below */}
+																						{titleEntries
+																							.filter((e) => e.type === "text")
+																							.map((entry) => (
 																								<div
 																									key={entry.data.id}
 																									className="journal-entry journal-entry-text"
@@ -367,7 +389,11 @@ export function JournalPage({ userId }: JournalPageProps) {
 																										📝
 																									</span>
 																									<span className="journal-note-content">
-																										{entry.data.note}
+																										{
+																											(
+																												entry.data as AffirmationLog
+																											).note
+																										}
 																									</span>
 																									<span className="journal-note-time">
 																										{formatTime(
@@ -387,8 +413,7 @@ export function JournalPage({ userId }: JournalPageProps) {
 																										×
 																									</button>
 																								</div>
-																							),
-																						)}
+																							))}
 																					</div>
 																				)}
 																			</li>
