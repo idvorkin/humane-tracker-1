@@ -207,22 +207,6 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 
 	return (
 		<div className="container">
-			{/* TEST BANNER - DELETE AFTER VERIFYING PR PREVIEW WORKS */}
-			<div
-				style={{
-					background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-					color: "white",
-					padding: "20px",
-					margin: "10px 0",
-					borderRadius: "12px",
-					textAlign: "center",
-					fontSize: "18px",
-					fontWeight: "bold",
-					boxShadow: "0 4px 15px rgba(102, 126, 234, 0.4)",
-				}}
-			>
-				🚀 PR PREVIEW TEST v2 - Surge deploy is working!
-			</div>
 			{vm.entryError && (
 				<div className="error-banner" role="alert">
 					{vm.entryError}
