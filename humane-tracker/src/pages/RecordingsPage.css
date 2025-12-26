@@ -109,6 +109,23 @@
 	border-bottom: 1px solid var(--color-amber-glow, #f0e6d3);
 }
 
+.recordings-context-group {
+	margin-bottom: 16px;
+}
+
+.recordings-context-group:last-child {
+	margin-bottom: 0;
+}
+
+.recordings-context-header {
+	font-size: 0.8rem;
+	font-weight: 500;
+	color: var(--color-text-muted, #666);
+	margin: 0 0 8px 4px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
 .recordings-list {
 	list-style: none;
 	margin: 0;
@@ -210,6 +227,10 @@
 	.recordings-date-header {
 		color: var(--color-cream, #faf8f5);
 		border-color: #78350f;
+	}
+
+	.recordings-context-header {
+		color: #a0a0a0;
 	}
 
 	.recordings-item {
