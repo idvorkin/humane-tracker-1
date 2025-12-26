@@ -9,6 +9,7 @@
     "test": "just test",
     "dev-called-from-just": "vite",
     "build-called-from-just": "tsc -b && vite build",
+    "build:ci": "node scripts/generate-version.js && tsc -b && vite build",
     "test-called-from-just": "vitest run",
     "preview": "vite preview",
     "test:watch": "vitest",
