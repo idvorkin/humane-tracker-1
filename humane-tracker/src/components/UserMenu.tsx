@@ -102,8 +102,18 @@ export function UserMenu({
 
 					<div className="user-menu-divider" />
 
-					{onManageHabits && (
-						<div className="user-menu-group">
+					<div className="user-menu-group">
+						{showLoadDefaults && onLoadDefaults && (
+							<MenuItem
+								icon={<DownloadIcon />}
+								label="Load Demo Data"
+								onClick={() => {
+									closeMenu();
+									onLoadDefaults();
+								}}
+							/>
+						)}
+						{onManageHabits && (
 							<MenuItem
 								icon={<ManageHabitsIcon />}
 								label="Manage Habits"
@@ -112,19 +122,8 @@ export function UserMenu({
 									onManageHabits();
 								}}
 							/>
-							{showLoadDefaults && onLoadDefaults && (
-								<MenuItem
-									icon={<DownloadIcon />}
-									label="Load Demo Data"
-									onClick={() => {
-										closeMenu();
-										onLoadDefaults();
-									}}
-									className="user-menu-subitem"
-								/>
-							)}
-						</div>
-					)}
+						)}
+					</div>
 
 					<Link to="/journal" className="user-menu-link" onClick={closeMenu}>
 						<MenuItem

@@ -224,3 +224,44 @@ export const JournalIcon: IconComponent = ({ size = 16 }) => (
 		<path d="M5 1v14M8 5h4M8 8h4M8 11h2" />
 	</svg>
 );
+
+export const CloudIcon: IconComponent = ({ size = 18 }) => (
+	<svg
+		width={size}
+		height={size}
+		viewBox="0 0 18 18"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.5"
+	>
+		<path d="M4.5 13.5a3.5 3.5 0 01-.5-6.96 5 5 0 019.9.46 3.5 3.5 0 01-.4 6.5H4.5z" />
+	</svg>
+);
+
+export const CopyIcon: IconComponent = ({ size = 16 }) => (
+	<svg
+		width={size}
+		height={size}
+		viewBox="0 0 16 16"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.5"
+	>
+		<rect x="5" y="5" width="9" height="9" rx="1" />
+		<path d="M11 5V3a1 1 0 00-1-1H3a1 1 0 00-1 1v7a1 1 0 001 1h2" />
+	</svg>
+);
+
+export const RefreshIcon: IconComponent = ({ size = 16 }) => (
+	<svg
+		width={size}
+		height={size}
+		viewBox="0 0 16 16"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.5"
+	>
+		<path d="M1 8a7 7 0 0112.9-3.8M15 8a7 7 0 01-12.9 3.8" />
+		<path d="M1 4v4h4M15 12V8h-4" />
+	</svg>
+);
