@@ -141,10 +141,9 @@ export function AboutSection({ isLocalMode, userId }: AboutSectionProps) {
 	const syncStateFromCloud = useObservable(() => db.cloud.syncState, []) as
 		| SyncState
 		| undefined;
-	const wsStatusFromCloud = useObservable(
-		() => db.cloud.webSocketStatus,
-		[],
-	) as WebSocketStatus | undefined;
+	const wsStatusFromCloud = useObservable(() => db.cloud.webSocketStatus, []) as
+		| WebSocketStatus
+		| undefined;
 
 	const syncState = isLocalMode ? null : (syncStateFromCloud ?? null);
 	const wsStatus = isLocalMode ? null : (wsStatusFromCloud ?? null);
@@ -179,6 +178,12 @@ export function AboutSection({ isLocalMode, userId }: AboutSectionProps) {
 			<div className="settings-section-content">
 				<p className="about-section-tagline">
 					Track habits with a humane, local-first approach
+				</p>
+				<p
+					className="about-section-tagline"
+					style={{ color: "#ff6b6b", fontWeight: "bold" }}
+				>
+					TEST: Workflow deploy is working! Delete me after testing.
 				</p>
 
 				{/* Build row with GitHub icon */}
