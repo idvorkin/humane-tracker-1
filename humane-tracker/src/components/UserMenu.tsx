@@ -113,7 +113,7 @@ export function UserMenu({
 							{showLoadDefaults && onLoadDefaults && (
 								<MenuItem
 									icon={<DownloadIcon />}
-									label="Load Default Habits"
+									label="Load Demo Data"
 									onClick={() => {
 										closeMenu();
 										onLoadDefaults();

@@ -2,8 +2,60 @@ import type React from "react";
 import { useState } from "react";
 import { DEFAULT_HABITS } from "../data/defaultHabits";
 import { useHabitService } from "../hooks/useHabitService";
+import { entryRepository } from "../repositories/entryRepository";
 import { buildCategoryInfo, extractCategories } from "../utils/categoryUtils";
 import "./InitializeHabits.css";
+
+/**
+ * Generate random completions for demo data with a realistic pattern:
+ * - ~25% of habits are skipped entirely
+ * - Recent days have higher completion probability
+ * - Covers past 14 days
+ */
+async function generateDemoCompletions(
+	habitIds: string[],
+	userId: string,
+): Promise<void> {
+	const today = new Date();
+	const DAYS_TO_FILL = 14;
+
+	for (const habitId of habitIds) {
+		// Skip ~25% of habits entirely
+		if (Math.random() < 0.25) continue;
+
+		for (let daysAgo = 0; daysAgo < DAYS_TO_FILL; daysAgo++) {
+			// Completion probability decreases with age
+			let probability: number;
+			if (daysAgo <= 2) {
+				probability = 0.6; // Recent: 60%
+			} else if (daysAgo <= 6) {
+				probability = 0.45; // Mid: 45%
+			} else {
+				probability = 0.25; // Older: 25%
+			}
+
+			if (Math.random() < probability) {
+				const date = new Date(today);
+				date.setDate(date.getDate() - daysAgo);
+
+				try {
+					await entryRepository.add({
+						habitId,
+						userId,
+						date,
+						value: 1,
+					});
+				} catch (err) {
+					// Demo data failure is non-fatal, just log and continue
+					console.warn(
+						`[InitializeHabits] Failed to create demo entry for habit ${habitId}:`,
+						err,
+					);
+				}
+			}
+		}
+	}
+}
 
 interface InitializeHabitsProps {
 	userId: string;
@@ -92,6 +144,14 @@ export const InitializeHabits: React.FC<InitializeHabitsProps> = ({
 				setProgress(Math.round(((rawHabits.length + i + 1) / total) * 100));
 			}
 
+			// Generate demo completions (non-fatal if this fails)
+			const rawHabitIds = Array.from(nameToId.values());
+			try {
+				await generateDemoCompletions(rawHabitIds, userId);
+			} catch (err) {
+				console.warn("[InitializeHabits] Demo completions failed:", err);
+			}
+
 			onComplete();
 		} catch (error) {
 			console.error("Error initializing habits:", error);
@@ -104,10 +164,12 @@ export const InitializeHabits: React.FC<InitializeHabitsProps> = ({
 	return (
 		<div className="initialize-habits">
 			<div className="init-card">
-				<h2>Welcome to Humane Tracker!</h2>
-				<p>Would you like to start with the default habit set?</p>
+				<h2>Load Demo Data</h2>
+				<p>Explore the app with sample habits and completions.</p>
 				<p className="habit-count">
 					{DEFAULT_HABITS.length} habits across {categories.length} categories
+					<br />
+					<small>Includes 2 weeks of sample completion data</small>
 				</p>
 
 				<div className="categories-preview">
@@ -140,14 +202,14 @@ export const InitializeHabits: React.FC<InitializeHabitsProps> = ({
 
 				<div className="init-actions">
 					<button className="btn-skip" onClick={onComplete} disabled={loading}>
-						Skip for now
+						Skip
 					</button>
 					<button
 						className="btn-initialize"
 						onClick={initializeDefaultHabits}
 						disabled={loading}
 					>
-						{loading ? "Initializing..." : "Initialize Default Habits"}
+						{loading ? "Loading..." : "Load Demo Data"}
 					</button>
 				</div>
 			</div>
