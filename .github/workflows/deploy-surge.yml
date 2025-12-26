@@ -25,6 +25,8 @@ jobs:
        (github.actor == 'idvorkin' || github.actor == 'idvorkin-ai-tools'))
     runs-on: ubuntu-latest
     name: Build and Deploy to Surge
+    # Use environment to limit secret access to only SURGE_TOKEN and SURGE_DOMAIN
+    environment: surge-deploy
 
     steps:
       - name: Checkout code
@@ -51,9 +53,6 @@ jobs:
         working-directory: ./humane-tracker
         run: just test
 
-      - name: Install Surge
-        run: npm install -g surge
-
       - name: Set deployment domain
         id: domain
         run: |
@@ -64,9 +63,8 @@ jobs:
           fi
 
       - name: Deploy to Surge
-        run: surge ./humane-tracker/dist "${{ steps.domain.outputs.domain }}" --token "${{ secrets.SURGE_TOKEN }}"
-        env:
-          SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
+        working-directory: ./humane-tracker
+        run: npx surge dist "${{ steps.domain.outputs.domain }}" --token "${{ secrets.SURGE_TOKEN }}"
 
       - name: Comment PR with preview URL
         if: github.event_name == 'pull_request_target'
@@ -115,12 +113,13 @@ jobs:
       (github.actor == 'idvorkin' || github.actor == 'idvorkin-ai-tools')
     runs-on: ubuntu-latest
     name: Teardown PR Preview
+    environment: surge-deploy
 
     steps:
-      - name: Install Surge
-        run: npm install -g surge
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
 
       - name: Teardown Surge deployment
-        run: surge teardown "pr-${{ github.event.pull_request.number }}-humane-tracker.surge.sh" --token "${{ secrets.SURGE_TOKEN }}"
-        env:
-          SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
+        run: npx surge teardown "pr-${{ github.event.pull_request.number }}-humane-tracker.surge.sh" --token "${{ secrets.SURGE_TOKEN }}"
