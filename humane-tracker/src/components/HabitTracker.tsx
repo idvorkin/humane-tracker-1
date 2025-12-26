@@ -253,7 +253,7 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 							if (!vm.hasNoHabits) {
 								if (
 									!window.confirm(
-										"This will DELETE all your current habits and entries, then load the default habits. This cannot be undone. Continue?",
+										"This will DELETE all your current habits and entries, then load demo data. This cannot be undone. Continue?",
 									)
 								) {
 									return;
