@@ -11,7 +11,7 @@ export interface AffirmationLog {
 	id: string;
 	userId: string;
 	affirmationTitle: string;
-	logType: "opportunity" | "didit";
+	logType: "opportunity" | "didit" | "grateful";
 	note: string;
 	date: Date;
 	createdAt: Date;
@@ -41,9 +41,10 @@ function toRecord(log: AffirmationLog): AffirmationLogRecord {
 	};
 }
 
-const VALID_LOG_TYPES: readonly ("opportunity" | "didit")[] = [
+const VALID_LOG_TYPES: readonly ("opportunity" | "didit" | "grateful")[] = [
 	"opportunity",
 	"didit",
+	"grateful",
 ];
 
 /**
@@ -66,7 +67,7 @@ export function validateAffirmationLog(
 	}
 	if (!VALID_LOG_TYPES.includes(log.logType)) {
 		throw new Error(
-			`validateAffirmationLog: logType must be "opportunity" or "didit", got "${log.logType}"`,
+			`validateAffirmationLog: logType must be "opportunity", "didit", or "grateful", got "${log.logType}"`,
 		);
 	}
 }

@@ -173,7 +173,7 @@ describe("affirmationLogRepository", () => {
 					...validLog,
 					logType: "invalid" as "opportunity",
 				}),
-			).toThrow('logType must be "opportunity" or "didit"');
+			).toThrow('logType must be "opportunity", "didit", or "grateful"');
 		});
 
 		it("accepts opportunity logType", () => {

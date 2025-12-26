@@ -161,6 +161,13 @@
 	flex-wrap: wrap;
 }
 
+.summary-bar-compact {
+	flex-wrap: nowrap;
+	justify-content: space-around;
+	gap: var(--space-md);
+	padding: var(--space-sm) var(--space-md);
+}
+
 .summary-item {
 	display: flex;
 	align-items: center;

@@ -36,6 +36,12 @@
 	font-style: italic;
 }
 
+.grateful-action-compact {
+	padding: 4px 8px;
+	font-size: 0.8rem;
+	margin-left: auto;
+}
+
 .grateful-actions {
 	display: flex;
 	gap: 8px;

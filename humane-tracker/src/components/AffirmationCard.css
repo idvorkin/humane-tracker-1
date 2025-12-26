@@ -47,6 +47,54 @@
 	font-size: 0.95rem;
 	color: var(--color-charcoal);
 	white-space: nowrap;
+}
+
+.affirmation-title-btn {
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 0;
+	text-align: left;
+}
+
+.affirmation-title-btn:hover {
+	opacity: 0.7;
+}
+
+.affirmation-selector {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 8px;
+	background: rgba(255, 255, 255, 0.8);
+	border-radius: var(--radius-sm);
+	margin-bottom: 4px;
+}
+
+.affirmation-selector-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 6px 10px;
+	background: none;
+	border: 1px solid transparent;
+	border-radius: var(--radius-sm);
+	cursor: pointer;
+	text-align: left;
+	font-family: var(--font-body);
+	font-size: 0.85rem;
+}
+
+.affirmation-selector-item:hover {
+	background: rgba(0, 0, 0, 0.05);
+}
+
+.affirmation-selector-item.selected {
+	background: rgba(0, 0, 0, 0.08);
+	border-color: var(--color-amber-glow);
+}
+
+.affirmation-selector-title {
 	flex: 1;
 }
 
@@ -56,6 +104,17 @@
 	color: var(--color-charcoal);
 	opacity: 0.75;
 	font-style: italic;
+}
+
+.affirmation-header-actions {
+	display: flex;
+	gap: 4px;
+	margin-left: auto;
+}
+
+.affirmation-action-compact {
+	padding: 4px 8px;
+	font-size: 0.8rem;
 }
 
 .affirmation-actions {

@@ -113,7 +113,7 @@ export interface AffirmationLogRecord {
 	id: string;
 	userId: string;
 	affirmationTitle: string;
-	logType: "opportunity" | "didit";
+	logType: "opportunity" | "didit" | "grateful";
 	note: string;
 	date: string; // ISO string (date portion only: YYYY-MM-DD)
 	createdAt: string; // ISO string

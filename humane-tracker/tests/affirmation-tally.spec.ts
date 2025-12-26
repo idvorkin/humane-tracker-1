@@ -14,9 +14,9 @@ test.describe("Affirmation Card Tally Marks", () => {
 		// Screenshot just the affirmation card
 		await card.screenshot({ path: "test-results/affirmation-card.png" });
 
-		// Check for the action buttons
-		const opportunityBtn = page.locator(".affirmation-action", { hasText: "Opportunity" });
-		const didItBtn = page.locator(".affirmation-action", { hasText: "Did it" });
+		// Check for the action buttons (compact labels in header)
+		const opportunityBtn = page.locator(".affirmation-action", { hasText: "Opp" });
+		const didItBtn = page.locator(".affirmation-action", { hasText: "Did" });
 
 		await expect(opportunityBtn).toBeVisible();
 		await expect(didItBtn).toBeVisible();
@@ -35,7 +35,7 @@ test.describe("Affirmation Card Tally Marks", () => {
 
 		// Log 3 "Did it" entries
 		for (let i = 1; i <= 3; i++) {
-			await page.locator(".affirmation-action", { hasText: "Did it" }).click();
+			await page.locator(".affirmation-action", { hasText: "Did" }).click();
 			await page.locator(".affirmation-note-input textarea").fill(`Test entry ${i}`);
 			await page.locator(".affirmation-save").click();
 			await page.waitForTimeout(500);
@@ -43,7 +43,7 @@ test.describe("Affirmation Card Tally Marks", () => {
 
 		// Log 2 "Opportunity" entries
 		for (let i = 1; i <= 2; i++) {
-			await page.locator(".affirmation-action", { hasText: "Opportunity" }).click();
+			await page.locator(".affirmation-action", { hasText: "Opp" }).click();
 			await page.locator(".affirmation-note-input textarea").fill(`Opportunity ${i}`);
 			await page.locator(".affirmation-save").click();
 			await page.waitForTimeout(500);

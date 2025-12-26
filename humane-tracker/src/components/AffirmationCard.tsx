@@ -28,6 +28,7 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 	const [noteText, setNoteText] = useState("");
 	const [saveError, setSaveError] = useState(false);
 	const [isRecording, setIsRecording] = useState(false);
+	const [showSelector, setShowSelector] = useState(false);
 	const stopRecordingRef = useRef<(() => Promise<void>) | null>(null);
 	const affirmation = DEFAULT_AFFIRMATIONS[index];
 
@@ -37,13 +38,31 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 		[userId],
 	);
 
+	// Count per affirmation for the selector
+	const countsPerAffirmation = useMemo(() => {
+		if (!todayLogs) return new Map<string, number>();
+		const counts = new Map<string, number>();
+		for (const log of todayLogs) {
+			counts.set(
+				log.affirmationTitle,
+				(counts.get(log.affirmationTitle) || 0) + 1,
+			);
+		}
+		return counts;
+	}, [todayLogs]);
+
 	const todayCounts = useMemo(() => {
 		if (!todayLogs) return { opportunity: 0, didit: 0 };
+		// Filter by current affirmation title
+		const forThisAffirmation = todayLogs.filter(
+			(l) => l.affirmationTitle === affirmation.title,
+		);
 		return {
-			opportunity: todayLogs.filter((l) => l.logType === "opportunity").length,
-			didit: todayLogs.filter((l) => l.logType === "didit").length,
+			opportunity: forThisAffirmation.filter((l) => l.logType === "opportunity")
+				.length,
+			didit: forThisAffirmation.filter((l) => l.logType === "didit").length,
 		};
-	}, [todayLogs]);
+	}, [todayLogs, affirmation.title]);
 
 	const handleRefresh = useCallback(() => {
 		setIndex((prev) => getRandomIndex(prev));
@@ -125,8 +144,32 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 	return (
 		<div className="affirmation-card">
 			<div className="affirmation-header">
-				<span className="affirmation-card-title">{affirmation.title}</span>
+				<button
+					type="button"
+					className="affirmation-card-title affirmation-title-btn"
+					onClick={() => setShowSelector(!showSelector)}
+				>
+					{affirmation.title} ▾
+				</button>
 				<TallyMarks count={todayCounts.opportunity + todayCounts.didit} />
+				{noteMode === null && (
+					<div className="affirmation-header-actions">
+						<button
+							type="button"
+							className="affirmation-action affirmation-action-compact"
+							onClick={() => setNoteMode("opportunity")}
+						>
+							🎯 Opp
+						</button>
+						<button
+							type="button"
+							className="affirmation-action affirmation-action-compact"
+							onClick={() => setNoteMode("didit")}
+						>
+							✓ Did
+						</button>
+					</div>
+				)}
 				<button
 					type="button"
 					className="affirmation-refresh"
@@ -136,30 +179,36 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 					↻
 				</button>
 			</div>
+
+			{showSelector && (
+				<div className="affirmation-selector">
+					{DEFAULT_AFFIRMATIONS.map((aff, i) => {
+						const count = countsPerAffirmation.get(aff.title) || 0;
+						return (
+							<button
+								key={aff.title}
+								type="button"
+								className={`affirmation-selector-item ${i === index ? "selected" : ""}`}
+								onClick={() => {
+									setIndex(i);
+									setShowSelector(false);
+								}}
+							>
+								<span className="affirmation-selector-title">{aff.title}</span>
+								<TallyMarks count={count} />
+							</button>
+						);
+					})}
+				</div>
+			)}
+
 			<div className="affirmation-subtitle-row">
 				<span className="affirmation-card-subtitle">
 					{affirmation.subtitle}
 				</span>
 			</div>
 
-			{noteMode === null ? (
-				<div className="affirmation-actions">
-					<button
-						type="button"
-						className="affirmation-action"
-						onClick={() => setNoteMode("opportunity")}
-					>
-						🎯 Opportunity
-					</button>
-					<button
-						type="button"
-						className="affirmation-action"
-						onClick={() => setNoteMode("didit")}
-					>
-						✓ Did it
-					</button>
-				</div>
-			) : (
+			{noteMode !== null && (
 				<div className="affirmation-note-input">
 					<div
 						className={`affirmation-input-row ${isRecording ? "recording-active" : ""}`}

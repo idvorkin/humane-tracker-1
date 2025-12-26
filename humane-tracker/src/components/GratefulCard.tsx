@@ -1,5 +1,6 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { affirmationLogRepository } from "../repositories/affirmationLogRepository";
 import { audioRecordingRepository } from "../repositories/audioRecordingRepository";
 import "./GratefulCard.css";
 import { AudioRecorderButton } from "./AudioRecorderButton";
@@ -22,11 +23,21 @@ export function GratefulCard({ userId }: GratefulCardProps) {
 		[userId],
 	);
 
+	// Get today's grateful text notes count (reactive)
+	const todayLogs = useLiveQuery(
+		() => affirmationLogRepository.getByUserIdAndDate(userId, new Date()),
+		[userId],
+	);
+
 	const todayGratefulCount = useMemo(() => {
-		if (!todayRecordings) return 0;
-		return todayRecordings.filter((r) => r.recordingContext === "grateful")
-			.length;
-	}, [todayRecordings]);
+		const audioCount = todayRecordings
+			? todayRecordings.filter((r) => r.recordingContext === "grateful").length
+			: 0;
+		const textCount = todayLogs
+			? todayLogs.filter((l) => l.logType === "grateful").length
+			: 0;
+		return audioCount + textCount;
+	}, [todayRecordings, todayLogs]);
 
 	const handleRecordingComplete = useCallback(
 		async (blob: Blob, durationMs: number) => {
@@ -67,17 +78,22 @@ export function GratefulCard({ userId }: GratefulCardProps) {
 			return;
 		}
 
-		// For text notes, save as audio recording with empty blob
-		// (or we could use affirmationLogRepository - keeping it simple here)
+		// Save text note using affirmationLogRepository with "grateful" logType
 		try {
-			// Close without saving text for now - focus on audio
+			await affirmationLogRepository.create({
+				userId,
+				affirmationTitle: "Grateful",
+				logType: "grateful",
+				note: noteText.trim(),
+				date: new Date(),
+			});
 			setIsOpen(false);
 			setNoteText("");
 		} catch (error) {
 			console.error("Failed to save grateful note:", error);
 			setSaveError(true);
 		}
-	}, [noteText, isRecording]);
+	}, [noteText, isRecording, userId]);
 
 	const handleKeyDown = useCallback(
 		(e: React.KeyboardEvent) => {
@@ -97,6 +113,15 @@ export function GratefulCard({ userId }: GratefulCardProps) {
 			<div className="grateful-header">
 				<span className="grateful-card-title">Grateful</span>
 				<TallyMarks count={todayGratefulCount} />
+				{!isOpen && (
+					<button
+						type="button"
+						className="grateful-action grateful-action-compact"
+						onClick={() => setIsOpen(true)}
+					>
+						🙏 Thanks
+					</button>
+				)}
 			</div>
 			<div className="grateful-subtitle-row">
 				<span className="grateful-card-subtitle">
@@ -104,17 +129,7 @@ export function GratefulCard({ userId }: GratefulCardProps) {
 				</span>
 			</div>
 
-			{!isOpen ? (
-				<div className="grateful-actions">
-					<button
-						type="button"
-						className="grateful-action"
-						onClick={() => setIsOpen(true)}
-					>
-						Record gratitude
-					</button>
-				</div>
-			) : (
+			{isOpen && (
 				<div className="grateful-note-input">
 					<div
 						className={`grateful-input-row ${isRecording ? "recording-active" : ""}`}

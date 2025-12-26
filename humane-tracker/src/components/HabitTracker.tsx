@@ -481,29 +481,23 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({
 				</tbody>
 			</table>
 
-			<div className="summary-bar">
+			<div className="summary-bar summary-bar-compact">
 				<div className="summary-item">
-					<span className="summary-label">Due Today:</span>
+					<span className="summary-label">Due:</span>
 					<span className="summary-value value-today">
 						{vm.summaryStats.dueToday}
 					</span>
 				</div>
 				<div className="summary-item">
-					<span className="summary-label">Overdue:</span>
-					<span className="summary-value value-overdue">
-						{vm.summaryStats.overdue}
-					</span>
-				</div>
-				<div className="summary-item">
-					<span className="summary-label">Done Today:</span>
+					<span className="summary-label">Done:</span>
 					<span className="summary-value value-done">
 						{vm.summaryStats.doneToday}
 					</span>
 				</div>
 				<div className="summary-item">
-					<span className="summary-label">On Track:</span>
-					<span className="summary-value value-track">
-						{vm.summaryStats.onTrack}
+					<span className="summary-label">Late:</span>
+					<span className="summary-value value-overdue">
+						{vm.summaryStats.overdue}
 					</span>
 				</div>
 			</div>
