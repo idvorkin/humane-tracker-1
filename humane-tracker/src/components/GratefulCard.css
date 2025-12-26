@@ -98,7 +98,46 @@
 .grateful-input-row {
 	display: flex;
 	gap: 8px;
-	align-items: flex-start;
+	align-items: center;
+	min-height: 60px;
+}
+
+.grateful-voice-primary {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex: 1;
+	padding: 8px 12px;
+	background: white;
+	border: 1px solid #81c784;
+	border-radius: var(--radius-sm);
+	min-height: 44px;
+}
+
+.grateful-voice-hint {
+	font-size: 0.85rem;
+	color: #2e7d32;
+	opacity: 0.5;
+}
+
+.grateful-mode-toggle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	font-size: 1.2rem;
+	background: rgba(255, 255, 255, 0.6);
+	border: 1px solid rgba(0, 0, 0, 0.1);
+	border-radius: var(--radius-sm);
+	cursor: pointer;
+	transition: background 0.15s ease;
+	flex-shrink: 0;
+}
+
+.grateful-mode-toggle:hover {
+	background: rgba(255, 255, 255, 0.9);
 }
 
 .grateful-input-row textarea {
@@ -210,5 +249,24 @@
 
 	.grateful-success {
 		color: #4ade80;
+	}
+
+	.grateful-voice-primary {
+		background: #1a2e1a;
+		border-color: #2e7d32;
+	}
+
+	.grateful-voice-hint {
+		color: #a5d6a7;
+	}
+
+	.grateful-mode-toggle {
+		background: rgba(0, 0, 0, 0.3);
+		border-color: rgba(255, 255, 255, 0.1);
+		color: #a5d6a7;
+	}
+
+	.grateful-mode-toggle:hover {
+		background: rgba(0, 0, 0, 0.5);
 	}
 }

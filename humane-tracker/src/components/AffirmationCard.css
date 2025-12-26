@@ -173,7 +173,46 @@
 .affirmation-input-row {
 	display: flex;
 	gap: 8px;
-	align-items: flex-start;
+	align-items: center;
+	min-height: 60px;
+}
+
+.affirmation-voice-primary {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex: 1;
+	padding: 8px 12px;
+	background: white;
+	border: 1px solid var(--color-amber-glow);
+	border-radius: var(--radius-sm);
+	min-height: 44px;
+}
+
+.affirmation-voice-hint {
+	font-size: 0.85rem;
+	color: var(--color-charcoal);
+	opacity: 0.5;
+}
+
+.affirmation-mode-toggle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	font-size: 1.2rem;
+	background: rgba(255, 255, 255, 0.6);
+	border: 1px solid rgba(0, 0, 0, 0.1);
+	border-radius: var(--radius-sm);
+	cursor: pointer;
+	transition: background 0.15s ease;
+	flex-shrink: 0;
+}
+
+.affirmation-mode-toggle:hover {
+	background: rgba(255, 255, 255, 0.9);
 }
 
 .affirmation-input-row textarea {
@@ -289,5 +328,24 @@
 
 	.affirmation-success {
 		color: #4ade80;
+	}
+
+	.affirmation-voice-primary {
+		background: #1f1d1a;
+		border-color: #78350f;
+	}
+
+	.affirmation-voice-hint {
+		color: var(--color-cream);
+	}
+
+	.affirmation-mode-toggle {
+		background: rgba(0, 0, 0, 0.3);
+		border-color: rgba(255, 255, 255, 0.1);
+		color: var(--color-cream);
+	}
+
+	.affirmation-mode-toggle:hover {
+		background: rgba(0, 0, 0, 0.5);
 	}
 }

@@ -128,6 +128,8 @@ describe("GratefulCard", () => {
 		render(<GratefulCard userId="test-user" />);
 
 		fireEvent.click(screen.getByText("🙏 Thanks"));
+		// Switch to voice mode (desktop defaults to text mode)
+		fireEvent.click(screen.getByLabelText("Switch to voice"));
 		fireEvent.click(screen.getByTestId("mock-audio-recorder"));
 
 		await waitFor(() => {
@@ -150,6 +152,8 @@ describe("GratefulCard", () => {
 			screen.getByPlaceholderText("I'm grateful for..."),
 		).toBeInTheDocument();
 
+		// Switch to voice mode (desktop defaults to text mode)
+		fireEvent.click(screen.getByLabelText("Switch to voice"));
 		fireEvent.click(screen.getByTestId("mock-audio-recorder"));
 
 		await waitFor(() => {

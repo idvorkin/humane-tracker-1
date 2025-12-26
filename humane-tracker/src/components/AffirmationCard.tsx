@@ -1,11 +1,14 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_AFFIRMATIONS } from "../constants/affirmations";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { affirmationLogRepository } from "../repositories/affirmationLogRepository";
 import { audioRecordingRepository } from "../repositories/audioRecordingRepository";
 import "./AffirmationCard.css";
 import { AudioRecorderButton } from "./AudioRecorderButton";
 import { TallyMarks } from "./TallyMarks";
+
+type InputMode = "voice" | "text";
 
 function getRandomIndex(currentIndex?: number): number {
 	if (DEFAULT_AFFIRMATIONS.length <= 1) return 0;
@@ -23,14 +26,23 @@ interface AffirmationCardProps {
 }
 
 export function AffirmationCard({ userId }: AffirmationCardProps) {
+	const isMobile = useIsMobile();
 	const [index, setIndex] = useState(() => getRandomIndex());
 	const [noteMode, setNoteMode] = useState<NoteMode>(null);
 	const [noteText, setNoteText] = useState("");
 	const [saveError, setSaveError] = useState(false);
 	const [isRecording, setIsRecording] = useState(false);
 	const [showSelector, setShowSelector] = useState(false);
+	const [inputMode, setInputMode] = useState<InputMode>("text");
 	const stopRecordingRef = useRef<(() => Promise<void>) | null>(null);
 	const affirmation = DEFAULT_AFFIRMATIONS[index];
+
+	// Reset input mode when noteMode opens (mobile = voice, desktop = text)
+	useEffect(() => {
+		if (noteMode !== null) {
+			setInputMode(isMobile ? "voice" : "text");
+		}
+	}, [noteMode, isMobile]);
 
 	// Get today's affirmation log counts (reactive)
 	const todayLogs = useLiveQuery(
@@ -210,34 +222,62 @@ export function AffirmationCard({ userId }: AffirmationCardProps) {
 
 			{noteMode !== null && (
 				<div className="affirmation-note-input">
-					<div
-						className={`affirmation-input-row ${isRecording ? "recording-active" : ""}`}
-					>
-						{!isRecording && (
-							<textarea
-								placeholder={
-									noteMode === "opportunity"
-										? "How will you apply this today?"
-										: "How did you apply this?"
-								}
-								value={noteText}
-								onChange={(e) => {
-									setNoteText(e.target.value);
-									setSaveError(false);
-								}}
-								onKeyDown={handleKeyDown}
-								autoFocus
-							/>
+					<div className="affirmation-input-row">
+						{inputMode === "text" ? (
+							<>
+								<textarea
+									placeholder={
+										noteMode === "opportunity"
+											? "How will you apply this today?"
+											: "How did you apply this?"
+									}
+									value={noteText}
+									onChange={(e) => {
+										setNoteText(e.target.value);
+										setSaveError(false);
+									}}
+									onKeyDown={handleKeyDown}
+									autoFocus
+								/>
+								<button
+									type="button"
+									className="affirmation-mode-toggle"
+									onClick={() => setInputMode("voice")}
+									aria-label="Switch to voice"
+								>
+									🎤
+								</button>
+							</>
+						) : (
+							<>
+								<div className="affirmation-voice-primary">
+									<AudioRecorderButton
+										onRecordingComplete={handleRecordingComplete}
+										onRecordingStateChange={setIsRecording}
+										stopRecordingRef={stopRecordingRef}
+										onError={(err) => {
+											console.error("Recording error:", err);
+											setSaveError(true);
+										}}
+									/>
+									{!isRecording && (
+										<span className="affirmation-voice-hint">
+											Tap to record
+										</span>
+									)}
+								</div>
+								{!isRecording && (
+									<button
+										type="button"
+										className="affirmation-mode-toggle"
+										onClick={() => setInputMode("text")}
+										aria-label="Switch to text"
+									>
+										⌨️
+									</button>
+								)}
+							</>
 						)}
-						<AudioRecorderButton
-							onRecordingComplete={handleRecordingComplete}
-							onRecordingStateChange={setIsRecording}
-							stopRecordingRef={stopRecordingRef}
-							onError={(err) => {
-								console.error("Recording error:", err);
-								setSaveError(true);
-							}}
-						/>
 					</div>
 					<div className="affirmation-note-actions">
 						<button

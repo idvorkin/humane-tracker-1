@@ -1,21 +1,33 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { affirmationLogRepository } from "../repositories/affirmationLogRepository";
 import { audioRecordingRepository } from "../repositories/audioRecordingRepository";
 import "./GratefulCard.css";
 import { AudioRecorderButton } from "./AudioRecorderButton";
 import { TallyMarks } from "./TallyMarks";
 
+type InputMode = "voice" | "text";
+
 interface GratefulCardProps {
 	userId: string;
 }
 
 export function GratefulCard({ userId }: GratefulCardProps) {
+	const isMobile = useIsMobile();
 	const [isOpen, setIsOpen] = useState(false);
 	const [noteText, setNoteText] = useState("");
 	const [saveError, setSaveError] = useState(false);
 	const [isRecording, setIsRecording] = useState(false);
+	const [inputMode, setInputMode] = useState<InputMode>("text");
 	const stopRecordingRef = useRef<(() => Promise<void>) | null>(null);
+
+	// Reset input mode when card opens (mobile = voice, desktop = text)
+	useEffect(() => {
+		if (isOpen) {
+			setInputMode(isMobile ? "voice" : "text");
+		}
+	}, [isOpen, isMobile]);
 
 	// Get today's grateful recording count (reactive)
 	const todayRecordings = useLiveQuery(
@@ -131,30 +143,56 @@ export function GratefulCard({ userId }: GratefulCardProps) {
 
 			{isOpen && (
 				<div className="grateful-note-input">
-					<div
-						className={`grateful-input-row ${isRecording ? "recording-active" : ""}`}
-					>
-						{!isRecording && (
-							<textarea
-								placeholder="I'm grateful for..."
-								value={noteText}
-								onChange={(e) => {
-									setNoteText(e.target.value);
-									setSaveError(false);
-								}}
-								onKeyDown={handleKeyDown}
-								autoFocus
-							/>
+					<div className="grateful-input-row">
+						{inputMode === "text" ? (
+							<>
+								<textarea
+									placeholder="I'm grateful for..."
+									value={noteText}
+									onChange={(e) => {
+										setNoteText(e.target.value);
+										setSaveError(false);
+									}}
+									onKeyDown={handleKeyDown}
+									autoFocus
+								/>
+								<button
+									type="button"
+									className="grateful-mode-toggle"
+									onClick={() => setInputMode("voice")}
+									aria-label="Switch to voice"
+								>
+									🎤
+								</button>
+							</>
+						) : (
+							<>
+								<div className="grateful-voice-primary">
+									<AudioRecorderButton
+										onRecordingComplete={handleRecordingComplete}
+										onRecordingStateChange={setIsRecording}
+										stopRecordingRef={stopRecordingRef}
+										onError={(err) => {
+											console.error("Recording error:", err);
+											setSaveError(true);
+										}}
+									/>
+									{!isRecording && (
+										<span className="grateful-voice-hint">Tap to record</span>
+									)}
+								</div>
+								{!isRecording && (
+									<button
+										type="button"
+										className="grateful-mode-toggle"
+										onClick={() => setInputMode("text")}
+										aria-label="Switch to text"
+									>
+										⌨️
+									</button>
+								)}
+							</>
 						)}
-						<AudioRecorderButton
-							onRecordingComplete={handleRecordingComplete}
-							onRecordingStateChange={setIsRecording}
-							stopRecordingRef={stopRecordingRef}
-							onError={(err) => {
-								console.error("Recording error:", err);
-								setSaveError(true);
-							}}
-						/>
 					</div>
 					<div className="grateful-note-actions">
 						<button
