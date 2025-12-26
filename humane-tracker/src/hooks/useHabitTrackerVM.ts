@@ -1,4 +1,4 @@
-import { addDays, format, isSameDay, isToday, isYesterday } from "date-fns";
+import { addDays, format, isSameDay, isToday } from "date-fns";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_HABITS } from "../data/defaultHabits";
 import { toDateString } from "../repositories";
@@ -20,6 +20,18 @@ import {
 // ============================================================================
 // Pure helper functions (easily testable)
 // ============================================================================
+
+/**
+ * Determines if a confirmation dialog should be shown before modifying an entry.
+ * Returns true if the date is NOT today AND NOT the currently selected date.
+ */
+export function shouldConfirmDateModification(
+	date: Date,
+	selectedDate: Date | null,
+): boolean {
+	const isSelectedDate = selectedDate !== null && isSameDay(date, selectedDate);
+	return !isToday(date) && !isSelectedDate;
+}
 
 export type StatStatus = "good" | "warn" | "bad" | "neutral";
 
@@ -429,14 +441,12 @@ export function useHabitTrackerVM({
 
 	const toggleEntry = useCallback(
 		async (habitId: string, date: Date) => {
-			// Check if date is older than yesterday and confirm
-			// Skip confirmation if the date is the currently selected date
-			const isSelectedDate = selectedDate && isSameDay(date, selectedDate);
-			if (!isToday(date) && !isYesterday(date) && !isSelectedDate) {
+			// Confirm modification of any date except today or the selected date
+			if (shouldConfirmDateModification(date, selectedDate)) {
 				const dateStr = format(date, "MMM d");
 				if (
 					!window.confirm(
-						`Are you sure you want to modify entries for ${dateStr}? This is an older date.`,
+						`Are you sure you want to modify entries for ${dateStr}?`,
 					)
 				) {
 					return;

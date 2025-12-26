@@ -8,6 +8,7 @@ import {
 	getStatusIcon,
 	getTrailingWeekDates,
 	groupHabitsByCategory,
+	shouldConfirmDateModification,
 } from "./useHabitTrackerVM";
 
 // Helper to create a mock habit
@@ -617,5 +618,54 @@ describe("calculateSummaryStats", () => {
 		expect(stats.overdue).toBe(0);
 		expect(stats.doneToday).toBe(0);
 		expect(stats.onTrack).toBe(0);
+	});
+});
+
+describe("shouldConfirmDateModification", () => {
+	it("returns false for today (no confirmation needed)", () => {
+		const today = new Date();
+
+		expect(shouldConfirmDateModification(today, null)).toBe(false);
+	});
+
+	it("returns true for yesterday (confirmation needed)", () => {
+		const yesterday = new Date();
+		yesterday.setDate(yesterday.getDate() - 1);
+
+		expect(shouldConfirmDateModification(yesterday, null)).toBe(true);
+	});
+
+	it("returns true for older dates (confirmation needed)", () => {
+		const weekAgo = new Date();
+		weekAgo.setDate(weekAgo.getDate() - 7);
+
+		expect(shouldConfirmDateModification(weekAgo, null)).toBe(true);
+	});
+
+	it("returns false when date matches selected date (no confirmation needed)", () => {
+		const yesterday = new Date();
+		yesterday.setDate(yesterday.getDate() - 1);
+		const selectedDate = new Date(yesterday);
+
+		expect(shouldConfirmDateModification(yesterday, selectedDate)).toBe(false);
+	});
+
+	it("returns true for non-today date when different date is selected", () => {
+		const yesterday = new Date();
+		yesterday.setDate(yesterday.getDate() - 1);
+		const twoDaysAgo = new Date();
+		twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+		// Modifying yesterday while two days ago is selected
+		expect(shouldConfirmDateModification(yesterday, twoDaysAgo)).toBe(true);
+	});
+
+	it("returns false for today even when another date is selected", () => {
+		const today = new Date();
+		const yesterday = new Date();
+		yesterday.setDate(yesterday.getDate() - 1);
+
+		// Today should never need confirmation, regardless of selection
+		expect(shouldConfirmDateModification(today, yesterday)).toBe(false);
 	});
 });
