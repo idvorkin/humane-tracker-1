@@ -20,6 +20,7 @@ export function GratefulCard({ userId }: GratefulCardProps) {
 	const [saveError, setSaveError] = useState(false);
 	const [isRecording, setIsRecording] = useState(false);
 	const [inputMode, setInputMode] = useState<InputMode>("text");
+	const [autoStartRecording, setAutoStartRecording] = useState(false);
 	const stopRecordingRef = useRef<(() => Promise<void>) | null>(null);
 	const cancelRecordingRef = useRef<(() => void) | null>(null);
 
@@ -204,9 +205,16 @@ export function GratefulCard({ userId }: GratefulCardProps) {
 						<div className="grateful-voice-input">
 							<AudioRecorderButton
 								onRecordingComplete={handleRecordingComplete}
-								onRecordingStateChange={setIsRecording}
+								onRecordingStateChange={(recording) => {
+									setIsRecording(recording);
+									// Reset auto-start flag once recording actually starts
+									if (recording) {
+										setAutoStartRecording(false);
+									}
+								}}
 								stopRecordingRef={stopRecordingRef}
 								cancelRecordingRef={cancelRecordingRef}
+								autoStart={autoStartRecording}
 								onError={(err) => {
 									console.error("Recording error:", err);
 									setSaveError(true);
@@ -218,10 +226,12 @@ export function GratefulCard({ userId }: GratefulCardProps) {
 					<button
 						type="button"
 						className={`grateful-mode-switch ${isRecording ? "disabled" : ""}`}
-						onClick={() =>
-							!isRecording &&
-							setInputMode(inputMode === "text" ? "voice" : "text")
-						}
+						onClick={() => {
+							if (isRecording) return;
+							const switchingToVoice = inputMode === "text";
+							setInputMode(switchingToVoice ? "voice" : "text");
+							setAutoStartRecording(switchingToVoice);
+						}}
 						aria-label={
 							inputMode === "text" ? "Switch to voice" : "Switch to text"
 						}

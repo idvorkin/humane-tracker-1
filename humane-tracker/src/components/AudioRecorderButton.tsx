@@ -10,6 +10,8 @@ interface AudioRecorderButtonProps {
 	disabled?: boolean;
 	stopRecordingRef?: React.MutableRefObject<(() => Promise<void>) | null>;
 	cancelRecordingRef?: React.MutableRefObject<(() => void) | null>;
+	/** When true, automatically start recording when component mounts */
+	autoStart?: boolean;
 }
 
 export function AudioRecorderButton({
@@ -19,6 +21,7 @@ export function AudioRecorderButton({
 	disabled = false,
 	stopRecordingRef,
 	cancelRecordingRef,
+	autoStart = false,
 }: AudioRecorderButtonProps) {
 	const {
 		isRecording,
@@ -74,6 +77,15 @@ export function AudioRecorderButton({
 			onError(error);
 		}
 	}, [error, onError]);
+
+	// Auto-start recording on mount if requested
+	useEffect(() => {
+		if (autoStart && !isRecording && !disabled) {
+			startRecording();
+		}
+		// Only run on mount - intentionally exclude dependencies to prevent re-triggering
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	if (!isSupported) {
 		return (

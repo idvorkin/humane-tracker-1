@@ -18,25 +18,33 @@ vi.mock("../repositories/audioRecordingRepository", () => ({
 	},
 }));
 
-// Track refs passed to AudioRecorderButton for testing cancel behavior
+// Track refs and props passed to AudioRecorderButton for testing
 let capturedCancelRef: React.MutableRefObject<(() => void) | null> | undefined;
 let capturedOnRecordingStateChange:
 	| ((isRecording: boolean) => void)
 	| undefined;
+let capturedAutoStart: boolean | undefined;
 
 vi.mock("./AudioRecorderButton", () => ({
 	AudioRecorderButton: ({
 		onRecordingStateChange,
 		cancelRecordingRef,
+		autoStart,
 	}: {
 		onRecordingComplete: (blob: Blob, durationMs: number) => void;
 		onRecordingStateChange?: (isRecording: boolean) => void;
 		cancelRecordingRef?: React.MutableRefObject<(() => void) | null>;
+		autoStart?: boolean;
 	}) => {
 		// Capture these for test verification
 		capturedCancelRef = cancelRecordingRef;
 		capturedOnRecordingStateChange = onRecordingStateChange;
-		return <div data-testid="mock-audio-recorder">Mock Audio Recorder</div>;
+		capturedAutoStart = autoStart;
+		return (
+			<div data-testid="mock-audio-recorder" data-autostart={autoStart}>
+				Mock Audio Recorder
+			</div>
+		);
 	},
 }));
 
@@ -45,6 +53,7 @@ describe("AffirmationCard", () => {
 		vi.clearAllMocks();
 		capturedCancelRef = undefined;
 		capturedOnRecordingStateChange = undefined;
+		capturedAutoStart = undefined;
 	});
 
 	it("renders an affirmation title and subtitle", () => {
@@ -233,5 +242,39 @@ describe("AffirmationCard", () => {
 
 		// Verify cancelRecording was called (not just set to null)
 		expect(mockCancelFn).toHaveBeenCalledTimes(1);
+	});
+
+	it("passes autoStart=true when switching from text to voice mode", () => {
+		render(<AffirmationCard userId="test-user" />);
+
+		// Open note input (text mode by default on desktop)
+		fireEvent.click(screen.getByText(/Opp/));
+
+		// Click the mic icon to switch to voice mode
+		const modeSwitch = screen.getByLabelText("Switch to voice");
+		fireEvent.click(modeSwitch);
+
+		// Verify AudioRecorderButton is rendered with autoStart=true
+		expect(screen.getByTestId("mock-audio-recorder")).toBeInTheDocument();
+		expect(capturedAutoStart).toBe(true);
+	});
+
+	it("resets autoStart after recording starts", () => {
+		render(<AffirmationCard userId="test-user" />);
+
+		// Open note input
+		fireEvent.click(screen.getByText(/Opp/));
+
+		// Switch to voice mode (triggers autoStart)
+		fireEvent.click(screen.getByLabelText("Switch to voice"));
+		expect(capturedAutoStart).toBe(true);
+
+		// Simulate recording starting (which should reset autoStart)
+		act(() => {
+			capturedOnRecordingStateChange?.(true);
+		});
+
+		// autoStart should now be false
+		expect(capturedAutoStart).toBe(false);
 	});
 });

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GratefulCard } from "./GratefulCard";
 
@@ -18,38 +18,52 @@ vi.mock("../repositories/affirmationLogRepository", () => ({
 	},
 }));
 
+// Track props passed to AudioRecorderButton for testing
+let capturedAutoStart: boolean | undefined;
+let capturedOnRecordingStateChange:
+	| ((isRecording: boolean) => void)
+	| undefined;
+
 // Mock AudioRecorderButton to avoid MediaRecorder dependencies
 vi.mock("./AudioRecorderButton", () => ({
 	AudioRecorderButton: ({
 		onRecordingComplete,
 		onRecordingStateChange,
-		onError,
+		autoStart,
 	}: {
 		onRecordingComplete: (blob: Blob, durationMs: number) => void;
 		onRecordingStateChange?: (isRecording: boolean) => void;
 		onError?: (error: string) => void;
-	}) => (
-		<button
-			type="button"
-			data-testid="mock-audio-recorder"
-			onClick={() => {
-				onRecordingStateChange?.(true);
-				// Simulate recording complete after a moment
-				setTimeout(() => {
-					const mockBlob = new Blob(["test"], { type: "audio/webm" });
-					onRecordingComplete(mockBlob, 3000);
-					onRecordingStateChange?.(false);
-				}, 10);
-			}}
-		>
-			Record
-		</button>
-	),
+		autoStart?: boolean;
+	}) => {
+		capturedAutoStart = autoStart;
+		capturedOnRecordingStateChange = onRecordingStateChange;
+		return (
+			<button
+				type="button"
+				data-testid="mock-audio-recorder"
+				data-autostart={autoStart}
+				onClick={() => {
+					onRecordingStateChange?.(true);
+					// Simulate recording complete after a moment
+					setTimeout(() => {
+						const mockBlob = new Blob(["test"], { type: "audio/webm" });
+						onRecordingComplete(mockBlob, 3000);
+						onRecordingStateChange?.(false);
+					}, 10);
+				}}
+			>
+				Record
+			</button>
+		);
+	},
 }));
 
 describe("GratefulCard", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		capturedAutoStart = undefined;
+		capturedOnRecordingStateChange = undefined;
 	});
 
 	it("renders the grateful card with title and subtitle", () => {
@@ -215,5 +229,39 @@ describe("GratefulCard", () => {
 				screen.queryByPlaceholderText("I'm grateful for..."),
 			).not.toBeInTheDocument();
 		});
+	});
+
+	it("passes autoStart=true when switching from text to voice mode", () => {
+		render(<GratefulCard userId="test-user" />);
+
+		// Open input form (text mode by default on desktop)
+		fireEvent.click(screen.getByText("🙏 Thanks"));
+
+		// Click the mic icon to switch to voice mode
+		const modeSwitch = screen.getByLabelText("Switch to voice");
+		fireEvent.click(modeSwitch);
+
+		// Verify AudioRecorderButton is rendered with autoStart=true
+		expect(screen.getByTestId("mock-audio-recorder")).toBeInTheDocument();
+		expect(capturedAutoStart).toBe(true);
+	});
+
+	it("resets autoStart after recording starts", () => {
+		render(<GratefulCard userId="test-user" />);
+
+		// Open input form
+		fireEvent.click(screen.getByText("🙏 Thanks"));
+
+		// Switch to voice mode (triggers autoStart)
+		fireEvent.click(screen.getByLabelText("Switch to voice"));
+		expect(capturedAutoStart).toBe(true);
+
+		// Simulate recording starting (which should reset autoStart)
+		act(() => {
+			capturedOnRecordingStateChange?.(true);
+		});
+
+		// autoStart should now be false
+		expect(capturedAutoStart).toBe(false);
 	});
 });

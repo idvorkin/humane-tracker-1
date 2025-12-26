@@ -220,4 +220,72 @@ describe("AudioRecorderButton", () => {
 		);
 		expect(recordingButton).toBeInTheDocument();
 	});
+
+	describe("autoStart prop", () => {
+		it("automatically starts recording on mount when autoStart is true", () => {
+			const startRecording = vi.fn();
+			mockUseAudioRecorder.mockReturnValue({
+				...defaultHookState,
+				startRecording,
+			});
+
+			render(
+				<AudioRecorderButton
+					onRecordingComplete={mockOnRecordingComplete}
+					autoStart={true}
+				/>,
+			);
+
+			expect(startRecording).toHaveBeenCalledTimes(1);
+		});
+
+		it("does not auto-start when autoStart is false", () => {
+			const startRecording = vi.fn();
+			mockUseAudioRecorder.mockReturnValue({
+				...defaultHookState,
+				startRecording,
+			});
+
+			render(
+				<AudioRecorderButton
+					onRecordingComplete={mockOnRecordingComplete}
+					autoStart={false}
+				/>,
+			);
+
+			expect(startRecording).not.toHaveBeenCalled();
+		});
+
+		it("does not auto-start when autoStart is not provided", () => {
+			const startRecording = vi.fn();
+			mockUseAudioRecorder.mockReturnValue({
+				...defaultHookState,
+				startRecording,
+			});
+
+			render(
+				<AudioRecorderButton onRecordingComplete={mockOnRecordingComplete} />,
+			);
+
+			expect(startRecording).not.toHaveBeenCalled();
+		});
+
+		it("does not auto-start when disabled", () => {
+			const startRecording = vi.fn();
+			mockUseAudioRecorder.mockReturnValue({
+				...defaultHookState,
+				startRecording,
+			});
+
+			render(
+				<AudioRecorderButton
+					onRecordingComplete={mockOnRecordingComplete}
+					autoStart={true}
+					disabled={true}
+				/>,
+			);
+
+			expect(startRecording).not.toHaveBeenCalled();
+		});
+	});
 });
