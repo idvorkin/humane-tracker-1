@@ -173,7 +173,7 @@ describe("affirmationLogRepository", () => {
 					...validLog,
 					logType: "invalid" as "opportunity",
 				}),
-			).toThrow('logType must be "opportunity" or "didit"');
+			).toThrow('logType must be "opportunity", "didit", or "grateful"');
 		});
 
 		it("accepts opportunity logType", () => {
@@ -185,6 +185,12 @@ describe("affirmationLogRepository", () => {
 		it("accepts didit logType", () => {
 			expect(() =>
 				validateAffirmationLog({ ...validLog, logType: "didit" }),
+			).not.toThrow();
+		});
+
+		it("accepts grateful logType", () => {
+			expect(() =>
+				validateAffirmationLog({ ...validLog, logType: "grateful" }),
 			).not.toThrow();
 		});
 	});

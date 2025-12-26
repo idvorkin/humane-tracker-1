@@ -6,6 +6,15 @@ import { GratefulCard } from "./GratefulCard";
 vi.mock("../repositories/audioRecordingRepository", () => ({
 	audioRecordingRepository: {
 		create: vi.fn().mockResolvedValue("test-id"),
+		getByUserIdAndDate: vi.fn().mockResolvedValue([]),
+	},
+}));
+
+// Mock the affirmation log repository
+vi.mock("../repositories/affirmationLogRepository", () => ({
+	affirmationLogRepository: {
+		create: vi.fn().mockResolvedValue("test-id"),
+		getByUserIdAndDate: vi.fn().mockResolvedValue([]),
 	},
 }));
 
@@ -52,16 +61,16 @@ describe("GratefulCard", () => {
 		).toBeInTheDocument();
 	});
 
-	it("shows Record gratitude button by default", () => {
+	it("shows 🙏 Thanks button by default", () => {
 		render(<GratefulCard userId="test-user" />);
 
-		expect(screen.getByText("Record gratitude")).toBeInTheDocument();
+		expect(screen.getByText("🙏 Thanks")).toBeInTheDocument();
 	});
 
-	it("shows textarea when Record gratitude is clicked", () => {
+	it("shows textarea when 🙏 Thanks is clicked", () => {
 		render(<GratefulCard userId="test-user" />);
 
-		fireEvent.click(screen.getByText("Record gratitude"));
+		fireEvent.click(screen.getByText("🙏 Thanks"));
 
 		expect(
 			screen.getByPlaceholderText("I'm grateful for..."),
@@ -72,7 +81,7 @@ describe("GratefulCard", () => {
 	it("closes textarea on cancel button click", () => {
 		render(<GratefulCard userId="test-user" />);
 
-		fireEvent.click(screen.getByText("Record gratitude"));
+		fireEvent.click(screen.getByText("🙏 Thanks"));
 		expect(
 			screen.getByPlaceholderText("I'm grateful for..."),
 		).toBeInTheDocument();
@@ -82,13 +91,13 @@ describe("GratefulCard", () => {
 		expect(
 			screen.queryByPlaceholderText("I'm grateful for..."),
 		).not.toBeInTheDocument();
-		expect(screen.getByText("Record gratitude")).toBeInTheDocument();
+		expect(screen.getByText("🙏 Thanks")).toBeInTheDocument();
 	});
 
 	it("closes textarea on Escape key", () => {
 		render(<GratefulCard userId="test-user" />);
 
-		fireEvent.click(screen.getByText("Record gratitude"));
+		fireEvent.click(screen.getByText("🙏 Thanks"));
 		const textarea = screen.getByPlaceholderText("I'm grateful for...");
 
 		fireEvent.keyDown(textarea, { key: "Escape" });
@@ -101,14 +110,14 @@ describe("GratefulCard", () => {
 	it("closes without saving when Save is clicked with empty text", () => {
 		render(<GratefulCard userId="test-user" />);
 
-		fireEvent.click(screen.getByText("Record gratitude"));
+		fireEvent.click(screen.getByText("🙏 Thanks"));
 		fireEvent.click(screen.getByText("Save"));
 
 		// Should close the input form
 		expect(
 			screen.queryByPlaceholderText("I'm grateful for..."),
 		).not.toBeInTheDocument();
-		expect(screen.getByText("Record gratitude")).toBeInTheDocument();
+		expect(screen.getByText("🙏 Thanks")).toBeInTheDocument();
 	});
 
 	it("saves audio recording when recording completes", async () => {
@@ -118,7 +127,7 @@ describe("GratefulCard", () => {
 
 		render(<GratefulCard userId="test-user" />);
 
-		fireEvent.click(screen.getByText("Record gratitude"));
+		fireEvent.click(screen.getByText("🙏 Thanks"));
 		fireEvent.click(screen.getByTestId("mock-audio-recorder"));
 
 		await waitFor(() => {
@@ -136,7 +145,7 @@ describe("GratefulCard", () => {
 	it("closes input form after successful audio save", async () => {
 		render(<GratefulCard userId="test-user" />);
 
-		fireEvent.click(screen.getByText("Record gratitude"));
+		fireEvent.click(screen.getByText("🙏 Thanks"));
 		expect(
 			screen.getByPlaceholderText("I'm grateful for..."),
 		).toBeInTheDocument();
@@ -153,7 +162,7 @@ describe("GratefulCard", () => {
 	it("clears text input when cancelled", () => {
 		render(<GratefulCard userId="test-user" />);
 
-		fireEvent.click(screen.getByText("Record gratitude"));
+		fireEvent.click(screen.getByText("🙏 Thanks"));
 		const textarea = screen.getByPlaceholderText("I'm grateful for...");
 		fireEvent.change(textarea, { target: { value: "Some gratitude text" } });
 
@@ -162,7 +171,48 @@ describe("GratefulCard", () => {
 		fireEvent.click(screen.getByText("\u2715"));
 
 		// Reopen and check text is cleared
-		fireEvent.click(screen.getByText("Record gratitude"));
+		fireEvent.click(screen.getByText("🙏 Thanks"));
 		expect(screen.getByPlaceholderText("I'm grateful for...")).toHaveValue("");
+	});
+
+	it("saves text note when Save is clicked with text", async () => {
+		const { affirmationLogRepository } = await import(
+			"../repositories/affirmationLogRepository"
+		);
+
+		render(<GratefulCard userId="test-user" />);
+
+		fireEvent.click(screen.getByText("🙏 Thanks"));
+		fireEvent.change(screen.getByPlaceholderText("I'm grateful for..."), {
+			target: { value: "My health and family" },
+		});
+		fireEvent.click(screen.getByText("Save"));
+
+		await waitFor(() => {
+			expect(affirmationLogRepository.create).toHaveBeenCalledWith(
+				expect.objectContaining({
+					userId: "test-user",
+					affirmationTitle: "Grateful",
+					logType: "grateful",
+					note: "My health and family",
+				}),
+			);
+		});
+	});
+
+	it("closes input form after successful text save", async () => {
+		render(<GratefulCard userId="test-user" />);
+
+		fireEvent.click(screen.getByText("🙏 Thanks"));
+		fireEvent.change(screen.getByPlaceholderText("I'm grateful for..."), {
+			target: { value: "Something I'm grateful for" },
+		});
+		fireEvent.click(screen.getByText("Save"));
+
+		await waitFor(() => {
+			expect(
+				screen.queryByPlaceholderText("I'm grateful for..."),
+			).not.toBeInTheDocument();
+		});
 	});
 });

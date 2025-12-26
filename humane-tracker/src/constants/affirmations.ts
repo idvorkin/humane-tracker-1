@@ -5,7 +5,7 @@ export const DEFAULT_AFFIRMATIONS = [
 	},
 	{
 		title: "An Essentialist",
-		subtitle: "Know Essential. Provide Context. Prioritize Ruthlessly.",
+		subtitle: "Know Essential. Give Context. Prioritize Ruthlessly.",
 	},
 	{
 		title: "A Class Act",

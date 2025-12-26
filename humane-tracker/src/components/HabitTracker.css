@@ -161,6 +161,13 @@
 	flex-wrap: wrap;
 }
 
+.summary-bar-compact {
+	flex-wrap: nowrap;
+	justify-content: space-around;
+	gap: var(--space-md);
+	padding: var(--space-sm) var(--space-md);
+}
+
 .summary-item {
 	display: flex;
 	align-items: center;
@@ -422,6 +429,53 @@ th {
 	color: var(--color-warm-gray);
 	font-size: 0.75rem;
 	opacity: 0.8;
+}
+
+/* ==========================================================================
+   Tally Marks - Small tick marks showing today's count
+   ========================================================================== */
+
+.tally-marks {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin-top: 2px;
+	height: 10px;
+}
+
+.tally-group {
+	display: flex;
+	align-items: center;
+	position: relative;
+	height: 10px;
+	margin-right: 3px;
+}
+
+.tally-mark {
+	width: 2px;
+	height: 8px;
+	background: var(--color-sage-light);
+	margin-right: 1px;
+	border-radius: 1px;
+	opacity: 0.8;
+}
+
+.tally-strike {
+	position: absolute;
+	width: 14px;
+	height: 2px;
+	background: var(--color-sage-light);
+	transform: rotate(-30deg);
+	left: -1px;
+	top: 4px;
+	opacity: 0.8;
+	border-radius: 1px;
+}
+
+.tally-overflow {
+	font-size: 0.6rem;
+	color: var(--color-warm-gray);
+	margin-left: 2px;
 }
 
 /* Status Icons */

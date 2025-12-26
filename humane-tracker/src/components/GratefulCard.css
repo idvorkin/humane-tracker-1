@@ -13,7 +13,6 @@
 .grateful-header {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
 	gap: 8px;
 }
 
@@ -26,6 +25,7 @@
 	font-weight: 600;
 	font-size: 0.95rem;
 	color: #2e7d32;
+	flex: 1;
 }
 
 .grateful-card-subtitle {
@@ -36,9 +36,41 @@
 	font-style: italic;
 }
 
+.grateful-action-compact {
+	padding: 4px 8px;
+	font-size: 0.8rem;
+	margin-left: auto;
+}
+
 .grateful-actions {
 	display: flex;
 	gap: 8px;
+}
+
+.grateful-header .tally-marks {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.grateful-header .tally-group-svg {
+	display: block;
+}
+
+.grateful-header .tally-mark-line {
+	stroke: #2e7d32;
+	stroke-width: 2.5;
+}
+
+.grateful-header .tally-strike-line {
+	stroke: #2e7d32;
+	stroke-width: 2;
+}
+
+.grateful-header .tally-placeholder {
+	font-size: 0.75rem;
+	color: #2e7d32;
+	opacity: 0.4;
 }
 
 .grateful-action {
