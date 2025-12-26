@@ -10,6 +10,33 @@ function formatTimestamp(timestamp: string): string {
 	}
 }
 
+async function shareOrCopyUrl(): Promise<void> {
+	const url = window.location.origin;
+
+	// Try Web Share API first (works on mobile)
+	if (navigator.share) {
+		try {
+			await navigator.share({
+				title: "Humane Tracker",
+				url,
+			});
+			return;
+		} catch (err) {
+			// User cancelled or share failed, fall through to clipboard
+			if ((err as Error).name === "AbortError") return;
+		}
+	}
+
+	// Fallback: copy to clipboard
+	try {
+		await navigator.clipboard.writeText(url);
+		alert("URL copied to clipboard!");
+	} catch {
+		// Last resort: prompt user to copy manually
+		prompt("Copy this URL:", url);
+	}
+}
+
 export function AboutSection() {
 	const buildInfo = getBuildInfo();
 	const links = getGitHubLinks();
@@ -60,9 +87,13 @@ export function AboutSection() {
 
 				<div className="settings-info-row">
 					<span className="settings-info-label">URL</span>
-					<span className="settings-info-value about-section-url">
+					<button
+						type="button"
+						onClick={shareOrCopyUrl}
+						className="about-section-url-button"
+					>
 						{window.location.origin}
-					</span>
+					</button>
 				</div>
 
 				<a
