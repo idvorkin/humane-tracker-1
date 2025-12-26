@@ -21,17 +21,16 @@ jobs:
           cache: 'npm'
           cache-dependency-path: 'humane-tracker/package-lock.json'
 
+      - name: Install just
+        uses: extractions/setup-just@v2
+
       - name: Install dependencies
         working-directory: ./humane-tracker
         run: npm ci
 
-      - name: Run unit tests
+      - name: Run tests
         working-directory: ./humane-tracker
-        run: npm test
-
-      - name: Build app
-        working-directory: ./humane-tracker
-        run: npm run build
+        run: just test
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
