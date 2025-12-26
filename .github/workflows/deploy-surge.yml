@@ -3,40 +3,34 @@ name: Deploy to Surge
 on:
   push:
     branches:
-      - main # Deploy on push to main branch
+      - main
+  workflow_run:
+    workflows: ["Build PR"]
+    types: [completed]
   pull_request_target:
-    types: [opened, synchronize, reopened, closed]
+    types: [closed]
     branches:
-      - main # Preview on PRs from approved users
+      - main
 
 permissions:
   contents: read
   pull-requests: write
+  actions: read
 
 jobs:
-  build-and-deploy:
-    # Only run for:
-    # - Push to main (always)
-    # - PR from approved users (not on close)
-    #   Approved: idvorkin (collaborator) or idvorkin-ai-tools (bot account)
-    if: |
-      github.event_name == 'push' ||
-      (github.event.action != 'closed' &&
-       (github.actor == 'idvorkin' || github.actor == 'idvorkin-ai-tools'))
+  # Deploy main branch on push
+  deploy-main:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    name: Build and Deploy to Surge
-    # Use environment to limit secret access to only SURGE_TOKEN and SURGE_DOMAIN
+    name: Deploy Main to Surge
     environment: surge-deploy
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          # For PRs, checkout the PR head commit
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: "npm"
@@ -49,29 +43,60 @@ jobs:
         working-directory: ./humane-tracker
         run: npm ci
 
-      - name: Run unit tests and build
+      - name: Build
         working-directory: ./humane-tracker
-        run: just test
-
-      - name: Set deployment domain
-        id: domain
-        run: |
-          if [ "${{ github.event_name }}" == "pull_request_target" ]; then
-            echo "domain=pr-${{ github.event.pull_request.number }}-humane-tracker.surge.sh" >> $GITHUB_OUTPUT
-          else
-            echo "domain=${{ secrets.SURGE_DOMAIN }}" >> $GITHUB_OUTPUT
-          fi
+        run: just build
 
       - name: Deploy to Surge
         working-directory: ./humane-tracker
-        run: npx surge dist "${{ steps.domain.outputs.domain }}" --token "${{ secrets.SURGE_TOKEN }}"
+        run: npx surge dist "${{ secrets.SURGE_DOMAIN }}" --token "${{ secrets.SURGE_TOKEN }}"
 
-      - name: Comment PR with preview URL
-        if: github.event_name == 'pull_request_target'
+  # Deploy PR preview after build completes (SECURE: never runs PR code)
+  deploy-pr-preview:
+    if: |
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    name: Deploy PR Preview to Surge
+    environment: surge-deploy
+
+    steps:
+      - name: Get PR number
+        id: pr
         uses: actions/github-script@v7
         with:
           script: |
-            const domain = 'pr-${{ github.event.pull_request.number }}-humane-tracker.surge.sh';
+            const pr = context.payload.workflow_run.pull_requests[0];
+            if (!pr) {
+              core.setFailed('No PR found for this workflow run');
+              return;
+            }
+            core.setOutput('number', pr.number);
+            console.log(`PR number: ${pr.number}`);
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-pr-${{ steps.pr.outputs.number }}
+          path: dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Deploy to Surge
+        run: npx surge ./dist "pr-${{ steps.pr.outputs.number }}-humane-tracker.surge.sh" --token "${{ secrets.SURGE_TOKEN }}"
+
+      - name: Comment PR with preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ steps.pr.outputs.number }};
+            const domain = `pr-${prNumber}-humane-tracker.surge.sh`;
             const body = `## 🚀 Preview Deployment
 
             Your preview is ready!
@@ -80,11 +105,10 @@ jobs:
 
             This preview will be automatically deleted when the PR is closed.`;
 
-            // Check if we already have a comment
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.issue.number,
+              issue_number: prNumber,
             });
 
             const botComment = comments.find(c => c.body.includes('Preview Deployment'));
@@ -100,24 +124,23 @@ jobs:
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: context.issue.number,
+                issue_number: prNumber,
                 body: body
               });
             }
 
+  # Teardown PR preview when PR is closed
   teardown:
-    # Only run on PR close from approved users
     if: |
       github.event_name == 'pull_request_target' &&
-      github.event.action == 'closed' &&
-      (github.actor == 'idvorkin' || github.actor == 'idvorkin-ai-tools')
+      github.event.action == 'closed'
     runs-on: ubuntu-latest
     name: Teardown PR Preview
     environment: surge-deploy
 
     steps:
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 

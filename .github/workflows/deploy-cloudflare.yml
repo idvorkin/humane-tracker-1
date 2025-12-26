@@ -4,18 +4,22 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["Build PR"]
+    types: [completed]
+
+permissions:
+  contents: read
+  deployments: write
+  pull-requests: write
+  actions: read
 
 jobs:
-  build-and-deploy:
+  # Deploy main branch on push
+  deploy-main:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    name: Build and Deploy to Cloudflare Pages
-    permissions:
-      contents: read
-      deployments: write
-      pull-requests: write
+    name: Deploy Main to Cloudflare Pages
 
     steps:
       - name: Checkout code
@@ -35,9 +39,49 @@ jobs:
         working-directory: ./humane-tracker
         run: npm ci
 
-      - name: Build and test
+      - name: Build
         working-directory: ./humane-tracker
-        run: just test
+        run: just build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: ./humane-tracker
+          command: pages deploy dist --project-name humane-tracker --branch main
+
+  # Deploy PR preview after build completes (SECURE: never runs PR code)
+  deploy-pr-preview:
+    if: |
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    name: Deploy PR Preview to Cloudflare Pages
+
+    steps:
+      - name: Get PR info
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.workflow_run.pull_requests[0];
+            if (!pr) {
+              core.setFailed('No PR found for this workflow run');
+              return;
+            }
+            core.setOutput('number', pr.number);
+            core.setOutput('branch', context.payload.workflow_run.head_branch);
+            console.log(`PR number: ${pr.number}, branch: ${context.payload.workflow_run.head_branch}`);
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-pr-${{ steps.pr.outputs.number }}
+          path: dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Deploy to Cloudflare Pages
         id: deploy
@@ -45,18 +89,43 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: ./humane-tracker
-          command: pages deploy dist --project-name humane-tracker --branch ${{ github.head_ref || github.ref_name }}
+          command: pages deploy dist --project-name humane-tracker --branch ${{ steps.pr.outputs.branch }}
 
       - name: Comment deployment URL on PR
-        if: github.event_name == 'pull_request'
-        uses: thollander/actions-comment-pull-request@v3
+        uses: actions/github-script@v7
         with:
-          message: |
-            🚀 **Cloudflare Pages Preview**
+          script: |
+            const prNumber = ${{ steps.pr.outputs.number }};
+            const deploymentUrl = '${{ steps.deploy.outputs.deployment-url }}';
+            const aliasUrl = '${{ steps.deploy.outputs.pages-deployment-alias-url }}';
+
+            const body = `## 🚀 Cloudflare Pages Preview
 
             | Environment | URL |
             |-------------|-----|
-            | Preview | ${{ steps.deploy.outputs.deployment-url }} |
-            | Branch Alias | ${{ steps.deploy.outputs.pages-deployment-alias-url }} |
-          comment-tag: cloudflare-deploy
+            | Preview | ${deploymentUrl} |
+            | Branch Alias | ${aliasUrl} |`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const botComment = comments.find(c => c.body.includes('Cloudflare Pages Preview'));
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body
+              });
+            }

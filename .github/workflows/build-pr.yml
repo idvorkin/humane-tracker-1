@@ -1,0 +1,43 @@
+name: Build PR
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build and Test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: "humane-tracker/package-lock.json"
+
+      - name: Install just
+        uses: extractions/setup-just@v2
+
+      - name: Install dependencies
+        working-directory: ./humane-tracker
+        run: npm ci
+
+      - name: Run unit tests and build
+        working-directory: ./humane-tracker
+        run: just test
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-pr-${{ github.event.pull_request.number }}
+          path: humane-tracker/dist
+          retention-days: 7
