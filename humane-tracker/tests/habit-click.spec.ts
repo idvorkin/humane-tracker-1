@@ -150,7 +150,7 @@ test.describe('Habit Tracker Click Functionality', () => {
     await page.waitForTimeout(500);
 
     // Get initial state
-    const doneToday = page.locator('.summary-item:has-text("Done Today") .summary-value');
+    const doneToday = page.locator('.summary-item:has-text("Done:") .summary-value');
     const initialDoneText = await doneToday.textContent();
     const initialDoneCount = parseInt(initialDoneText || '0', 10);
     console.log('Initial Done Today count:', initialDoneCount);

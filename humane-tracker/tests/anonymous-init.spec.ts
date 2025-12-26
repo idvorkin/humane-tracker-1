@@ -21,10 +21,10 @@ test("anonymous user can load default habits via UI", async ({ page }) => {
   const menuTrigger = page.locator(".user-menu-trigger");
   await menuTrigger.click();
 
-  // Look for "Load Default Habits" option
-  const loadDefaultsBtn = page.locator('text=Load Default Habits');
+  // Look for "Load Demo Data" option (renamed from "Load Default Habits")
+  const loadDefaultsBtn = page.locator('text=Load Demo Data');
   const isVisible = await loadDefaultsBtn.isVisible().catch(() => false);
-  console.log("Load Default Habits visible:", isVisible);
+  console.log("Load Demo Data visible:", isVisible);
 
   if (isVisible) {
     await loadDefaultsBtn.click();
@@ -35,7 +35,7 @@ test("anonymous user can load default habits via UI", async ({ page }) => {
     console.log("Dialog appeared");
 
     // Click the initialize button using text selector for reliability
-    const initBtn = page.getByRole('button', { name: 'Initialize Default Habits' });
+    const initBtn = page.getByRole('button', { name: 'Load Demo Data' });
     await initBtn.waitFor({ state: 'visible', timeout: 5000 });
     console.log("Initialize button visible, clicking...");
     await initBtn.click();

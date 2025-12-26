@@ -75,7 +75,7 @@ describe("GratefulCard", () => {
 		expect(
 			screen.getByPlaceholderText("I'm grateful for..."),
 		).toBeInTheDocument();
-		expect(screen.getByText("Save")).toBeInTheDocument();
+		expect(screen.getByLabelText("Send")).toBeInTheDocument();
 	});
 
 	it("closes textarea on cancel button click", () => {
@@ -86,7 +86,7 @@ describe("GratefulCard", () => {
 			screen.getByPlaceholderText("I'm grateful for..."),
 		).toBeInTheDocument();
 
-		fireEvent.click(screen.getByText("\u2715"));
+		fireEvent.click(screen.getByLabelText("Cancel"));
 
 		expect(
 			screen.queryByPlaceholderText("I'm grateful for..."),
@@ -107,17 +107,14 @@ describe("GratefulCard", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("closes without saving when Save is clicked with empty text", () => {
+	it("does not submit when Send is clicked with empty text", () => {
 		render(<GratefulCard userId="test-user" />);
 
 		fireEvent.click(screen.getByText("🙏 Thanks"));
-		fireEvent.click(screen.getByText("Save"));
+		const sendBtn = screen.getByLabelText("Send");
 
-		// Should close the input form
-		expect(
-			screen.queryByPlaceholderText("I'm grateful for..."),
-		).not.toBeInTheDocument();
-		expect(screen.getByText("🙏 Thanks")).toBeInTheDocument();
+		// Send button should be disabled when text is empty
+		expect(sendBtn).toBeDisabled();
 	});
 
 	it("saves audio recording when recording completes", async () => {
@@ -128,6 +125,8 @@ describe("GratefulCard", () => {
 		render(<GratefulCard userId="test-user" />);
 
 		fireEvent.click(screen.getByText("🙏 Thanks"));
+		// Switch to voice mode (desktop defaults to text mode)
+		fireEvent.click(screen.getByLabelText("Switch to voice"));
 		fireEvent.click(screen.getByTestId("mock-audio-recorder"));
 
 		await waitFor(() => {
@@ -150,6 +149,8 @@ describe("GratefulCard", () => {
 			screen.getByPlaceholderText("I'm grateful for..."),
 		).toBeInTheDocument();
 
+		// Switch to voice mode (desktop defaults to text mode)
+		fireEvent.click(screen.getByLabelText("Switch to voice"));
 		fireEvent.click(screen.getByTestId("mock-audio-recorder"));
 
 		await waitFor(() => {
@@ -168,14 +169,14 @@ describe("GratefulCard", () => {
 
 		expect(textarea).toHaveValue("Some gratitude text");
 
-		fireEvent.click(screen.getByText("\u2715"));
+		fireEvent.click(screen.getByLabelText("Cancel"));
 
 		// Reopen and check text is cleared
 		fireEvent.click(screen.getByText("🙏 Thanks"));
 		expect(screen.getByPlaceholderText("I'm grateful for...")).toHaveValue("");
 	});
 
-	it("saves text note when Save is clicked with text", async () => {
+	it("saves text note when Send is clicked with text", async () => {
 		const { affirmationLogRepository } = await import(
 			"../repositories/affirmationLogRepository"
 		);
@@ -186,7 +187,7 @@ describe("GratefulCard", () => {
 		fireEvent.change(screen.getByPlaceholderText("I'm grateful for..."), {
 			target: { value: "My health and family" },
 		});
-		fireEvent.click(screen.getByText("Save"));
+		fireEvent.click(screen.getByLabelText("Send"));
 
 		await waitFor(() => {
 			expect(affirmationLogRepository.create).toHaveBeenCalledWith(
@@ -207,7 +208,7 @@ describe("GratefulCard", () => {
 		fireEvent.change(screen.getByPlaceholderText("I'm grateful for..."), {
 			target: { value: "Something I'm grateful for" },
 		});
-		fireEvent.click(screen.getByText("Save"));
+		fireEvent.click(screen.getByLabelText("Send"));
 
 		await waitFor(() => {
 			expect(

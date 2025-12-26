@@ -9,6 +9,7 @@ interface AudioRecorderButtonProps {
 	onError?: (error: string) => void;
 	disabled?: boolean;
 	stopRecordingRef?: React.MutableRefObject<(() => Promise<void>) | null>;
+	cancelRecordingRef?: React.MutableRefObject<(() => void) | null>;
 }
 
 export function AudioRecorderButton({
@@ -17,18 +18,16 @@ export function AudioRecorderButton({
 	onError,
 	disabled = false,
 	stopRecordingRef,
+	cancelRecordingRef,
 }: AudioRecorderButtonProps) {
 	const {
 		isRecording,
-		isPaused,
 		durationMs,
 		error,
 		isSupported,
 		permissionState,
 		startRecording,
 		stopRecording,
-		pauseRecording,
-		resumeRecording,
 		cancelRecording,
 	} = useAudioRecorder();
 
@@ -62,17 +61,12 @@ export function AudioRecorderButton({
 		}
 	}, [isRecording, stopRecording, onRecordingComplete, stopRecordingRef]);
 
-	const handleCancel = useCallback(() => {
-		cancelRecording();
-	}, [cancelRecording]);
-
-	const handlePauseResume = useCallback(() => {
-		if (isPaused) {
-			resumeRecording();
-		} else {
-			pauseRecording();
+	// Expose cancel function to parent via ref (stops recording without saving)
+	useEffect(() => {
+		if (cancelRecordingRef) {
+			cancelRecordingRef.current = isRecording ? cancelRecording : null;
 		}
-	}, [isPaused, pauseRecording, resumeRecording]);
+	}, [isRecording, cancelRecording, cancelRecordingRef]);
 
 	// Report errors to parent via useEffect to avoid side effects during render
 	useEffect(() => {
@@ -101,66 +95,36 @@ export function AudioRecorderButton({
 		);
 	}
 
-	if (isRecording) {
-		return (
-			<div className="audio-recorder-active">
-				<div className="audio-recorder-timer">
-					<span
-						className={`audio-recorder-indicator ${isPaused ? "paused" : "recording"}`}
-					/>
-					<span className="audio-recorder-duration">
-						{formatDurationMs(durationMs)}
-					</span>
-				</div>
-				<div className="audio-recorder-controls">
-					<button
-						type="button"
-						className="audio-recorder-control pause"
-						onClick={handlePauseResume}
-						title={isPaused ? "Resume" : "Pause"}
-					>
-						{isPaused ? "\u25B6" : "\u275A\u275A"}
-					</button>
-					<button
-						type="button"
-						className="audio-recorder-control stop"
-						onClick={handleStartStop}
-						title="Stop and save"
-					>
-						{"\u25A0"}
-					</button>
-					<button
-						type="button"
-						className="audio-recorder-control cancel"
-						onClick={handleCancel}
-						title="Cancel"
-					>
-						{"\u2715"}
-					</button>
-				</div>
-			</div>
-		);
-	}
-
 	return (
-		<button
-			type="button"
-			className="audio-recorder-button"
-			onClick={handleStartStop}
-			disabled={disabled}
-			title="Record audio"
-		>
-			<span className="audio-recorder-icon">
-				<svg
-					viewBox="0 0 24 24"
-					width="20"
-					height="20"
-					fill="currentColor"
-					aria-hidden="true"
-				>
-					<path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
-				</svg>
-			</span>
-		</button>
+		<div className="audio-recorder-wrapper">
+			<button
+				type="button"
+				className={`audio-recorder-button ${isRecording ? "recording" : ""}`}
+				onClick={handleStartStop}
+				disabled={disabled}
+				title={isRecording ? "Stop and save" : "Record audio"}
+			>
+				<span className="audio-recorder-icon">
+					{isRecording ? (
+						<span className="audio-recorder-stop-icon" />
+					) : (
+						<svg
+							viewBox="0 0 24 24"
+							width="20"
+							height="20"
+							fill="currentColor"
+							aria-hidden="true"
+						>
+							<path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+						</svg>
+					)}
+				</span>
+			</button>
+			{isRecording && (
+				<span className="audio-recorder-duration">
+					{formatDurationMs(durationMs)}
+				</span>
+			)}
+		</div>
 	);
 }

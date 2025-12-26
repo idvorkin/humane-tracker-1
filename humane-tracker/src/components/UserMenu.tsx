@@ -5,8 +5,8 @@ import { BugReportDialog } from "./BugReportDialog";
 import {
 	ChevronIcon,
 	DownloadIcon,
+	JournalIcon,
 	ManageHabitsIcon,
-	MicrophoneIcon,
 	SettingsIcon,
 	SignInIcon,
 	SignOutIcon,
@@ -18,6 +18,7 @@ import "./UserMenu.css";
 interface UserMenuProps {
 	userName: string;
 	avatarLetter: string;
+	userId: string;
 	isLocalMode?: boolean;
 	onSignOut?: () => void;
 	onSignIn?: () => void;
@@ -29,6 +30,7 @@ interface UserMenuProps {
 export function UserMenu({
 	userName,
 	avatarLetter,
+	userId,
 	isLocalMode = false,
 	onSignOut,
 	onSignIn,
@@ -124,10 +126,10 @@ export function UserMenu({
 						</div>
 					)}
 
-					<Link to="/recordings" className="user-menu-link" onClick={closeMenu}>
+					<Link to="/journal" className="user-menu-link" onClick={closeMenu}>
 						<MenuItem
-							icon={<MicrophoneIcon />}
-							label="Recordings"
+							icon={<JournalIcon />}
+							label="Journal"
 							onClick={() => {
 								/* Link handles navigation */
 							}}
@@ -173,6 +175,7 @@ export function UserMenu({
 			{showSettingsDialog && (
 				<SettingsDialog
 					isLocalMode={isLocalMode}
+					userId={userId}
 					onClose={() => setShowSettingsDialog(false)}
 					onOpenBugReport={bugReporter.open}
 					shakeEnabled={bugReporter.shakeEnabled}

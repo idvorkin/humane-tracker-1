@@ -104,10 +104,8 @@ describe("AudioRecorderButton", () => {
 		// Check for timer display
 		expect(screen.getByText("0:05")).toBeInTheDocument();
 
-		// Check for control buttons (using title attribute)
-		expect(screen.getByTitle("Pause")).toBeInTheDocument();
+		// Check for stop button
 		expect(screen.getByTitle("Stop and save")).toBeInTheDocument();
-		expect(screen.getByTitle("Cancel")).toBeInTheDocument();
 	});
 
 	it("calls stopRecording and onRecordingComplete when stop is clicked", async () => {
@@ -136,61 +134,6 @@ describe("AudioRecorderButton", () => {
 		await waitFor(() => {
 			expect(mockOnRecordingComplete).toHaveBeenCalledWith(mockBlob, 5000);
 		});
-	});
-
-	it("calls cancelRecording when cancel is clicked", () => {
-		const cancelRecording = vi.fn();
-		mockUseAudioRecorder.mockReturnValue({
-			...defaultHookState,
-			isRecording: true,
-			cancelRecording,
-		});
-
-		render(
-			<AudioRecorderButton onRecordingComplete={mockOnRecordingComplete} />,
-		);
-
-		const cancelButton = screen.getByTitle("Cancel");
-		fireEvent.click(cancelButton);
-
-		expect(cancelRecording).toHaveBeenCalled();
-	});
-
-	it("calls pauseRecording when pause is clicked", () => {
-		const pauseRecording = vi.fn();
-		mockUseAudioRecorder.mockReturnValue({
-			...defaultHookState,
-			isRecording: true,
-			pauseRecording,
-		});
-
-		render(
-			<AudioRecorderButton onRecordingComplete={mockOnRecordingComplete} />,
-		);
-
-		const pauseButton = screen.getByTitle("Pause");
-		fireEvent.click(pauseButton);
-
-		expect(pauseRecording).toHaveBeenCalled();
-	});
-
-	it("calls resumeRecording when resume is clicked (paused state)", () => {
-		const resumeRecording = vi.fn();
-		mockUseAudioRecorder.mockReturnValue({
-			...defaultHookState,
-			isRecording: true,
-			isPaused: true,
-			resumeRecording,
-		});
-
-		render(
-			<AudioRecorderButton onRecordingComplete={mockOnRecordingComplete} />,
-		);
-
-		const resumeButton = screen.getByTitle("Resume");
-		fireEvent.click(resumeButton);
-
-		expect(resumeRecording).toHaveBeenCalled();
 	});
 
 	it("calls onRecordingStateChange when recording state changes", () => {
@@ -262,37 +205,19 @@ describe("AudioRecorderButton", () => {
 		expect(screen.getByText("2:05")).toBeInTheDocument();
 	});
 
-	it("shows paused indicator when recording is paused", () => {
+	it("shows recording state when actively recording", () => {
 		mockUseAudioRecorder.mockReturnValue({
 			...defaultHookState,
 			isRecording: true,
-			isPaused: true,
 		});
 
 		render(
 			<AudioRecorderButton onRecordingComplete={mockOnRecordingComplete} />,
 		);
 
-		const indicator = document.querySelector(
-			".audio-recorder-indicator.paused",
+		const recordingButton = document.querySelector(
+			".audio-recorder-button.recording",
 		);
-		expect(indicator).toBeInTheDocument();
-	});
-
-	it("shows recording indicator when actively recording", () => {
-		mockUseAudioRecorder.mockReturnValue({
-			...defaultHookState,
-			isRecording: true,
-			isPaused: false,
-		});
-
-		render(
-			<AudioRecorderButton onRecordingComplete={mockOnRecordingComplete} />,
-		);
-
-		const indicator = document.querySelector(
-			".audio-recorder-indicator.recording",
-		);
-		expect(indicator).toBeInTheDocument();
+		expect(recordingButton).toBeInTheDocument();
 	});
 });

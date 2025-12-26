@@ -148,6 +148,33 @@
 	opacity: 0.5;
 }
 
+/* Tally marks in selector dropdown */
+.affirmation-selector-item .tally-marks {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.affirmation-selector-item .tally-group-svg {
+	display: block;
+}
+
+.affirmation-selector-item .tally-mark-line {
+	stroke: var(--color-sage);
+	stroke-width: 2.5;
+}
+
+.affirmation-selector-item .tally-strike-line {
+	stroke: var(--color-sage);
+	stroke-width: 2;
+}
+
+.affirmation-selector-item .tally-placeholder {
+	font-size: 0.75rem;
+	color: var(--color-warm-gray);
+	opacity: 0.5;
+}
+
 .affirmation-action {
 	flex: 1;
 	padding: 6px 12px;
@@ -164,76 +191,140 @@
 	background: rgba(255, 255, 255, 0.9);
 }
 
-.affirmation-note-input {
+/* ==========================================================================
+   Unified Input Container - Clean pill-shaped input area
+   ========================================================================== */
+
+.affirmation-input-container {
 	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.affirmation-input-row {
-	display: flex;
-	gap: 8px;
-	align-items: flex-start;
-}
-
-.affirmation-input-row textarea {
-	flex: 1;
-	padding: 10px 14px;
-	font-size: 0.95rem;
-	font-family: var(--font-body);
-	border: 1px solid var(--color-amber-glow);
-	border-radius: var(--radius-sm);
-	background: white;
-	min-height: 60px;
-	resize: vertical;
-}
-
-.affirmation-input-row textarea:focus {
-	outline: none;
-	border-color: var(--color-sky);
-	box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
-}
-
-/* When recording is active, let it fill the space */
-.affirmation-input-row.recording-active {
-	justify-content: stretch;
-}
-
-.affirmation-note-actions {
-	display: flex;
-	gap: 8px;
 	align-items: center;
+	gap: 8px;
+	padding: 8px 10px;
+	background: white;
+	border: 1px solid var(--color-amber-glow);
+	border-radius: 28px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+	min-height: 52px;
 }
 
-.affirmation-save {
-	padding: 8px 14px;
-	font-size: 0.85rem;
-	font-family: var(--font-body);
-	font-weight: 500;
-	background: var(--color-sage);
-	color: white;
-	border: none;
-	border-radius: var(--radius-sm);
-	cursor: pointer;
-	transition: background 0.15s ease;
-}
-
-.affirmation-save:hover {
-	background: #3d6a0a;
-}
-
-.affirmation-cancel {
-	padding: 8px;
-	font-size: 0.9rem;
+.affirmation-input-dismiss {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
 	background: none;
 	border: none;
+	border-radius: 50%;
 	color: var(--color-charcoal);
-	opacity: 0.5;
+	opacity: 0.4;
 	cursor: pointer;
+	transition:
+		opacity 0.15s ease,
+		background 0.15s ease;
+	flex-shrink: 0;
 }
 
-.affirmation-cancel:hover {
-	opacity: 0.8;
+.affirmation-input-dismiss:hover {
+	opacity: 0.7;
+	background: rgba(0, 0, 0, 0.05);
+}
+
+/* Text input mode */
+.affirmation-text-input {
+	display: flex;
+	align-items: center;
+	flex: 1;
+	gap: 8px;
+	min-width: 0;
+}
+
+.affirmation-text-input textarea {
+	flex: 1;
+	padding: 8px 0;
+	font-size: 0.95rem;
+	font-family: var(--font-body);
+	border: none;
+	background: transparent;
+	resize: none;
+	min-height: 24px;
+	max-height: 120px;
+	line-height: 1.4;
+}
+
+.affirmation-text-input textarea:focus {
+	outline: none;
+}
+
+.affirmation-text-input textarea::placeholder {
+	color: var(--color-charcoal);
+	opacity: 0.4;
+}
+
+.affirmation-send-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	background: var(--color-sage);
+	border: none;
+	border-radius: 50%;
+	color: white;
+	cursor: pointer;
+	transition:
+		transform 0.15s ease,
+		opacity 0.15s ease;
+	flex-shrink: 0;
+}
+
+.affirmation-send-btn:hover:not(:disabled) {
+	transform: scale(1.08);
+}
+
+.affirmation-send-btn:disabled {
+	opacity: 0.3;
+	cursor: not-allowed;
+}
+
+/* Voice input mode - center the mic button */
+.affirmation-voice-input {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
+}
+
+/* Mode switch button */
+.affirmation-mode-switch {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	background: none;
+	border: none;
+	border-radius: 50%;
+	color: var(--color-charcoal);
+	opacity: 0.35;
+	cursor: pointer;
+	transition:
+		opacity 0.15s ease,
+		background 0.15s ease;
+	flex-shrink: 0;
+}
+
+.affirmation-mode-switch:hover:not(.disabled) {
+	opacity: 0.6;
+	background: rgba(0, 0, 0, 0.05);
+}
+
+.affirmation-mode-switch.disabled {
+	opacity: 0.15;
+	cursor: default;
 }
 
 .affirmation-error {
@@ -277,13 +368,24 @@
 		background: rgba(0, 0, 0, 0.5);
 	}
 
-	.affirmation-input-row textarea {
+	.affirmation-input-container {
 		background: #1f1d1a;
 		border-color: #78350f;
+	}
+
+	.affirmation-input-dismiss {
 		color: var(--color-cream);
 	}
 
-	.affirmation-cancel {
+	.affirmation-text-input textarea {
+		color: var(--color-cream);
+	}
+
+	.affirmation-text-input textarea::placeholder {
+		color: var(--color-cream);
+	}
+
+	.affirmation-mode-switch {
 		color: var(--color-cream);
 	}
 

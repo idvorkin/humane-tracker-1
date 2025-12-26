@@ -1,14 +1,23 @@
 import type React from "react";
+import { useEffect, useState } from "react";
 import { useVersionCheck } from "../hooks/useVersionCheck";
+import { audioRecordingRepository } from "../repositories/audioRecordingRepository";
 import { getModifierKey } from "../services/githubService";
 import { AboutSection } from "./AboutSection";
 import { CrashTestButton } from "./CrashTestButton";
-import { BugIcon, CloseIcon, UpdateIcon, WarningIcon } from "./icons/MenuIcons";
+import {
+	BugIcon,
+	CloseIcon,
+	StorageIcon,
+	UpdateIcon,
+	WarningIcon,
+} from "./icons/MenuIcons";
 import { SyncSection } from "./SyncSection";
 import "./SettingsDialog.css";
 
 interface SettingsDialogProps {
 	isLocalMode: boolean;
+	userId: string;
 	onClose: () => void;
 	onOpenBugReport?: () => void;
 	shakeEnabled?: boolean;
@@ -16,6 +25,14 @@ interface SettingsDialogProps {
 	shakeSupported?: boolean;
 	shakeHasPermission?: boolean;
 	onRequestShakePermission?: () => Promise<boolean>;
+}
+
+function formatBytes(bytes: number): string {
+	if (bytes === 0) return "0 B";
+	const k = 1024;
+	const sizes = ["B", "KB", "MB", "GB"];
+	const i = Math.floor(Math.log(bytes) / Math.log(k));
+	return `${parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`;
 }
 
 function formatTimeAgo(date: Date | null): string {
@@ -34,6 +51,7 @@ function formatTimeAgo(date: Date | null): string {
 
 export function SettingsDialog({
 	isLocalMode,
+	userId,
 	onClose,
 	onOpenBugReport,
 	shakeEnabled = false,
@@ -43,6 +61,14 @@ export function SettingsDialog({
 	onRequestShakePermission,
 }: SettingsDialogProps) {
 	const { checkForUpdate, isChecking, lastCheckTime } = useVersionCheck();
+	const [audioStorageSize, setAudioStorageSize] = useState<number | null>(null);
+
+	useEffect(() => {
+		audioRecordingRepository
+			.getTotalSizeForUser(userId)
+			.then(setAudioStorageSize)
+			.catch(() => setAudioStorageSize(null));
+	}, [userId]);
 
 	const handleOverlayClick = (e: React.MouseEvent) => {
 		if (e.target === e.currentTarget) {
@@ -98,6 +124,26 @@ export function SettingsDialog({
 
 					{/* Sync Section with expandable details and logs */}
 					<SyncSection isLocalMode={isLocalMode} />
+
+					{/* Storage Section */}
+					<div className="settings-section">
+						<div className="settings-section-header">
+							<div className="settings-section-icon">
+								<StorageIcon />
+							</div>
+							<span className="settings-section-title">Storage</span>
+						</div>
+						<div className="settings-section-content">
+							<div className="settings-info-row">
+								<span className="settings-info-label">Audio recordings</span>
+								<span className="settings-info-value">
+									{audioStorageSize !== null
+										? formatBytes(audioStorageSize)
+										: "—"}
+								</span>
+							</div>
+						</div>
+					</div>
 
 					{/* Help & Feedback Section */}
 					<div className="settings-section">

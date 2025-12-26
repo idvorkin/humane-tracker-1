@@ -49,7 +49,7 @@ test.describe('Habit Tracker App', () => {
 
     // Check summary bar
     await expect(page.locator('.summary-bar')).toBeVisible();
-    await expect(page.locator('.summary-label').first()).toContainText('Due Today');
+    await expect(page.locator('.summary-label').first()).toContainText('Due:');
 
     // Check view toggle button (toggles between Expand All/Collapse All)
     await expect(page.locator('.toggle-btn')).toBeVisible();
@@ -224,14 +224,13 @@ test.describe('Habit Tracker App', () => {
   });
 
   test('should display summary statistics', async ({ page }) => {
-    // Check all summary items are present
-    await expect(page.locator('.summary-item:has-text("Due Today")')).toBeVisible();
-    await expect(page.locator('.summary-item:has-text("Overdue")')).toBeVisible();
-    await expect(page.locator('.summary-item:has-text("Done Today")')).toBeVisible();
-    await expect(page.locator('.summary-item:has-text("On Track")')).toBeVisible();
-    
+    // Check all summary items are present (compact labels)
+    await expect(page.locator('.summary-item:has-text("Due:")')).toBeVisible();
+    await expect(page.locator('.summary-item:has-text("Done:")')).toBeVisible();
+    await expect(page.locator('.summary-item:has-text("Late:")')).toBeVisible();
+
     // Check that values are numbers
-    const dueToday = page.locator('.summary-item:has-text("Due Today") .summary-value');
+    const dueToday = page.locator('.summary-item:has-text("Due:") .summary-value');
     const value = await dueToday.textContent();
     expect(value).toMatch(/\d+/);
   });

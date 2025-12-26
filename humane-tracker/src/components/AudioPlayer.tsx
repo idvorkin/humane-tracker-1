@@ -6,9 +6,17 @@ interface AudioPlayerProps {
 	blob: Blob;
 	mimeType: string;
 	onDelete?: () => void;
+	compact?: boolean;
+	compactLabel?: string;
 }
 
-export function AudioPlayer({ blob, mimeType, onDelete }: AudioPlayerProps) {
+export function AudioPlayer({
+	blob,
+	mimeType,
+	onDelete,
+	compact = false,
+	compactLabel,
+}: AudioPlayerProps) {
 	const audioRef = useRef<HTMLAudioElement | null>(null);
 	const [isPlaying, setIsPlaying] = useState(false);
 	const [currentTime, setCurrentTime] = useState(0);
@@ -100,6 +108,40 @@ export function AudioPlayer({ blob, mimeType, onDelete }: AudioPlayerProps) {
 		return (
 			<div className="audio-player audio-player-error">
 				<span className="audio-player-error-text">{error}</span>
+			</div>
+		);
+	}
+
+	// Compact mode: just play button + label
+	if (compact) {
+		return (
+			<div className="audio-player audio-player-compact">
+				{audioUrl && (
+					<audio ref={audioRef} src={audioUrl} preload="metadata">
+						<track kind="captions" />
+					</audio>
+				)}
+				<button
+					type="button"
+					className="audio-player-play"
+					onClick={handlePlayPause}
+					aria-label={isPlaying ? "Pause" : "Play"}
+				>
+					{isPlaying ? "\u275A\u275A" : "\u25B6"}
+				</button>
+				<span className="audio-player-compact-label">
+					{compactLabel || formatDurationSec(duration)}
+				</span>
+				{onDelete && (
+					<button
+						type="button"
+						className="audio-player-delete-compact"
+						onClick={onDelete}
+						aria-label="Delete recording"
+					>
+						{"\u2715"}
+					</button>
+				)}
 			</div>
 		);
 	}
