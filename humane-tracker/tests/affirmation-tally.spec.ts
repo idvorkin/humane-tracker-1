@@ -36,19 +36,19 @@ test.describe("Affirmation Card Tally Marks", () => {
 		// Log 3 "Did it" entries
 		for (let i = 1; i <= 3; i++) {
 			await page.locator(".affirmation-action", { hasText: "Did" }).click();
-			await page.locator(".affirmation-note-input textarea").fill(`Test entry ${i}`);
-			await page.locator(".affirmation-save").click();
+			await page.locator(".affirmation-input-container textarea").fill(`Test entry ${i}`);
+			await page.getByRole("button", { name: "Send" }).click();
 			// Wait for form to close (indicates save completed)
-			await expect(page.locator(".affirmation-note-input")).not.toBeVisible();
+			await expect(page.locator(".affirmation-input-container")).not.toBeVisible();
 		}
 
 		// Log 2 "Opportunity" entries
 		for (let i = 1; i <= 2; i++) {
 			await page.locator(".affirmation-action", { hasText: "Opp" }).click();
-			await page.locator(".affirmation-note-input textarea").fill(`Opportunity ${i}`);
-			await page.locator(".affirmation-save").click();
+			await page.locator(".affirmation-input-container textarea").fill(`Opportunity ${i}`);
+			await page.getByRole("button", { name: "Send" }).click();
 			// Wait for form to close (indicates save completed)
-			await expect(page.locator(".affirmation-note-input")).not.toBeVisible();
+			await expect(page.locator(".affirmation-input-container")).not.toBeVisible();
 		}
 
 		// Screenshot after multiple saves (include project name in filename)
