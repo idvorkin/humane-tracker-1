@@ -13,14 +13,14 @@
 }
 
 .keyboard-shortcuts-dialog {
-	background: var(--color-bg);
+	background: var(--color-cream, #faf7f2);
 	border-radius: 12px;
 	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 	max-width: 500px;
 	width: 90%;
 	max-height: 80vh;
 	overflow-y: auto;
-	border: 1px solid var(--color-border);
+	border: 1px solid var(--color-parchment, #e8e0d5);
 }
 
 .keyboard-shortcuts-header {
@@ -28,21 +28,21 @@
 	align-items: center;
 	justify-content: space-between;
 	padding: 20px;
-	border-bottom: 1px solid var(--color-border);
+	border-bottom: 1px solid var(--color-parchment, #e8e0d5);
 }
 
 .keyboard-shortcuts-header h2 {
 	margin: 0;
 	font-size: 1.25rem;
 	font-weight: 600;
-	color: var(--color-text);
+	color: var(--color-charcoal, #3d3a36);
 }
 
 .keyboard-shortcuts-close {
 	background: none;
 	border: none;
 	font-size: 1.5rem;
-	color: var(--color-text-secondary);
+	color: var(--color-warm-gray, #9c9489);
 	cursor: pointer;
 	padding: 4px 8px;
 	line-height: 1;
@@ -50,7 +50,18 @@
 }
 
 .keyboard-shortcuts-close:hover {
-	color: var(--color-text);
+	color: var(--color-charcoal, #3d3a36);
+}
+
+.keyboard-shortcuts-close:focus-visible {
+	outline: 2px solid var(--color-info, #0891b2);
+	outline-offset: 2px;
+	border-radius: 4px;
+}
+
+/* Fallback for browsers without :focus-visible */
+.keyboard-shortcuts-close:focus:not(:focus-visible) {
+	outline: none;
 }
 
 .keyboard-shortcuts-content {
@@ -71,7 +82,7 @@
 	font-weight: 600;
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
-	color: var(--color-text-secondary);
+	color: var(--color-warm-gray, #9c9489);
 }
 
 .keyboard-shortcut {
@@ -83,14 +94,14 @@
 }
 
 .keyboard-shortcut kbd {
-	background: var(--color-surface);
-	border: 1px solid var(--color-border);
+	background: var(--color-cream-dark, #f0ebe3);
+	border: 1px solid var(--color-parchment, #e8e0d5);
 	border-radius: 4px;
 	padding: 4px 8px;
 	font-size: 0.875rem;
 	font-family: ui-monospace, monospace;
 	font-weight: 500;
-	color: var(--color-text);
+	color: var(--color-charcoal, #3d3a36);
 	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 	min-width: 32px;
 	text-align: center;
@@ -98,19 +109,19 @@
 
 .keyboard-shortcut span {
 	flex: 1;
-	color: var(--color-text-secondary);
+	color: var(--color-warm-gray, #9c9489);
 	font-size: 0.9375rem;
 }
 
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
 	.keyboard-shortcuts-dialog {
-		background: #1a1a1a;
+		background: var(--color-deep-brown, #1f1d1a);
 	}
 
 	.keyboard-shortcut kbd {
-		background: #2a2a2a;
-		border-color: #404040;
+		background: var(--color-espresso, #2a2825);
+		border-color: var(--color-charcoal, #3d3a36);
 		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 	}
 }

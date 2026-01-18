@@ -88,12 +88,8 @@ function App() {
 				return;
 			}
 
-			if (
-				event.key === "?" &&
-				!event.shiftKey &&
-				!event.ctrlKey &&
-				!event.metaKey
-			) {
+			// "?" is Shift+/ on US keyboards, so we don't check shiftKey
+			if (event.key === "?" && !event.ctrlKey && !event.metaKey) {
 				event.preventDefault();
 				setShowKeyboardShortcuts(true);
 			}

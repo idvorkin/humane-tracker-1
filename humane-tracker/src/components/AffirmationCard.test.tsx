@@ -331,9 +331,11 @@ describe("AffirmationCard", () => {
 		});
 
 		// Card should stay open with cleared text
-		expect(
-			screen.getByPlaceholderText("How will you apply this today?"),
-		).toHaveValue("");
+		await vi.waitFor(() => {
+			expect(
+				screen.getByPlaceholderText("How will you apply this today?"),
+			).toHaveValue("");
+		});
 	});
 
 	it("saves and keeps open when Ctrl+Enter is pressed", async () => {
@@ -358,9 +360,11 @@ describe("AffirmationCard", () => {
 		});
 
 		// Card should stay open with cleared text
-		expect(screen.getByPlaceholderText("How did you apply this?")).toHaveValue(
-			"",
-		);
+		await vi.waitFor(() => {
+			expect(
+				screen.getByPlaceholderText("How did you apply this?"),
+			).toHaveValue("");
+		});
 	});
 
 	it("allows adding multiple entries with Cmd/Ctrl+Enter", async () => {
